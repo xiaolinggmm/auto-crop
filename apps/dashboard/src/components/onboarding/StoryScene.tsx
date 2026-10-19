@@ -1,5 +1,6 @@
-import { Check, Circle, Globe, MessageSquare, Network } from "lucide-react";
+import { Check, Circle, MessageSquare, Network } from "lucide-react";
 import { CoordinationScene } from "./CoordinationScene";
+import { ParallelScene } from "./ParallelScene";
 import { FoundingScene } from "./FoundingScene";
 import type { StoryCopy } from "./storyCopy";
 
@@ -30,62 +31,7 @@ export function StoryScene({
         <CoordinationScene elapsed={elapsed} reduced={reduced} c={c} />
       )}
       {scene === 2 && (
-        <>
-          <div className="story-browser">
-            <div className="story-browser-bar">
-              <span>● ● ●</span>
-              <span>
-                <Globe aria-hidden="true" /> firstsearch.example
-              </span>
-            </div>
-            <div className="story-browser-body">
-              <h3>Check your shipping address</h3>
-              <div className="story-address">
-                {phase === 0 ? (
-                  <div className="story-skeleton" aria-hidden="true">
-                    <span />
-                    <span />
-                  </div>
-                ) : (
-                  <>
-                    42 Example Street
-                    <br />
-                    Sample City, CA {phase === 2 ? "90210" : "_____"}
-                  </>
-                )}
-              </div>
-              {phase >= 1 && (
-                <p className="story-result">
-                  {phase === 2 ? (
-                    <Check aria-hidden="true" />
-                  ) : (
-                    <Circle aria-hidden="true" />
-                  )}
-                  {phase === 2 ? c.valid : c.missing}
-                </p>
-              )}
-              <small>{c.limitation}</small>
-            </div>
-          </div>
-          {phase === 2 && (
-            <div className="story-delivery">
-              <div>
-                <strong>{c.delivery}</strong>
-                {c.outputs.map((text) => (
-                  <p key={text}>
-                    <Check aria-hidden="true" />
-                    {text}
-                  </p>
-                ))}
-              </div>
-              <div>
-                {c.statuses.map((text) => (
-                  <p key={text}>{text}</p>
-                ))}
-              </div>
-            </div>
-          )}
-        </>
+        <ParallelScene elapsed={elapsed} reduced={reduced} c={c} />
       )}
       {scene === 3 && (
         <>

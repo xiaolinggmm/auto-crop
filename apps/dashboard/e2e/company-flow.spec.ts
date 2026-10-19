@@ -7,6 +7,7 @@ import { fixtureApiPort } from "./fixtureApi";
 import {
   aiSaasPlaybook,
   createApiServer,
+  createCompany,
   createDatabaseClient,
   createMockAgentAdapter,
   createRepositories,
@@ -26,20 +27,9 @@ test.afterAll(async () => {
   await fixture.close();
 });
 
-test("creates and operates a mock agent company through the dashboard", async ({ page }) => {
+test("opens and operates an existing mock agent company through the dashboard", async ({ page }) => {
   await page.goto("/");
 
-  // No companies yet, so the dashboard opens straight into the onboarding wizard.
-  await expect(page.getByRole("heading", { name: "CEO Office" })).toBeVisible();
-  await page.getByLabel("Company name").fill("Pricing Page Studio");
-  await page.getByRole("button", { name: "Next" }).click();
-  await page.getByRole("button", { name: /codex/i }).click();
-  await page.getByRole("button", { name: "Next" }).click();
-  await page.getByLabel("Founder vision").fill("Build an AI SaaS that creates pricing pages.");
-  await page.getByRole("radiogroup", { name: "Permission mode" }).getByRole("radio", { name: "Balanced" }).click();
-  await page.getByRole("button", { name: /create company/i }).click();
-
-  await expect(page.getByLabel("Founder vision")).toHaveCount(0);
   // The company runs as soon as its blueprint exists (ADR 0044) and opens on CEO Office.
   await expect(page.getByRole("heading", { name: "Pricing Page Studio" })).toBeVisible();
   await expect(page.getByRole("heading", { level: 1, name: "CEO Office" })).toBeVisible();
@@ -145,6 +135,15 @@ async function startFixtureServer() {
       output: ["## Human CEO Brief", "Validate.", "```json", JSON.stringify({ brief: "Validate.", blueprint }), "```"].join("\n"),
     }),
   ];
+  // Seed an existing company with a mock adapter; the UI no longer submits legacy creation.
+  await createCompany({
+    projectRoot, repositories, companyName: "Pricing Page Studio",
+    founderVision: "Build an AI SaaS that creates pricing pages.",
+    selectedCeoAgent: agents[0]!, availableAgents: agents,
+    permissionMode: "balanced", assets: [],
+    now: () => new Date("2026-08-17T00:00:00.000Z"),
+    createId: createSequentialIdFactory(),
+  });
   const server = createApiServer({
     projectRoot,
     repositories,

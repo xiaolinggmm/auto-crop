@@ -118,6 +118,6 @@ test("reduced motion keeps the complete story readable without playing", async (
   await expect(
     page.getByRole("button", { name: "Pause", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: "3 · Deliver" }).click();
-  await expect(page.getByText("Google indexing unconfirmed")).toBeVisible();
+  await page.getByRole("button", { name: "3 · Progress" }).click();
+  await expect(page.getByRole("region", { name: "CEO inbox" })).toBeVisible();
 });

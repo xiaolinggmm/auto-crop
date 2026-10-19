@@ -21,21 +21,35 @@ import type {
 } from "./api/client";
 
 describe("Dashboard App", () => {
-  it("starts on the company-name step only", async () => {
+  it("opens the demo first and never submits the combined form to the legacy API", async () => {
     const api = createMockApiClient();
-
+    const user = userEvent.setup();
     render(<App apiClient={api} />);
-
-    expect(await screen.findByRole("heading", { name: "CEO Office" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "CEO Office" })).toBeInTheDocument();
-    expect(document.querySelector("dialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Step 1 / Company Name" })).toBeInTheDocument();
-    expect(screen.getByLabelText("Company name")).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Step 2 / Choose CEO" })).not.toBeInTheDocument();
-    expect(screen.queryByLabelText("Founder vision")).not.toBeInTheDocument();
-    expect(api.listCompanies).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Create directly" }));
+    await user.type(screen.getByLabelText("Company name"), "My studio");
+    await user.type(screen.getByLabelText("Founder vision"), "My goal");
+    expect(screen.getByRole("button", { name: "Generate team and plan" })).toBeDisabled();
+    await user.keyboard("{Meta>}{Enter}{/Meta}");
+    expect(api.createCompany).not.toHaveBeenCalled();
     expect(api.listAgents).not.toHaveBeenCalled();
     expect(api.subscribeEvents).not.toHaveBeenCalled();
+  });
+
+  it("reviews the demo without background operation shortcuts and restores launcher focus", async () => {
+    const api = createMockApiClient();
+    const user = userEvent.setup();
+    renderExistingCompany(api);
+    await expectExistingCompany();
+    await openPage(user, "Settings");
+    const launcher = screen.getByRole("button", { name: "Watch the demo" });
+    await user.click(launcher);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    await user.keyboard("{Meta>}{Shift>}k{/Shift}{/Meta}");
+    expect(api.pauseCompany).not.toHaveBeenCalled();
+    expect(api.resumeCompany).not.toHaveBeenCalled();
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(launcher).toHaveFocus());
   });
 
   it("shows the company list load failure detail", async () => {
@@ -166,119 +180,10 @@ describe("Dashboard App", () => {
     expect(screen.queryByLabelText("Company name")).not.toBeInTheDocument();
   });
 
-  it("blocks Next on Step 1 until a company name is entered", async () => {
-    const api = createMockApiClient();
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await user.click(await screen.findByRole("button", { name: /next/i }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent("Company name is required.");
-    expect(screen.getByRole("heading", { name: "Step 1 / Company Name" })).toBeInTheDocument();
-    expect(api.listAgents).not.toHaveBeenCalled();
-  });
-
-  it("uses the entered company name as the onboarding modal title", async () => {
-    const api = createMockApiClient();
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await user.type(await screen.findByLabelText("Company name"), "MATT");
-
-    expect(screen.getByRole("region", { name: "MATT" })).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "MATT" })).toBeInTheDocument();
-  });
-
-  it("detects agents automatically when entering Step 2", async () => {
-    const api = createMockApiClient();
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await user.type(await screen.findByLabelText("Company name"), "Pricing Page Studio");
-    await user.click(screen.getByRole("button", { name: /next/i }));
-
-    expect(await screen.findByRole("heading", { name: "Step 2 / Choose CEO" })).toBeInTheDocument();
-    expect(api.listAgents).toHaveBeenCalledTimes(1);
-    expect(await screen.findByRole("button", { name: /codex/i })).toBeInTheDocument();
-  });
-
-  it("shows Step 2 loading and empty states", async () => {
-    const api = createMockApiClient();
-    const agents = createDeferred<{ agents: [] }>();
-    api.listAgents = vi.fn(() => agents.promise);
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await user.type(await screen.findByLabelText("Company name"), "Pricing Page Studio");
-    await user.click(screen.getByRole("button", { name: /next/i }));
-
-    expect(await screen.findByText("Scanning local agent registry...")).toBeInTheDocument();
-    agents.resolve({ agents: [] });
-    expect(await screen.findByText("No local agents reported by the API.")).toBeInTheDocument();
-  });
-
-  it("requires a detected CEO before Step 3 appears", async () => {
-    const api = createMockApiClient();
-    api.listAgents = vi.fn(async () => ({
-      agents: [
-        {
-          id: "codex",
-          name: "Codex",
-          capabilities: ["code", "frontend", "test"],
-          detected: false,
-        },
-      ],
-    }));
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await user.type(await screen.findByLabelText("Company name"), "Pricing Page Studio");
-    await user.click(screen.getByRole("button", { name: /next/i }));
-    expect(await screen.findByRole("heading", { name: "Step 2 / Choose CEO" })).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /next/i }));
-
-    expect(screen.getByRole("alert")).toHaveTextContent("Select one detected CEO Agent.");
-    expect(screen.queryByLabelText("Founder vision")).not.toBeInTheDocument();
-  });
-
-  it("shows the creation loading page immediately after Create Company", async () => {
-    const api = createMockApiClient();
-    const created = createDeferred<Awaited<ReturnType<ApiClient["createCompany"]>>>();
-    api.createCompany = vi.fn(() => created.promise);
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
-
-    expect(await screen.findByRole("heading", { level: 1, name: "Creating Company" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Creating Company" })).toBeInTheDocument();
-    expect(screen.getByRole("region", { name: "Company Creation Trace" })).toBeInTheDocument();
-    expect(document.querySelector("dialog")).not.toBeInTheDocument();
-    // Before the server accepts the request there is no event timestamp, so no elapsed time is shown.
-    expect(screen.queryByText("Running for")).not.toBeInTheDocument();
-    expect(screen.getAllByText("Pricing Page Studio").length).toBeGreaterThan(0);
-    expect(screen.getByText("Codex")).toBeInTheDocument();
-    expect(screen.getByText("Accept creation request")).toBeInTheDocument();
-    expect(screen.getByText("Generate company blueprint")).toBeInTheDocument();
-    expect(screen.getByText("Parse blueprint")).toBeInTheDocument();
-    expect(screen.getByText("Create departments and tasks")).toBeInTheDocument();
-    expect(screen.getByText("Company ready")).toBeInTheDocument();
-
-    created.resolve(createCompanyResponse());
-    expect(await screen.findByRole("heading", { name: "Pricing Page Studio" })).toBeInTheDocument();
-  });
-
   it("keeps watching async company creation and opens the workspace when creation completes", async () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
-    api.createCompany = vi.fn(async () => createCreatingCompanyResponse());
+    api.initialCompany = vi.fn(async () => createCreatingCompanyResponse());
     api.getCompanyState = vi.fn(async () => ({
       ...createCompanyResponse(),
       proof: [],
@@ -287,10 +192,8 @@ describe("Dashboard App", () => {
       replanProposals: [],
     }));
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
 
     expect(await screen.findByText("Accept creation request")).toBeInTheDocument();
     expect(api.subscribeEvents).toHaveBeenCalledWith("company_1", expect.any(Function), expect.any(Function));
@@ -312,7 +215,7 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
     let openStream: (() => void) | undefined;
-    api.createCompany = vi.fn(async () => createCreatingCompanyResponse());
+    api.initialCompany = vi.fn(async () => createCreatingCompanyResponse());
     api.getCompanyState = vi.fn(async () => ({
       ...createCompanyResponse(),
       proof: [],
@@ -325,10 +228,8 @@ describe("Dashboard App", () => {
       return () => undefined;
     });
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
     expect(await screen.findByText("Accept creation request")).toBeInTheDocument();
 
     // The completion event was published before this subscriber existed, so it never arrives.
@@ -341,13 +242,11 @@ describe("Dashboard App", () => {
   it("shows failed company creation and retries it from the loading view", async () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
-    api.createCompany = vi.fn(async () => createFailedCompanyCreationResponse());
+    api.initialCompany = vi.fn(async () => createFailedCompanyCreationResponse());
     api.retryCompanyCreation = vi.fn(async () => createCreatingCompanyResponse());
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
 
     expect(await screen.findByText("Codex ran into an error")).toBeInTheDocument();
     // A failed creation is retried or left, never abandoned from this page.
@@ -362,10 +261,9 @@ describe("Dashboard App", () => {
   it("leaves a failed creation for another company", async () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
-    api.createCompany = vi.fn(async () => createFailedCompanyCreationResponse());
+    api.initialCompany = vi.fn(async () => createFailedCompanyCreationResponse());
     api.listCompanies = vi
       .fn()
-      .mockResolvedValueOnce({ companies: [] })
       .mockResolvedValue({
         companies: [
           { id: "company_1", name: "Pricing Page Studio", status: "creation_failed", playbookId: "ai-saas", createdAt: "2026-08-17T00:00:00.000Z", updatedAt: "2026-08-19T00:00:00.000Z", taskCount: 0 },
@@ -382,9 +280,7 @@ describe("Dashboard App", () => {
       replanProposals: [],
     }));
 
-    render(<App apiClient={api} />);
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
+    renderExistingCompany(api);
 
     await user.click(await screen.findByRole("button", { name: "Back to another company" }));
 
@@ -396,16 +292,14 @@ describe("Dashboard App", () => {
   it("starts afresh from a failed creation when no other company exists", async () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
-    api.createCompany = vi.fn(async () => createFailedCompanyCreationResponse());
+    api.initialCompany = vi.fn(async () => createFailedCompanyCreationResponse());
 
-    render(<App apiClient={api} />);
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
+    renderExistingCompany(api);
 
     const nextSteps = await screen.findByRole("region", { name: "What happens to this company" });
     await user.click(within(nextSteps).getByRole("button", { name: "Create New Company" }));
 
-    expect(await screen.findByLabelText("Company name")).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
     expect(api.stopCompany).not.toHaveBeenCalled();
     // There is nothing to go back to: the failed company is not offered as a way back.
     expect(screen.queryByRole("button", { name: "Cancel" })).not.toBeInTheDocument();
@@ -439,7 +333,7 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
     const creating = createCreatingCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...creating,
       creationEvents: [
         {
@@ -452,10 +346,8 @@ describe("Dashboard App", () => {
       ],
     }));
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
     expect(await screen.findByText("Accept creation request")).toBeInTheDocument();
 
     await user.click(within(screen.getByRole("group", { name: "Language" })).getByRole("button", { name: "中文" }));
@@ -467,9 +359,9 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
 
     expect(screen.getByRole("navigation", { name: "Workbench" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "CEO Office" })).toHaveAttribute("aria-current", "page");
@@ -491,7 +383,7 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
     const decision = createFounderDecisionSummary({ taskId: "task_2", departmentId: "department_1" });
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         { ...created.tasks[0], id: "task_1", title: "Validate the prototype", status: "review", affordances: offered("ceo_review_decision") },
@@ -531,8 +423,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const column = needsYouColumn();
     const overview = within(column).getByLabelText("Overview");
@@ -638,7 +530,7 @@ describe("Dashboard App", () => {
         },
       },
     ];
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         { ...created.tasks[0], title: "Connect analytics account", status: "complete" },
@@ -647,8 +539,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const column = needsYouColumn();
     const actions = within(column).getByRole("region", { name: "Needs your action" });
@@ -663,7 +555,7 @@ describe("Dashboard App", () => {
   it("renders stage changes, final reports, and decision resolutions in the CEO Office Timeline", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       ceoOfficeItems: [
         {
@@ -736,8 +628,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const timeline = ceoTimeline();
     // Each item is a summary card: type tag + title + one key line.
@@ -772,7 +664,7 @@ describe("Dashboard App", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       company: { ...created.company, locale: "zh" as const },
       ceoOfficeItems: [
@@ -805,8 +697,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     // The company-locale (zh) conclusion renders on the card as-is.
     expect(await screen.findByText("分析已准备好连接。")).toBeInTheDocument();
@@ -826,7 +718,7 @@ describe("Dashboard App", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       company: { ...created.company, locale: "zh" as const },
       tasks: [{ ...created.tasks[0], id: "task_1", title: "监控首次导入", status: "blocked" }],
@@ -853,8 +745,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     // The company locale is zh, so the chrome (and region names) render in Chinese.
     const timeline = screen.getByRole("region", { name: "时间线" });
@@ -873,7 +765,7 @@ describe("Dashboard App", () => {
     // The company was created in English; the interface toggle is switched to Chinese below. The
     // timeline is the founder's broadcast surface, so its content must follow the company locale,
     // not the toggle — otherwise the card reads half in one language and half in the other.
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       company: { ...created.company, locale: "en" as const },
       departments: [{ ...created.departments[0], id: "department_1", name: "Product", nameText: { en: "Product", zh: "产品" } }],
@@ -898,8 +790,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await switchLanguage(user, "中文");
 
@@ -919,7 +811,7 @@ describe("Dashboard App", () => {
   it("renders action-bearing CEO Office Items in the Timeline with business details", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         { ...created.tasks[0], id: "task_1", title: "Choose pricing path", status: "review", affordances: offered("ceo_review_decision") },
@@ -1024,8 +916,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const timeline = ceoTimeline();
 
@@ -1089,7 +981,7 @@ describe("Dashboard App", () => {
   it("pins the Final Founder Report above the Outcomes view with its classification and sections", async () => {
     const api = createMockApiClient();
     const response = createFinalFounderReportCompanyResponse();
-    api.createCompany = vi.fn(async () => response);
+    api.initialCompany = vi.fn(async () => response);
     api.getCompanyState = vi.fn(async () => ({
       ...response,
       proof: [],
@@ -1099,9 +991,9 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
 
     await user.click(screen.getByRole("tab", { name: "Outcomes" }));
     const outcomes = screen.getByRole("tabpanel", { name: "Outcomes" });
@@ -1124,7 +1016,7 @@ describe("Dashboard App", () => {
       ...base,
       finalFounderReport: { ...base.finalFounderReport!, generatedBy: "deterministic_fallback" as const },
     };
-    api.createCompany = vi.fn(async () => response);
+    api.initialCompany = vi.fn(async () => response);
     api.getCompanyState = vi.fn(async () => ({
       ...response,
       proof: [],
@@ -1134,9 +1026,9 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
 
     await user.click(screen.getByRole("tab", { name: "Outcomes" }));
     const outcomes = screen.getByRole("tabpanel", { name: "Outcomes" });
@@ -1159,7 +1051,7 @@ describe("Dashboard App", () => {
       finalFounderReport: null,
       finalFounderReportPreparing: true,
     };
-    api.createCompany = vi.fn(async () => preparing);
+    api.initialCompany = vi.fn(async () => preparing);
     api.getCompanyState = vi.fn(async () => ({
       ...preparing,
       proof: [],
@@ -1169,9 +1061,9 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
 
     await user.click(screen.getByRole("tab", { name: "Outcomes" }));
     const panel = within(screen.getByRole("tabpanel", { name: "Outcomes" })).getByRole("region", { name: "Final report" });
@@ -1183,7 +1075,7 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
     const preparing = { ...created, finalFounderReport: null, finalFounderReportPreparing: true };
-    api.createCompany = vi.fn(async () => preparing);
+    api.initialCompany = vi.fn(async () => preparing);
     const ready = createFinalFounderReportCompanyResponse();
     api.getCompanyState = vi.fn(async () => ({
       ...ready,
@@ -1195,9 +1087,9 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
 
     act(() => {
       api.lastEventHandler?.({
@@ -1237,8 +1129,8 @@ describe("Dashboard App", () => {
     api.getCompanyState = vi.fn(async () => sent);
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.type(screen.getByRole("textbox", { name: "Message to the CEO" }), "Add multiplayer mode.");
     await user.click(screen.getByRole("button", { name: "Send" }));
@@ -1267,7 +1159,7 @@ describe("Dashboard App", () => {
   it("explains in a plain sentence when the CEO could not handle a message, with the code under Details", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       ceoOfficeItems: [
         createFounderIntakeCeoOfficeItem("ceo_intake_1", "Change everything.", "failed", "2026-08-17T00:05:00.000Z"),
@@ -1276,8 +1168,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const answer = within(ceoTimeline()).getByRole("article", { name: "CEO: Could not handle your message" });
     expect(answer).toHaveTextContent("The agent could not handle this message. Send it again.");
@@ -1289,15 +1181,15 @@ describe("Dashboard App", () => {
   it("keeps a message for a paused company until it resumes", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       company: { ...created.company, status: "paused" },
       ceoOfficeItems: [createFounderIntakeCeoOfficeItem("ceo_intake_1", "Note this.", "received", "2026-08-17T00:05:00.000Z")],
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     expect(screen.getByText("The company is paused. Your message is read after you resume.")).toBeInTheDocument();
     expect(within(ceoTimeline()).getByRole("article", { name: "You" })).toHaveTextContent("CEO reads this after you resume the company.");
@@ -1307,11 +1199,11 @@ describe("Dashboard App", () => {
   it("takes no message for a stopped company and opens it on its outcomes", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({ ...created, company: { ...created.company, status: "stopped" } }));
+    api.initialCompany = vi.fn(async () => ({ ...created, company: { ...created.company, status: "stopped" } }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     expect(screen.getByRole("textbox", { name: "Message to the CEO" })).toBeDisabled();
     expect(screen.getByText("This company has stopped. It takes no new messages.")).toBeInTheDocument();
     // A stopped company opens on its outcomes.
@@ -1321,11 +1213,11 @@ describe("Dashboard App", () => {
   it("shows a department page: its responsibility, who works now, each task as a trace, and a text composer", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({ ...created, tasks: [{ ...created.tasks[0]!, status: "running" as const }] }));
+    api.initialCompany = vi.fn(async () => ({ ...created, tasks: [{ ...created.tasks[0]!, status: "running" as const }] }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
 
     expect(screen.getByRole("heading", { level: 1, name: "Engineering" })).toBeInTheDocument();
@@ -1362,7 +1254,7 @@ describe("Dashboard App", () => {
       id, companyId: "company_1", departmentId: "department_1", parentTaskId: "task_1", subjectTaskId: "task_1",
       step, status, label, detail: null, createdAt: `2026-08-17T00:0${minute}:00.000Z`,
     });
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [{ ...created.tasks[0]!, status: "complete" as const }],
       taskProgressEvents: [
@@ -1379,8 +1271,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
 
     // Settled: one summary line, and the result stays in view.
@@ -1404,7 +1296,7 @@ describe("Dashboard App", () => {
   it("answers a department's input with a card on its page: a note for a task, or the input passed to the CEO", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [{ ...created.tasks[0]!, status: "running" as const }],
       ceoOfficeItems: [
@@ -1420,8 +1312,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     // The input the department passed on reaches CEO Office, saying where it came from.
     expect(within(ceoTimeline()).getByRole("article", { name: "You" })).toHaveTextContent("Passed on by Engineering");
@@ -1440,7 +1332,7 @@ describe("Dashboard App", () => {
   it("shows the CEO sending input to one department, with a way to open it", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       ceoOfficeItems: [
         createFounderIntakeCeoOfficeItem("ci_1", "Start a newsletter.", "dispatched", "2026-08-17T00:05:00.000Z"),
@@ -1449,8 +1341,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const answer = within(ceoTimeline()).getByRole("article", { name: "CEO: Sent to a department" });
     await user.click(within(answer).getByRole("button", { name: "Open Engineering" }));
@@ -1459,7 +1351,7 @@ describe("Dashboard App", () => {
 
   it("routes department review-ready tasks to Needs you without approval controls on the card", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => {
+    api.initialCompany = vi.fn(async () => {
       const created = createCompanyResponse();
       const taskProgressEvents = created.taskProgressEvents ?? [];
       return {
@@ -1497,9 +1389,9 @@ describe("Dashboard App", () => {
     });
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
 
     // The department page shows the delivery waiting, and lists the review in its own "Needs you".
@@ -1522,14 +1414,14 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       humanActions: [createHumanActionSummary()],
       ceoOfficeItems: [createHumanActionCeoOfficeItem(createHumanActionSummary(), "Create landing page")],
     }));
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     expect(within(ceoTimeline()).getByText("Publish the prototype URL.")).toBeInTheDocument();
     expect(within(needsYouColumn()).getByRole("region", { name: "Needs your action" })).toHaveTextContent("Create landing page");
@@ -1563,13 +1455,13 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       waitStates: [createWaitStateSummary()],
     }));
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     // CEO Office counts what the company waits for; the department page lists it.
     expect(within(needsYouColumn()).getByLabelText("Overview")).toHaveTextContent("Waiting1");
@@ -1602,7 +1494,7 @@ describe("Dashboard App", () => {
       taskKind: "department_subtask" as const,
       parentTaskId: parentTask.id,
     };
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [parentTask, reviewSubtask],
       proof: [
@@ -1638,8 +1530,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const reviews = within(needsYouColumn()).getByRole("region", { name: "Needs your review" });
     expect(reviews).toHaveTextContent("Execute Provide local prototype access");
@@ -1693,7 +1585,7 @@ describe("Dashboard App", () => {
         title: "Find the first overseas keyword opportunity",
       })],
     };
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -1707,9 +1599,9 @@ describe("Dashboard App", () => {
     api.getCompanyState = vi.fn(async () => reviewReady);
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
 
     act(() => {
@@ -1731,7 +1623,7 @@ describe("Dashboard App", () => {
 
   it("does not duplicate blocked task status in a separate CEO blocked queue", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => {
+    api.initialCompany = vi.fn(async () => {
       const created = createCompanyResponse();
       return {
         ...created,
@@ -1759,9 +1651,9 @@ describe("Dashboard App", () => {
     });
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
 
     expect(screen.queryByRole("region", { name: "Blocked / Not Reviewable" })).not.toBeInTheDocument();
     // A stuck task is counted, and is acted on from its department page, not listed again here.
@@ -1772,7 +1664,7 @@ describe("Dashboard App", () => {
   it("opens a review from Needs you and approves a proof-backed deliverable", async () => {
     const api = createMockApiClient();
     const decision = createDeferred<Awaited<ReturnType<ApiClient["createCeoReviewDecision"]>>>();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...createReviewReadyCompanyResponse(),
       proof: [
         {
@@ -1806,8 +1698,8 @@ describe("Dashboard App", () => {
     };
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.click(within(needsYouColumn()).getByRole("button", { name: "Open: Validate the prototype" }));
 
@@ -1852,7 +1744,7 @@ describe("Dashboard App", () => {
 
   it("does not render CEO review decisions when a stale review item no longer offers the review affordance", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => {
+    api.initialCompany = vi.fn(async () => {
       const created = createReviewReadyCompanyResponse();
       return {
         ...created,
@@ -1880,8 +1772,8 @@ describe("Dashboard App", () => {
     });
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.click(within(needsYouColumn()).getByRole("button", { name: "Open: Validate the prototype" }));
 
@@ -1897,7 +1789,7 @@ describe("Dashboard App", () => {
   it("applies dependency cascade updates returned by CEO approval", async () => {
     const api = createMockApiClient();
     const created = createDependencyGraphCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         ...created.tasks.map((task) =>
@@ -1996,8 +1888,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const overview = within(needsYouColumn()).getByLabelText("Overview");
     expect(overview).toHaveTextContent("Done4/7");
@@ -2015,7 +1907,7 @@ describe("Dashboard App", () => {
 
   it("reviews a delivery from its trace on the department page, which then shows the task done", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...createReviewReadyCompanyResponse(),
       proof: [
         {
@@ -2042,8 +1934,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
 
     await user.click(within(screen.getByRole("region", { name: "Validate the prototype" })).getByRole("button", { name: "Review it" }));
@@ -2059,7 +1951,7 @@ describe("Dashboard App", () => {
 
   it("blocks missing-proof CEO approval and returns tasks with a reason and next step", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => createReviewReadyCompanyResponse());
+    api.initialCompany = vi.fn(async () => createReviewReadyCompanyResponse());
     api.createCeoReviewDecision = vi.fn(async () => ({
       decision: {
         id: "ceo_review_decision_1",
@@ -2088,8 +1980,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.click(within(needsYouColumn()).getByRole("button", { name: "Open: Validate the prototype" }));
 
@@ -2122,14 +2014,14 @@ describe("Dashboard App", () => {
 
   it("shows CEO review API errors instead of silently doing nothing", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => createReviewReadyCompanyResponse());
+    api.initialCompany = vi.fn(async () => createReviewReadyCompanyResponse());
     api.createCeoReviewDecision = vi.fn(async () => {
       throw new Error("Request failed: 404");
     });
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.click(within(needsYouColumn()).getByRole("button", { name: "Open: Validate the prototype" }));
     const taskReview = within(screen.getByRole("dialog")).getByRole("region", { name: "Needs your review" });
@@ -2146,9 +2038,9 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
     expect(queryCommand(/setup/i)).not.toBeInTheDocument();
     expect(within(screen.getByRole("navigation", { name: "Workbench" })).queryByRole("button", { name: /setup/i })).not.toBeInTheDocument();
     await user.keyboard("{Meta>}b{/Meta}");
@@ -2162,8 +2054,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await runCommand(user, "Pause Operating");
     expect(api.pauseCompany).toHaveBeenCalledWith("company_1");
@@ -2180,8 +2072,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await openPage(user, "Operations Diagnostics");
 
     await waitFor(() => expect(api.lastEventHandler).toBeDefined());
@@ -2196,8 +2088,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = screen.getByRole("region", { name: "Create landing page" });
 
@@ -2219,8 +2111,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     const subscriptions = vi.mocked(api.subscribeEvents).mock.calls.length;
 
     await openPage(user, "Operations Diagnostics");
@@ -2241,8 +2133,8 @@ describe("Dashboard App", () => {
       return () => undefined;
     });
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = () => screen.getByRole("region", { name: "Create landing page" });
 
@@ -2265,8 +2157,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = screen.getByRole("region", { name: "Create landing page" });
 
@@ -2290,8 +2182,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = screen.getByRole("region", { name: "Create landing page" });
 
@@ -2335,7 +2227,7 @@ describe("Dashboard App", () => {
   it("checks a blocked task again from its trace", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -2361,8 +2253,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = screen.getByRole("region", { name: "Create landing page" });
 
@@ -2393,7 +2285,7 @@ describe("Dashboard App", () => {
       failureReason: "non_reviewable_artifact",
       affordances: offered("refresh_task", "recover_task", "request_replan"),
     };
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [parentTask, blockedSubtask],
       taskProgressEvents: [
@@ -2443,8 +2335,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const steps = within(screen.getByRole("region", { name: "Provide local prototype access" })).getByRole("region", { name: "Department steps" });
 
@@ -2467,7 +2359,7 @@ describe("Dashboard App", () => {
       status: "waiting_dependency" as const,
       dependencyNote: "Waiting for department subtasks.",
     };
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -2525,8 +2417,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     await user.click(screen.getByRole("button", { name: "Check again Create landing page" }));
 
@@ -2538,7 +2430,7 @@ describe("Dashboard App", () => {
   it("does not show proof recovery refresh for tasks that are waiting on upstream proof", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -2550,8 +2442,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
 
     const trace = screen.getByRole("region", { name: "Create landing page" });
@@ -2562,7 +2454,7 @@ describe("Dashboard App", () => {
   it("shows proof recovery feedback after refreshing a failed no-proof task", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -2616,8 +2508,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
 
     await user.click(screen.getByRole("button", { name: "Check again Create landing page" }));
@@ -2629,7 +2521,7 @@ describe("Dashboard App", () => {
   it("runs a failed timeout task again from its trace", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -2672,8 +2564,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = screen.getByRole("region", { name: "Create landing page" });
 
@@ -2693,7 +2585,7 @@ describe("Dashboard App", () => {
   it("answers a Founder Approval request from the task's trace", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -2746,8 +2638,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = screen.getByRole("region", { name: "Create landing page" });
 
@@ -2767,8 +2659,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await waitFor(() => expect(api.lastEventHandler).toBeDefined());
     act(() => {
@@ -2794,8 +2686,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await waitFor(() => expect(api.lastEventHandler).toBeDefined());
     act(() => {
@@ -2832,7 +2724,7 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         {
@@ -2854,8 +2746,8 @@ describe("Dashboard App", () => {
       ],
     }));
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await openPage(user, "Operations Diagnostics");
 
     const reviewQueue = screen.getByRole("region", { name: "Waiting for review" });
@@ -2888,12 +2780,12 @@ describe("Dashboard App", () => {
         },
       ],
     };
-    api.createCompany = vi.fn(async () => ({ ...created, tasks: [exhaustedTask] }));
+    api.initialCompany = vi.fn(async () => ({ ...created, tasks: [exhaustedTask] }));
     api.createReplanProposal = vi.fn(async () => ({ proposal: createReplanProposalSummary() }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await user.click(screen.getByRole("button", { name: "Engineering" }));
     const trace = screen.getByRole("region", { name: "Create landing page" });
     expect(trace).toHaveTextContent("Create landing page reached the Bounded Recovery ceiling and needs a replan.");
@@ -2913,7 +2805,7 @@ describe("Dashboard App", () => {
     const created = createCompanyResponse();
     const blockedTask = { ...created.tasks[0]!, status: "blocked", affordances: offered("request_replan") };
     let serverProposals: ReplanProposalSummary[] = [];
-    api.createCompany = vi.fn(async () => ({ ...created, tasks: [blockedTask] }));
+    api.initialCompany = vi.fn(async () => ({ ...created, tasks: [blockedTask] }));
     api.createReplanProposal = vi.fn(async () => {
       serverProposals = [{ ...createReplanProposalSummary(), mode: "revision", replacementTasks: [] }];
       return { proposal: serverProposals[0]! };
@@ -2927,8 +2819,8 @@ describe("Dashboard App", () => {
       creationAttempts: [], replanProposals: serverProposals, taskProgressEvents: [], ceoIntakes: [],
     }));
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await openPage(user, "Engineering");
     await user.click(screen.getByRole("button", { name: "Ask for a new plan Create landing page" }));
 
@@ -2953,7 +2845,7 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [
         ...created.tasks,
@@ -3039,8 +2931,8 @@ describe("Dashboard App", () => {
       ceoIntakes: [],
     }));
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await waitFor(() => expect(api.lastEventHandler).toBeDefined());
     act(() => {
@@ -3083,8 +2975,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await openPage(user, "Operations Diagnostics");
 
     await waitFor(() => expect(api.lastEventHandler).toBeDefined());
@@ -3113,48 +3005,16 @@ describe("Dashboard App", () => {
     expect(screen.getByText("Running · Create landing page — Agent is working on this task. Budget: 10m.")).toBeInTheDocument();
   });
 
-  it("shows a styled empty state when the local API is not connected", async () => {
-    const api = createMockApiClient();
-    api.listAgents = async () => {
-      throw new Error("offline");
-    };
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await user.type(await screen.findByLabelText("Company name"), "Pricing Page Studio");
-    await user.click(screen.getByRole("button", { name: /next/i }));
-
-    expect(await screen.findByText(/local api is not connected/i)).toBeInTheDocument();
-  });
-
-  it("shows create-company errors instead of leaving the button loading", async () => {
-    const api = createMockApiClient();
-    api.createCompany = async () => {
-      throw new Error("CEO agent failed to create company blueprint");
-    };
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    expect(await screen.findByRole("heading", { name: "CEO Office" })).toBeInTheDocument();
-    await fillReadyToCreate(user);
-    await user.click(screen.getByRole("button", { name: /create company/i }));
-
-    expect(await screen.findByRole("alert")).toHaveTextContent("CEO agent failed to create company blueprint");
-    expect(screen.getByRole("button", { name: /create company/i })).toBeEnabled();
-  });
-
   it("switches language from the onboarding language switch", async () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
     render(<App apiClient={api} />);
 
-    expect(await screen.findByRole("heading", { name: "CEO Office" })).toBeInTheDocument();
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
     await user.click(within(screen.getByRole("group", { name: "Language" })).getByRole("button", { name: "中文" }));
 
-    expect(screen.getByRole("heading", { name: "CEO 办公室" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "说出愿景，组建你的团队" })).toBeInTheDocument();
     expect(window.localStorage.getItem("auto-crop.currentLanguage")).toBe("zh");
   });
 
@@ -3210,13 +3070,13 @@ describe("Dashboard App", () => {
         },
       ],
     };
-    api.createCompany = vi.fn(async () => company);
+    api.initialCompany = vi.fn(async () => company);
     api.getCompanyState = vi.fn(async () => ({ ...company, reviews: [], replanProposals: [] }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
+    renderExistingCompany(api);
 
-    await createCompany(user);
+    await expectExistingCompany();
     expect(screen.getByRole("button", { name: "Engineering" })).toBeInTheDocument();
     await openPage(user, "Engineering");
     expect(screen.getAllByText(/Create landing page/).length).toBeGreaterThan(0);
@@ -3251,7 +3111,7 @@ describe("Dashboard App", () => {
     try {
       render(<App apiClient={api} />);
 
-      expect(await screen.findByRole("heading", { name: "CEO 办公室" })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "说出愿景，组建你的团队" })).toBeInTheDocument();
       expect(within(screen.getByRole("group", { name: "语言" })).getByRole("button", { name: "中文" })).toHaveAttribute(
         "aria-pressed",
         "true",
@@ -3292,20 +3152,6 @@ describe("Dashboard App", () => {
     } finally {
       restoreStorage();
     }
-  });
-
-  it("selects detected agents from the onboarding agent list", async () => {
-    const api = createMockApiClient();
-    const user = userEvent.setup();
-
-    render(<App apiClient={api} />);
-
-    await user.type(await screen.findByLabelText("Company name"), "Pricing Page Studio");
-    await user.click(screen.getByRole("button", { name: /next/i }));
-    await screen.findByRole("heading", { name: "Step 2 / Choose CEO" });
-    await user.click(await screen.findByRole("button", { name: /Claude Code/ }));
-
-    expect(screen.getByRole("button", { name: /Claude Code/ })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("hydrates persisted company state, proof, and activity after refresh", async () => {
@@ -3416,11 +3262,11 @@ describe("Dashboard App", () => {
 
   it("shows every outcome card in the Outcomes tab, newest first, as the timeline posted them", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
+    api.initialCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.click(screen.getByRole("tab", { name: "Outcomes" }));
     const outcomes = screen.getByRole("tabpanel", { name: "Outcomes" });
@@ -3435,11 +3281,11 @@ describe("Dashboard App", () => {
 
   it("shows Task Briefs and Execution Reports in the CEO Office Timeline", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
+    api.initialCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     // Days before the latest fold away; open them to read the whole history.
     const timeline = ceoTimeline();
@@ -3470,7 +3316,7 @@ describe("Dashboard App", () => {
   it("shows the collapsed evidence section only inside the activated timeline card's modal", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       tasks: [{ ...created.tasks[0], id: "task_1", title: "Find SEO keyword opportunity", status: "review" }],
       proof: [
@@ -3507,8 +3353,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const timeline = ceoTimeline();
     // The evidence section is not on the card; the raw artifact id is never shown.
@@ -3530,11 +3376,11 @@ describe("Dashboard App", () => {
     });
     try {
       const api = createMockApiClient();
-      api.createCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
+      api.initialCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
       const user = userEvent.setup();
 
-      render(<App apiClient={api} />);
-      await createCompany(user);
+      renderExistingCompany(api);
+      await expectExistingCompany();
 
       const timeline = ceoTimeline();
       // The latest Result occurred after the last visit; the Task Brief occurred before it.
@@ -3554,7 +3400,7 @@ describe("Dashboard App", () => {
     try {
       const api = createMockApiClient();
       const response = createOutcomesNewMarkerResponse();
-      api.createCompany = vi.fn(async () => response);
+      api.initialCompany = vi.fn(async () => response);
       api.getCompanyState = vi.fn(async () => ({
         ...response,
         proof: [],
@@ -3564,8 +3410,8 @@ describe("Dashboard App", () => {
       }));
       const user = userEvent.setup();
 
-      const { unmount } = render(<App apiClient={api} />);
-      await createCompany(user);
+      const { unmount } = renderExistingCompany(api);
+      await expectExistingCompany();
 
       // Two of the three outcomes were created after the stubbed last-seen timestamp.
       expect(screen.getByRole("tab", { name: "Outcomes 2" })).toBeInTheDocument();
@@ -3574,7 +3420,7 @@ describe("Dashboard App", () => {
 
       // Revisiting the company after the visit was recorded clears the marker.
       unmount();
-      render(<App apiClient={api} />);
+      renderExistingCompany(api);
       await user.click(await screen.findByRole("tab", { name: "Outcomes" }));
       expect(screen.getByRole("tabpanel", { name: "Outcomes" })).not.toHaveTextContent(/new since your last visit/);
     } finally {
@@ -3592,15 +3438,15 @@ describe("Dashboard App", () => {
       const manyReports = Array.from({ length: 15 }, (_, index) =>
         createExecutionReportCeoOfficeItem(`tce_${index}`, `2026-08-${String(17 + index).padStart(2, "0")}T00:00:00.000Z`, `Outcome ${index} is complete and reviewed.`),
       );
-      api.createCompany = vi.fn(async () => ({
+      api.initialCompany = vi.fn(async () => ({
         ...base,
         founderDecisions: [],
         ceoOfficeItems: manyReports,
       }));
       const user = userEvent.setup();
 
-      render(<App apiClient={api} />);
-      await createCompany(user);
+      renderExistingCompany(api);
+      await expectExistingCompany();
 
       await user.click(screen.getByRole("tab", { name: "Outcomes 15" }));
       const outcomes = screen.getByRole("tabpanel", { name: "Outcomes 15" });
@@ -3616,11 +3462,11 @@ describe("Dashboard App", () => {
     delete (window as { localStorage?: Storage }).localStorage;
     try {
       const api = createMockApiClient();
-      api.createCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
+      api.initialCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
       const user = userEvent.setup();
 
-      render(<App apiClient={api} />);
-      await createCompany(user);
+      renderExistingCompany(api);
+      await expectExistingCompany();
 
       expect(within(ceoTimeline()).queryByText("New")).not.toBeInTheDocument();
       await user.click(screen.getByRole("tab", { name: "Outcomes" }));
@@ -3656,11 +3502,11 @@ describe("Dashboard App", () => {
     });
     try {
       const api = createMockApiClient();
-      api.createCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
+      api.initialCompany = vi.fn(async () => createOutcomesNewMarkerResponse());
       const user = userEvent.setup();
 
-      render(<App apiClient={api} />);
-      await createCompany(user);
+      renderExistingCompany(api);
+      await expectExistingCompany();
 
       expect(within(ceoTimeline()).queryByText("New")).not.toBeInTheDocument();
       await user.click(screen.getByRole("tab", { name: "Outcomes" }));
@@ -3685,11 +3531,11 @@ describe("Dashboard App", () => {
           createdAt: "2026-08-18T00:00:00.000Z",
         },
       };
-      api.createCompany = vi.fn(async () => response);
+      api.initialCompany = vi.fn(async () => response);
       const user = userEvent.setup();
 
-      render(<App apiClient={api} />);
-      await createCompany(user);
+      renderExistingCompany(api);
+      await expectExistingCompany();
 
       await user.click(screen.getByRole("tab", { name: "Outcomes" }));
       const panel = within(screen.getByRole("tabpanel", { name: "Outcomes" })).getByRole("region", { name: "Final report" });
@@ -3701,11 +3547,11 @@ describe("Dashboard App", () => {
 
   it("resolves a Founder Decision by picking an option, which accepts the deliverable", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => createOutcomesCompanyResponse());
+    api.initialCompany = vi.fn(async () => createOutcomesCompanyResponse());
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const decisions = within(needsYouColumn()).getByRole("region", { name: "Needs your decision" });
     await user.click(within(decisions).getByRole("button", { name: "Open: Find SEO keyword opportunity" }));
@@ -3725,11 +3571,11 @@ describe("Dashboard App", () => {
 
   it("returns a Founder Decision to the department with a reason", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => createOutcomesCompanyResponse());
+    api.initialCompany = vi.fn(async () => createOutcomesCompanyResponse());
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.click(within(needsYouColumn()).getByRole("button", { name: "Open: Find SEO keyword opportunity" }));
     const dialog = screen.getByRole("dialog");
@@ -3753,7 +3599,7 @@ describe("Dashboard App", () => {
   it("announces the goals with the plan, keeps them in view on the Plan tab, and posts each key result met", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       objectives: [{ id: "objective_1", title: "Validate first wedge", priority: 1 }],
       keyResults: [
@@ -3798,8 +3644,8 @@ describe("Dashboard App", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const timeline = ceoTimeline();
     expect(timeline).toHaveTextContent("The CEO set 1 goals with 2 key results, and planned 2 tasks.");
@@ -3826,11 +3672,11 @@ describe("Dashboard App", () => {
 
   it("keeps the decision in Needs you and the timeline while the task it blocks waits", async () => {
     const api = createMockApiClient();
-    api.createCompany = vi.fn(async () => createOutcomesCompanyResponse());
+    api.initialCompany = vi.fn(async () => createOutcomesCompanyResponse());
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     expect(within(needsYouColumn()).getByRole("region", { name: "Needs your decision" })).toHaveTextContent("Find SEO keyword opportunity");
     expect(within(ceoTimeline()).getByRole("button", { name: "Open Needs your decision: Find SEO keyword opportunity" })).toBeInTheDocument();
@@ -3842,8 +3688,8 @@ describe("Dashboard App", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await waitFor(() => expect(api.lastEventHandler).toBeDefined());
     act(() => {
@@ -3876,7 +3722,7 @@ describe("Workbench", () => {
   it("lists CEO Office and each department in the rail, with what needs the founder and who is working", async () => {
     const api = createMockApiClient();
     const created = createReviewReadyCompanyResponse();
-    api.createCompany = vi.fn(async () => ({
+    api.initialCompany = vi.fn(async () => ({
       ...created,
       departments: [
         ...created.departments,
@@ -3889,8 +3735,8 @@ describe("Workbench", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     const rail = screen.getByRole("navigation", { name: "Workbench" });
     expect(within(rail).getByRole("heading", { name: "Pricing Page Studio" })).toBeInTheDocument();
@@ -3917,13 +3763,13 @@ describe("Workbench", () => {
       activity: [],
       replanProposals: [],
     };
-    api.createCompany = vi.fn(async () => company);
+    api.initialCompany = vi.fn(async () => company);
     // Opening Deliverables reads the snapshot again.
     api.getCompanyState = vi.fn(async () => company);
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await openPage(user, "Deliverables");
 
     const delivered = screen.getByRole("region", { name: "Validate the prototype" });
@@ -3947,8 +3793,8 @@ describe("Workbench", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     expect(screen.queryByText("Written by the CLI review")).not.toBeInTheDocument();
 
     await openPage(user, "Deliverables");
@@ -3959,8 +3805,8 @@ describe("Workbench", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await openPage(user, "Settings");
 
     const current = screen.getByRole("region", { name: "Current company" });
@@ -3984,7 +3830,6 @@ describe("Workbench", () => {
     const api = createMockApiClient();
     api.listCompanies = vi
       .fn()
-      .mockResolvedValueOnce({ companies: [] })
       .mockResolvedValue({
         companies: [
           { id: "company_1", name: "Pricing Page Studio", status: "active", playbookId: "ai-saas", createdAt: "2026-08-17T00:00:00.000Z", updatedAt: "2026-08-18T00:00:00.000Z", taskCount: 1 },
@@ -4002,8 +3847,8 @@ describe("Workbench", () => {
     }));
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
     await openPage(user, "Settings");
 
     const companies = screen.getByRole("region", { name: "All companies" });
@@ -4016,8 +3861,8 @@ describe("Workbench", () => {
 
     await openPage(user, "Settings");
     await user.click(screen.getByRole("button", { name: "Create New Company" }));
-    expect(await screen.findByLabelText("Company name")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Return to company" }));
     expect(await screen.findByRole("heading", { name: "Ops Lab" })).toBeInTheDocument();
     expect(api.getCompanyState).toHaveBeenLastCalledWith("company_2");
   });
@@ -4026,8 +3871,8 @@ describe("Workbench", () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
 
-    render(<App apiClient={api} />);
-    await createCompany(user);
+    renderExistingCompany(api);
+    await expectExistingCompany();
 
     await user.keyboard("{Shift>}{Meta>}k{/Meta}{/Shift}");
     expect(api.pauseCompany).toHaveBeenCalledWith("company_1");
@@ -4048,15 +3893,15 @@ describe("Workbench", () => {
   it("keeps a page crash to that page, so the rail still works", async () => {
     const api = createMockApiClient();
     const created = createCompanyResponse();
-    api.createCompany = vi.fn(async () => ({ ...created, tasks: [{ ...created.tasks[0]!, status: "running" as const }] }));
+    api.initialCompany = vi.fn(async () => ({ ...created, tasks: [{ ...created.tasks[0]!, status: "running" as const }] }));
     // A body the dashboard cannot render from; the real client rejects it, a bare mock does not.
     api.getTaskExecution = vi.fn(async () => ({}) as Awaited<ReturnType<ApiClient["getTaskExecution"]>>);
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const user = userEvent.setup();
 
     try {
-      render(<App apiClient={api} />);
-      await createCompany(user);
+      renderExistingCompany(api);
+      await expectExistingCompany();
       await openPage(user, "Engineering");
 
       expect(await screen.findByRole("alert")).toHaveTextContent("This page hit a problem.");
@@ -4080,7 +3925,7 @@ describe("Workbench", () => {
     api.getCompanyState = vi.fn(async () => ({ ...created, proof: [], reviews: [], activity: [], replanProposals: [] }));
 
     try {
-      render(<App apiClient={api} />);
+      renderExistingCompany(api);
 
       expect(await screen.findByRole("heading", { level: 1, name: "Engineering" })).toBeInTheDocument();
       expect(screen.getByRole("region", { name: "Tasks" })).toBeInTheDocument();
@@ -4114,24 +3959,17 @@ async function switchLanguage(user: ReturnType<typeof userEvent.setup>, language
   await user.click(within(switches[0]!).getByRole("button", { name: language }));
 }
 
-async function fillReadyToCreate(user: ReturnType<typeof userEvent.setup>) {
-  expect(await screen.findByRole("heading", { name: "CEO Office" })).toBeInTheDocument();
-  await user.type(screen.getByLabelText("Company name"), "Pricing Page Studio");
-  await user.click(screen.getByRole("button", { name: /next/i }));
-  expect(await screen.findByRole("heading", { name: "Step 2 / Choose CEO" })).toBeInTheDocument();
-  await user.click(screen.getByRole("button", { name: /codex/i }));
-  await user.click(screen.getByRole("button", { name: /next/i }));
-  await user.type(screen.getByLabelText("Founder vision"), "Build an AI SaaS that creates pricing pages.");
-  await user.click(within(screen.getByRole("radiogroup", { name: "Permission mode" })).getByRole("radio", { name: "Balanced" }));
+function renderExistingCompany(api: ReturnType<typeof createMockApiClient>) {
+  if (window.localStorage) window.localStorage.setItem("auto-crop.currentCompanyId", "company_1");
+  else api.listCompanies = vi.fn(async () => ({ companies: [{ ...createCompanyResponse().company, createdAt: "2026-08-17T00:00:00.000Z", updatedAt: "2026-08-17T00:00:00.000Z", taskCount: 2 }] }));
+  const subsequentRead = api.getCompanyState;
+  api.getCompanyState = vi.fn().mockImplementationOnce(() => api.initialCompany()).mockImplementation(subsequentRead);
+  return render(<App apiClient={api} />);
 }
 
-async function createCompany(user: ReturnType<typeof userEvent.setup>) {
-  await fillReadyToCreate(user);
-  await user.click(screen.getByRole("button", { name: /create company/i }));
-
-  // Onboarding titles itself with the company name too, so wait for it to leave first.
-  await waitFor(() => expect(screen.queryByLabelText("Founder vision")).not.toBeInTheDocument());
+async function expectExistingCompany() {
   expect(await screen.findByRole("heading", { name: "Pricing Page Studio" })).toBeInTheDocument();
+  await screen.findByRole("navigation", { name: /Workbench|工作台/ });
 }
 
 function createDeferred<T>() {
@@ -5030,7 +4868,7 @@ function createReplanProposalSummary(): ReplanProposalSummary {
   };
 }
 
-function createMockApiClient(): ApiClient & { lastEventHandler?: (event: ServerEvent) => void } {
+function createMockApiClient(): ApiClient & { initialCompany: () => Promise<Awaited<ReturnType<ApiClient["createCompany"]>>>; lastEventHandler?: (event: ServerEvent) => void } {
   return {
     lastEventHandler: undefined,
     listAgents: vi.fn(async () => {
@@ -5052,9 +4890,8 @@ function createMockApiClient(): ApiClient & { lastEventHandler?: (event: ServerE
       };
     }),
     listCompanies: vi.fn(async () => ({ companies: [] })),
-    async createCompany() {
-      return createCompanyResponse();
-    },
+    createCompany: vi.fn(async () => createCompanyResponse()),
+    initialCompany: async () => createCompanyResponse(),
     async retryCompanyCreation() {
       return createCreatingCompanyResponse();
     },
