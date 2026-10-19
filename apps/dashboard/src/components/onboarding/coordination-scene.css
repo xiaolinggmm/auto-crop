@@ -1,0 +1,42 @@
+.coordination-scene { position: relative; width: 100%; height: 100%; min-height: 390px; }
+.assignment-source { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.assignment-decision { display: flex; align-items: center; gap: 7px; font-size: 11px; color: hsl(var(--muted-foreground)); }
+.assignment-decision svg { width: 17px; height: 17px; }
+.assignment-dispatch { position: relative; display: flex; align-items: center; justify-content: center; gap: 7px; min-width: 160px; min-height: 34px; padding: 8px 14px; background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-radius: var(--r-pill); font-size: 12px; transition: transform 180ms ease, background 400ms ease, color 400ms ease; }
+.assignment-dispatch > svg { width: 15px; height: 15px; }
+.assignment-dispatch[data-pressed="true"] { transform: scale(.95); }
+.assignment-dispatch[data-sent="true"] { transform: scale(1); background: var(--c-ice); color: hsl(var(--foreground)); }
+.assignment-dispatch .assignment-pointer { position: absolute; right: 8px; bottom: -8px; width: 24px; height: 24px; fill: hsl(var(--foreground)); stroke: hsl(var(--card)); animation: assignment-point 600ms ease-out both; }
+.assignment-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 28px; }
+.assignment-worker { min-width: 0; }
+.assignment-worker header { display: flex; align-items: center; gap: 7px; margin-bottom: 12px; }
+.assignment-worker .story-avatar { width: 32px; height: 32px; flex-shrink: 0; }
+.assignment-worker .story-avatar svg { width: 17px; height: 17px; }
+.assignment-worker header strong { font-size: 12px; font-weight: 600; }
+.assignment-agent-label { font-size: 9px; color: hsl(var(--muted-foreground)); font-weight: 400; }
+.assignment-tool { display: flex; align-items: center; gap: 4px; margin-top: 3px; font-size: 10px; color: hsl(var(--muted-foreground)); }
+.assignment-tool svg { width: 13px; height: 13px; }
+.assignment-bundle { padding: 10px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); opacity: 0; transform: translate(var(--origin-x), -85px) scale(.35); transition: transform 850ms cubic-bezier(.22,1,.36,1), opacity 400ms ease; }
+.assignment-bundle[data-assigned="true"] { opacity: 1; transform: translate(0, 0) scale(1); }
+.assignment-category { display: flex; align-items: center; justify-content: space-between; gap: 4px; padding-bottom: 8px; border-bottom: 1px solid hsl(var(--border)); }
+.assignment-category strong { font-size: 10px; font-weight: 500; }
+.assignment-category small { font-size: 9px; white-space: nowrap; color: hsl(var(--muted-foreground)); }
+.assignment-bundle ol { list-style: none; margin: 0; padding: 0; }
+.assignment-bundle li { display: flex; align-items: baseline; gap: 6px; padding-top: 12px; font-size: 11px; line-height: 1.5; }
+.assignment-id { font-family: var(--font-mono); flex-shrink: 0; font-size: 9px; color: hsl(var(--muted-foreground)); }
+.assignment-note { position: absolute; bottom: 0; width: 100%; text-align: center; font-size: 10px; color: hsl(var(--muted-foreground)); }
+@keyframes assignment-point { from { opacity: 0; transform: translate(30px, 25px); } to { opacity: 1; transform: translate(0, 0); } }
+@media (max-width: 600px) {
+  .assignment-grid { grid-template-columns: 1fr; margin-top: 20px; gap: 14px; }
+  .assignment-worker header { margin-bottom: 6px; }
+  .assignment-worker header > div { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .assignment-tool { margin-top: 0; }
+  .assignment-worker .story-avatar { width: 26px; height: 26px; }
+  .assignment-bundle { padding: 8px 10px; transform: translateY(-50px) scale(.8); }
+  .assignment-bundle ol { display: grid; grid-template-columns: 1fr 1fr; gap: 0 8px; }
+  .assignment-bundle li { font-size: 10px; padding-top: 6px; gap: 4px; }
+  .assignment-category { padding-bottom: 5px; }
+  .assignment-note { font-size: 9px; }
+}
+@media (prefers-reduced-motion: reduce) { .coordination-scene * { animation: none !important; transition: none !important; } }
+.coordination-scene[data-reduced="true"] * { animation: none !important; transition: none !important; }
