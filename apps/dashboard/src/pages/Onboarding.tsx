@@ -55,7 +55,7 @@ export function Onboarding({
     () =>
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
   );
-  const duration = scene <= 1 ? 12 : 10;
+  const duration = scene === 2 ? 10 : 12;
   const finished = reduced || elapsed >= duration;
 
   useEffect(() => {

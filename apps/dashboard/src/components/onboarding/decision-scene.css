@@ -1,0 +1,59 @@
+.decision-scene { width: 100%; height: 100%; min-height: 390px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.decision-task { display: flex; align-items: center; gap: 8px; padding: 12px 16px; width: 85%; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); }
+.decision-task > svg { width: 18px; height: 18px; color: hsl(var(--primary)); }
+.decision-task strong { font-size: 12px; font-weight: 500; }
+.decision-task > span { margin-left: auto; font-size: 10px; color: hsl(var(--primary)); }
+.decision-transfer { position: relative; height: 34px; display: grid; place-items: center; flex-shrink: 0; }
+.decision-transfer > svg { width: 18px; height: 18px; color: hsl(var(--muted-foreground) / .5); }
+.decision-transfer i { position: absolute; height: 7px; width: 7px; border-radius: 50%; background: hsl(var(--primary)); animation: decision-send 800ms ease-in both; }
+.decision-review { width: 85%; min-height: 214px; padding: 14px 16px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); opacity: 0; transform: translateY(-12px) scale(.96); transition: opacity 500ms ease, transform 600ms ease; }
+.decision-review[data-visible="true"] { opacity: 1; transform: translateY(0) scale(1); }
+.decision-review header { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.decision-review header svg { width: 18px; height: 18px; }
+.decision-review header span { margin-left: auto; font-size: 10px; color: hsl(var(--muted-foreground)); }
+.decision-question { margin: 12px 0 10px; font-size: 12px; }
+.decision-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.decision-option { position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 12px 8px; border: 1px solid hsl(var(--border)); border-radius: 9px; transition: background 350ms ease, border-color 350ms ease; }
+.decision-option strong { font-size: 11px; font-weight: 500; }
+.decision-option small { font-size: 9px; color: hsl(var(--muted-foreground)); }
+.decision-option[data-selected="true"] { border-color: hsl(var(--primary)); background: var(--c-ice); }
+.decision-radio { display: grid; place-items: center; width: 14px; height: 14px; border: 1px solid hsl(var(--border)); border-radius: 50%; }
+.decision-radio svg { width: 11px; height: 11px; }
+.decision-option[data-selected="true"] .decision-radio { background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); border-color: hsl(var(--primary)); }
+.decision-action { display: flex; justify-content: flex-end; margin-top: 12px; }
+.decision-approve { position: relative; display: flex; align-items: center; gap: 5px; justify-content: center; min-width: 90px; padding: 8px 16px; font-size: 12px; border-radius: var(--r-pill); background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); opacity: .35; transition: opacity 300ms ease, transform 150ms ease; }
+.decision-approve[data-ready="true"] { opacity: 1; }
+.decision-approve[data-pressed="true"] { transform: scale(.94); }
+.decision-approve > svg:not(.decision-pointer) { width: 14px; height: 14px; }
+.decision-scene[data-approved="true"] .decision-approve { transform: scale(1); background: hsl(var(--primary)); color: hsl(var(--primary-foreground)); }
+.decision-pointer { position: absolute; bottom: -5px; right: 10px; width: 24px; height: 24px; fill: hsl(var(--foreground)); stroke: hsl(var(--card)); animation: decision-point 600ms ease-out both; }
+.decision-select-pointer { bottom: 5px; right: 20%; }
+.decision-delivery { position: relative; display: flex; align-items: center; gap: 10px; width: 85%; min-height: 68px; padding: 12px; margin-top: 16px; border: 1px solid hsl(var(--border)); border-radius: 12px; opacity: 0; transform: translateY(-8px); transition: opacity 500ms ease, transform 500ms ease, border-color 500ms ease; }
+.decision-delivery[data-visible="true"] { opacity: 1; transform: translateY(0); }
+.decision-delivery[data-done="true"] { border-color: var(--c-cool); background: var(--c-ice); }
+.decision-result-icon { display: grid; place-items: center; flex-shrink: 0; }
+.decision-result-icon > svg { width: 26px; height: 26px; }
+.decision-delivery:not([data-done="true"]) .decision-result-icon > svg { animation: decision-spin 1.6s linear infinite; }
+.decision-delivery[data-done="true"] .decision-result-icon { color: hsl(var(--primary)); animation: decision-check 500ms ease-out both; }
+.decision-delivery strong { font-size: 12px; font-weight: 500; }
+.decision-delivery p { font-size: 10px; margin-top: 3px; color: hsl(var(--muted-foreground)); }
+.decision-progress { width: 22%; margin-left: auto; height: 4px; background: hsl(var(--border)); border-radius: 3px; overflow: hidden; }
+.decision-progress span { display: block; height: 100%; background: hsl(var(--primary)); transition: width 300ms linear; }
+.decision-finish { width: 20px; height: 20px; color: hsl(var(--primary)); animation: decision-check 500ms ease-out both; }
+@keyframes decision-send { from { top: 0; opacity: 0; } 30% { opacity: 1; } to { top: 100%; opacity: 0; } }
+@keyframes decision-point { from { transform: translate(30px, 20px); opacity: 0; } to { transform: translate(0, 0); opacity: 1; } }
+@keyframes decision-spin { to { transform: rotate(360deg); } }
+@keyframes decision-check { 0% { transform: scale(.5); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@media (max-width: 600px) {
+  .decision-task, .decision-review, .decision-delivery { width: 100%; }
+  .decision-task { padding: 12px; gap: 5px; }
+  .decision-task strong { font-size: 11px; }
+  .decision-task > span { font-size: 9px; }
+  .decision-options { grid-template-columns: 1fr; }
+  .decision-review { min-height: 260px; }
+  .decision-option small { margin-left: auto; }
+  .decision-progress { width: 15%; }
+}
+@media (prefers-reduced-motion: reduce) { .decision-scene * { animation: none !important; transition: none !important; } .decision-transfer i { display: none; } }
+.decision-scene[data-reduced="true"] * { animation: none !important; transition: none !important; }
+.decision-scene[data-reduced="true"] .decision-transfer i { display: none; }

@@ -10,18 +10,18 @@ export const storyCopy = {
     resume: "Resume",
     replay: "Replay",
     done: "Demo complete",
-    steps: ["Plan", "Assign", "Progress", "Improve"],
+    steps: ["Plan", "Assign", "Progress", "Decide"],
     titles: [
       "Make complex goals clear.",
       "Give each task to the right Agent.",
       "Multiple Agents. Progress in parallel.",
-      "Use feedback to move forward.",
+      "Key decisions. Always in your control.",
     ],
     descriptions: [
       "Describe your goal. Your CEO plans the tasks and execution order.",
       "Match tasks to the right roles, powered by Claude Code, Codex and other Agents.",
       "Run independent tasks in parallel. Stay up to date on progress and issues.",
-      "You choose the next direction. Your team keeps improving from feedback.",
+      "Answer Agent questions, approve important actions, and verify deliverables.",
     ],
     disclaimer:
       "A fictional example. No tasks run, no models called, no credits used.",
@@ -53,6 +53,13 @@ export const storyCopy = {
     waiting: "Waiting for validation",
     unassigned: "Tool not assigned",
     taskTool: "Example task tool",
+    decision: {
+      task: "T04 · Choose the best direction", ready: "Analysis complete", inbox: "CEO review",
+      question: "Which direction should we build?", options: ["Address checker", "Shipping cost calculator"],
+      recommended: "Recommended", selected: "Selected", approved: "Approved", user: "Your decision",
+      continue: "Work resumes", verifying: "Verifying delivery", done: "Delivery verified",
+      result: "Address checker", evidence: "Required-field checks passed",
+    },
     parallel: {
       running: "In progress", complete: "Completed", question: "Question raised", inbox: "CEO inbox",
       waiting: "Waiting for Agent updates", sync: "Updates sent to CEO", review: "Results & questions for review",
@@ -155,18 +162,18 @@ export const storyCopy = {
     resume: "继续播放",
     replay: "重播",
     done: "本幕播放完毕",
-    steps: ["清晰规划", "任务派发", "并行推进", "持续改进"],
+    steps: ["清晰规划", "任务派发", "并行推进", "决策可控"],
     titles: [
       "让复杂目标变得清晰",
       "把任务交给合适的 Agent",
       "多个 Agent，同步推进",
-      "根据反馈，推进下一轮",
+      "关键决策，始终可控",
     ],
     descriptions: [
       "描述你的目标，自动规划任务与执行顺序。",
       "按任务需求分配给研究、开发与运营 Agent，由 Claude Code、Codex 等工具执行。",
       "并行处理独立任务，实时掌握进度与问题。",
-      "你决定下一步方向，团队依据反馈持续改进。",
+      "处理 Agent 提问，审批重要操作，验证交付结果。",
     ],
     disclaimer: "虚构案例 · 不执行任务、不调用模型、不消耗额度。",
     vision:
@@ -197,6 +204,13 @@ export const storyCopy = {
     waiting: "等待验证",
     unassigned: "尚未分配工具",
     taskTool: "本次示例执行工具",
+    decision: {
+      task: "T04 · 筛选最佳方向", ready: "筛选完成", inbox: "CEO 审批区",
+      question: "下一步开发哪个方向？", options: ["地址检查工具", "运费计算工具"],
+      recommended: "推荐", selected: "已选中", approved: "已批准", user: "由你决定",
+      continue: "任务继续", verifying: "验证交付结果", done: "交付已验证",
+      result: "地址检查工具", evidence: "必填字段检查通过",
+    },
     parallel: {
       running: "执行中", complete: "已完成", question: "提出问题", inbox: "CEO 收件区",
       waiting: "等待 Agent 状态消息", sync: "状态已推送给 CEO", review: "重要结论与问题，集中查看",

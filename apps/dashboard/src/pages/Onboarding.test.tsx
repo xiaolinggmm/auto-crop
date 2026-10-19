@@ -84,8 +84,8 @@ it("shows complete static scenes with reduced motion and supports direct navigat
   fireEvent.click(screen.getByRole("button", { name: "2 · Assign" }));
   expect(screen.getByText("CEO assigns tasks")).toBeInTheDocument();
   expect(screen.getByText("Codex")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("button", { name: "4 · Improve" }));
-  expect(screen.getByText("Weeks later · Example review")).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "4 · Decide" }));
+  expect(screen.getByText("Delivery verified")).toBeInTheDocument();
   expect(
     screen.getByRole("button", { name: "Create my company" }),
   ).toBeInTheDocument();
