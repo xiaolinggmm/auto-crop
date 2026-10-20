@@ -1,11 +1,11 @@
 .parallel-scene { width: 100%; height: 100%; min-height: 390px; display: flex; flex-direction: column; justify-content: center; }
 .parallel-tasks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
-.parallel-task { padding: 16px 12px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); transition: border-color 400ms ease, background 400ms ease; }
+.parallel-task { display: flex; flex-direction: column; padding: 16px 12px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); transition: border-color 400ms ease, background 400ms ease; }
 .parallel-agent { display: flex; align-items: center; gap: 5px; font-size: 10px; color: hsl(var(--muted-foreground)); }
 .parallel-agent svg { width: 15px; height: 15px; }
 .parallel-task h3 { display: flex; gap: 6px; font-size: 12px; font-weight: 500; margin: 14px 0 20px; }
 .parallel-task h3 > span { font-family: var(--font-mono); color: hsl(var(--muted-foreground)); font-size: 10px; }
-.parallel-status { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.parallel-status { margin-top: auto; display: flex; align-items: center; gap: 8px; font-size: 11px; }
 .parallel-status svg { width: 26px; height: 26px; }
 .parallel-status strong { font-weight: 500; }
 .parallel-task[data-state="running"] .parallel-status svg { animation: parallel-spin 2s linear infinite; }
