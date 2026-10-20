@@ -1,0 +1,64 @@
+.parallel-scene { width: 100%; height: 100%; min-height: 390px; display: flex; flex-direction: column; justify-content: center; }
+.parallel-tasks { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.parallel-task { display: flex; flex-direction: column; padding: 16px 12px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); transition: border-color 400ms ease, background 400ms ease; }
+.parallel-agent { display: flex; align-items: center; gap: 5px; font-size: 10px; color: hsl(var(--muted-foreground)); }
+.parallel-agent svg { width: 15px; height: 15px; }
+.parallel-task h3 { display: flex; gap: 6px; font-size: 12px; font-weight: 500; margin: 14px 0 20px; }
+.parallel-task h3 > span { font-family: var(--font-mono); color: hsl(var(--muted-foreground)); font-size: 10px; }
+.parallel-status { margin-top: auto; display: flex; align-items: center; gap: 8px; font-size: 11px; }
+.parallel-status svg { width: 26px; height: 26px; }
+.parallel-status strong { font-weight: 500; }
+.parallel-task[data-state="running"] .parallel-status svg { animation: parallel-spin 2s linear infinite; }
+.parallel-task[data-state="complete"] .parallel-status { color: #34715b; }
+.parallel-task[data-state="complete"] .parallel-status svg { animation: parallel-complete 600ms ease-out both; }
+.parallel-task[data-state="question"] { border-color: #b88a4e; }
+.parallel-task[data-state="question"] .parallel-status { color: #8a5a1d; }
+.parallel-task[data-state="question"] .parallel-status svg { animation: parallel-question 1.4s ease-in-out 2; }
+.parallel-meter { height: 4px; border-radius: 3px; background: hsl(var(--border)); margin-top: 16px; overflow: hidden; }
+.parallel-meter > span { position: relative; display: block; height: 100%; background: #6d829a; transition: width 350ms linear; }
+.parallel-task[data-state="running"] .parallel-meter > span::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, #ffffff99, transparent); animation: parallel-scan 1.8s ease-in-out infinite; }
+.parallel-task[data-state="complete"] .parallel-meter > span { background: #60937d; }
+.parallel-task[data-state="question"] .parallel-meter > span { background: #b88a4e; }
+.parallel-transfer { display: grid; grid-template-columns: repeat(3, 1fr); height: 58px; flex-shrink: 0; }
+.parallel-transfer > div { position: relative; display: flex; align-items: flex-end; justify-content: center; }
+.parallel-transfer > div::before { content: ""; position: absolute; top: 0; bottom: 8px; left: 50%; border-left: 1px dashed hsl(var(--muted-foreground) / .3); }
+.parallel-transfer > div > svg { height: 16px; width: 16px; color: hsl(var(--muted-foreground) / .5); }
+.parallel-transfer i { position: absolute; z-index: 1; display: grid; place-items: center; width: 24px; height: 20px; border-radius: 5px; color: hsl(var(--foreground)); background: var(--c-ice); animation: parallel-send 700ms ease-in both; }
+.parallel-transfer i svg { width: 15px; height: 15px; }
+.parallel-inbox { min-height: 152px; border: 1px solid hsl(var(--border)); border-radius: 12px; background: hsl(var(--card)); padding: 12px 14px; }
+.parallel-inbox header { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.parallel-inbox header > svg { width: 20px; height: 20px; }
+.parallel-inbox ol { margin: 6px 0 0; padding: 0; list-style: none; }
+.parallel-inbox li { display: flex; align-items: center; gap: 8px; margin-top: 7px; padding-top: 7px; border-top: 1px solid hsl(var(--border)); animation: parallel-receive 450ms ease-out both; }
+.parallel-message-id { font-family: var(--font-mono); font-size: 9px; color: hsl(var(--muted-foreground)); }
+.parallel-inbox li svg { width: 14px; height: 14px; flex-shrink: 0; color: #6d829a; }
+.parallel-inbox li[data-kind="0"] svg { color: #34715b; }
+.parallel-inbox li[data-kind="1"] svg { animation: parallel-spin 2s linear infinite; }
+.parallel-inbox li[data-kind="2"] svg { color: #8a5a1d; }
+.parallel-inbox li p { font-size: 11px; line-height: 1.4; }
+.parallel-waiting { display: flex; justify-content: center; gap: 5px; padding-top: 36px; }
+.parallel-waiting i { width: 5px; height: 5px; border-radius: 50%; background: hsl(var(--muted-foreground)); animation: parallel-dot 1.2s ease-in-out infinite; }
+.parallel-waiting i:nth-last-child(2) { animation-delay: 150ms; }
+.parallel-waiting i:last-child { animation-delay: 300ms; }
+@keyframes parallel-spin { to { transform: rotate(360deg); } }
+@keyframes parallel-send { from { top: 0; opacity: 0; transform: scale(.7); } 20% { opacity: 1; } 80% { opacity: 1; } to { top: calc(100% - 10px); opacity: 0; transform: scale(1); } }
+@keyframes parallel-receive { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes parallel-complete { 0% { transform: scale(.5); opacity: .3; } 65% { transform: scale(1.2); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes parallel-question { 50% { transform: translateY(-3px) scale(1.12); } }
+@keyframes parallel-scan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+@keyframes parallel-dot { 50% { opacity: .25; transform: translateY(-3px); } }
+@media (max-width: 600px) {
+  .parallel-tasks { grid-template-columns: 1fr; gap: 8px; }
+  .parallel-task { padding: 12px; display: grid; grid-template-columns: 1fr auto; column-gap: 8px; }
+  .parallel-agent { grid-column: 1; }
+  .parallel-task h3 { grid-column: 1; margin: 8px 0; font-size: 11px; }
+  .parallel-status { grid-column: 2; grid-row: 1 / 3; font-size: 10px; }
+  .parallel-status svg { width: 22px; height: 22px; }
+  .parallel-meter { grid-column: 1 / -1; margin-top: 4px; }
+  .parallel-transfer { height: 40px; }
+  .parallel-inbox { padding: 12px; }
+  .parallel-inbox li p { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .parallel-scene *, .parallel-scene *::after { animation: none !important; transition: none !important; } .parallel-transfer i { display: none; } }
+.parallel-scene[data-reduced="true"] *, .parallel-scene[data-reduced="true"] *::after { animation: none !important; transition: none !important; }
+.parallel-scene[data-reduced="true"] .parallel-transfer i { display: none; }

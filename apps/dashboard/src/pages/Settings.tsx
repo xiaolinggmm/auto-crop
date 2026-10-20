@@ -18,6 +18,7 @@ export type SettingsProps = {
   onLoadCompanies(): void;
   onOpenCompany(companyId: string): void;
   onCreateNewCompany(): void;
+  onReviewOnboarding?(): void;
   stopCommand: WorkbenchCommand;
 };
 
@@ -28,11 +29,12 @@ export function Settings({
   companiesLoadState,
   company,
   onCreateNewCompany,
+  onReviewOnboarding,
   onLoadCompanies,
   onOpenCompany,
   stopCommand,
 }: SettingsProps) {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     onLoadCompanies();
@@ -97,6 +99,7 @@ export function Settings({
               {t("onboarding.retry")}
             </Button>
           ) : null}
+          {onReviewOnboarding && <Button variant="ghost" onClick={onReviewOnboarding}>{language === "zh" ? "回看演示" : "Watch the demo"}</Button>}
           <Button onClick={onCreateNewCompany}>
             <Plus aria-hidden="true" />
             {t("settings.createNewCompany")}

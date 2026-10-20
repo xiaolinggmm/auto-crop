@@ -49,27 +49,6 @@ for (const viewport of viewports) {
     }
   });
 
-  test(`captures modern onboarding screenshots for every step on ${viewport.name}`, async ({ page }, testInfo) => {
-    await page.setViewportSize({ height: viewport.height, width: viewport.width });
-    await mockApi(page, { companies: [] });
-    await page.goto("/");
-
-    await expect(page.getByLabel("Company name")).toBeVisible();
-    await expectModernPage(page);
-    await page.screenshot({ fullPage: true, path: testInfo.outputPath(`modern-onboarding-company-${viewport.name}.png`) });
-
-    await page.getByLabel("Company name").fill("Pricing Page Studio");
-    await page.getByRole("button", { name: "Next" }).click();
-    await expect(page.getByRole("button", { name: /Codex/ })).toBeVisible();
-    await expectModernPage(page);
-    await page.screenshot({ fullPage: true, path: testInfo.outputPath(`modern-onboarding-agents-${viewport.name}.png`) });
-
-    await page.getByRole("button", { name: "Next" }).click();
-    await page.getByLabel("Founder vision").fill("Build an AI SaaS that creates pricing pages.");
-    await expectModernPage(page);
-    await page.screenshot({ fullPage: true, path: testInfo.outputPath(`modern-onboarding-vision-${viewport.name}.png`) });
-  });
-
   test(`captures modern creation loading screenshots on ${viewport.name}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ height: viewport.height, width: viewport.width });
 

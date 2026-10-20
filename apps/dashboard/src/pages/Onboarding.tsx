@@ -1,223 +1,288 @@
-import { ArrowLeft, ArrowRight, Play, RefreshCw, ShieldCheck, X } from "lucide-react";
-import type { ReactNode } from "react";
-import type { AgentSummary } from "../api/client";
-import { AgentOption, CompanyFlowPage } from "../components/company-flow";
-import { ComposerInput } from "../components/composer";
-import { Alert, Button, Card, Input, Label, RadioGroup, RadioGroupItem } from "../components/ui";
-import { cn } from "../lib/utils";
+import { useEffect, useRef, useState } from "react";
+import * as Dialog from "@radix-ui/react-dialog";
+import {
+  ArrowLeft,
+  ArrowRight,
+  Play,
+  ShieldCheck,
+  X,
+} from "lucide-react";
+import { CompanyFlowPage } from "../components/company-flow";
+import { Button, Card, Input, Label } from "../components/ui";
+import { LanguageSwitch } from "../components/workbench/LanguageSwitch";
+import { StoryScene } from "../components/onboarding/StoryScene";
+import { storyCopy } from "../components/onboarding/storyCopy";
 import { useLanguage } from "../ui/language";
-import { formatPermissionMode } from "../ui/tasks/formatDisplayValue";
+import "./onboarding.css";
 
-export type OnboardingStep = "company" | "agents" | "vision";
+const draftKey = "auto-crop.onboardingDraft";
+function readDraft(): { name: string; vision: string; form: boolean } {
+  try {
+    const value = JSON.parse(sessionStorage.getItem(draftKey) ?? "null");
+    if (
+      value &&
+      typeof value.name === "string" &&
+      typeof value.vision === "string"
+    )
+      return { ...value, form: value.form === true };
+  } catch {
+    /* Storage can be unavailable; retain input in React for this visit. */
+  }
+  return { name: "", vision: "", form: false };
+}
 
-const onboardingSteps: OnboardingStep[] = ["company", "agents", "vision"];
-const permissionModes = ["safe", "balanced", "autonomous"];
-
-export type OnboardingProps = {
-  step: OnboardingStep;
-  companyName: string;
-  companyNameError: string | null;
-  agents: AgentSummary[];
-  agentLoadState: "idle" | "loading" | "ready" | "failed";
-  agentSelectionError: string | null;
-  selectedAgentId: string;
-  founderVision: string;
-  founderVisionError: string | null;
-  permissionMode: string;
-  isCreating: boolean;
-  createError: string | null;
-  onCompanyNameChange(value: string): void;
-  onRetryAgents(): void;
-  onSelectAgent(agentId: string): void;
-  onVisionChange(value: string): void;
-  onPermissionModeChange(value: string): void;
-  onBack(): void;
-  onNext(): void;
-  onCreateCompany(): void;
-  /** Offered when a company already exists, so the founder can go back to it (dashboard ADR 0002). */
+export function Onboarding({
+  onCancel,
+  review = false,
+}: {
   onCancel?(): void;
-};
+  review?: boolean;
+}) {
+  const { language, t } = useLanguage();
+  const launcher = useRef(
+    document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null,
+  );
+  const modal = useRef<HTMLDivElement>(null);
+  const c = storyCopy[language];
+  const [draft, setDraft] = useState(readDraft);
+  const [form, setForm] = useState(() => (review ? false : readDraft().form));
+  const [scene, setScene] = useState(0);
+  const [playback, setPlayback] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [reduced, setReduced] = useState(
+    () =>
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
+  );
+  const duration = scene === 2 ? 10 : 12;
+  const finished = reduced || elapsed >= duration;
 
-export function Onboarding(props: OnboardingProps) {
-  const { t } = useLanguage();
-  const selectedAgent = props.agents.find((agent) => agent.id === props.selectedAgentId);
-  const displayCompanyName = props.companyName.trim();
-  const permissionOptions = permissionModes.map((value) => ({ value, label: formatPermissionMode(value, t) }));
-  const permissionLabel = formatPermissionMode(props.permissionMode, t);
+  useEffect(() => {
+    const query = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(query?.matches ?? false);
+    query?.addEventListener("change", update);
+    return () => query?.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    if (form || finished) return;
+    let frame: number;
+    let previous: number | undefined;
+    const tick = (now: number) => {
+      // Clamp background-tab gaps so returning does not skip the sending action.
+      const delta = previous === undefined ? 0 : Math.min((now - previous) / 1000, 0.05);
+      previous = now;
+      setElapsed((value) => Math.min(duration, value + delta));
+      frame = window.requestAnimationFrame(tick);
+    };
+    frame = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(frame);
+  }, [form, finished, scene, duration]);
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(draftKey, JSON.stringify({ ...draft, form }));
+    } catch {
+      /* In-memory retention still works. */
+    }
+  }, [draft, form]);
+
+  useEffect(() => {
+    if (modal.current) modal.current.scrollTop = 0;
+  }, [scene, form]);
+
+  function selectScene(index: number) {
+    if (modal.current) modal.current.scrollTop = 0;
+    setPlayback((value) => value + 1);
+    setScene(index);
+    setElapsed(0);
+  }
+  function showForm() {
+    setForm(true);
+  }
 
   return (
-    <CompanyFlowPage
-      eyebrow={displayCompanyName ? t("app.localAgentCompany") : t("onboarding.eyebrow")}
-      headerActions={
-        props.onCancel ? (
-          <Button disabled={props.isCreating} onClick={props.onCancel} size="sm" variant="ghost">
-            <X aria-hidden="true" />
-            {t("onboarding.cancel")}
-          </Button>
-        ) : undefined
-      }
-      status={`${permissionLabel} ${t("onboarding.executionPolicy")}`}
-      statusIcon={<ShieldCheck aria-hidden="true" />}
-      title={displayCompanyName || t("app.title")}
-      titleId="onboarding-dialog-title"
-    >
-      <StepProgress step={props.step} />
-
-      {props.step === "company" ? (
-        <StepCard title={t("onboarding.stepCompany")}>
-          <div className="grid gap-2">
-            <Label htmlFor="company-name">{t("onboarding.companyName")}</Label>
-            <Input
-              id="company-name"
-              onChange={(event) => props.onCompanyNameChange(event.target.value)}
-              placeholder={t("onboarding.companyPlaceholder")}
-              value={props.companyName}
-            />
-          </div>
-          {props.companyNameError ? (
-            <Alert role="alert" variant="danger">
-              {props.companyNameError}
-            </Alert>
-          ) : null}
-          <StepActions>
-            <Button onClick={props.onNext}>
-              {t("onboarding.next")}
-              <ArrowRight aria-hidden="true" />
-            </Button>
-          </StepActions>
-        </StepCard>
-      ) : null}
-
-      {props.step === "agents" ? (
-        <StepCard title={t("onboarding.stepAgents")}>
-          <div className="grid gap-2">
-            {props.agentLoadState === "loading" ? <Alert role="status">{t("onboarding.scanningAgents")}</Alert> : null}
-            {props.agentLoadState === "failed" ? (
-              <Alert role="status" variant="danger">
-                {t("onboarding.apiDisconnected")}
-              </Alert>
-            ) : null}
-            {props.agentLoadState === "ready" && props.agents.length === 0 ? (
-              <Alert role="status">{t("onboarding.noAgents")}</Alert>
-            ) : null}
-            {props.agents.map((agent) => (
-              <AgentOption
-                agent={agent}
-                key={agent.id}
-                onSelect={props.onSelectAgent}
-                selected={agent.id === props.selectedAgentId}
-              />
-            ))}
-          </div>
-          {props.agentSelectionError ? (
-            <Alert role="alert" variant="danger">
-              {props.agentSelectionError}
-            </Alert>
-          ) : null}
-          <StepActions>
-            <Button onClick={props.onBack} variant="ghost">
-              <ArrowLeft aria-hidden="true" />
-              {t("onboarding.back")}
-            </Button>
-            {props.agentLoadState === "failed" ? (
-              <Button onClick={props.onRetryAgents} variant="outline">
-                <RefreshCw aria-hidden="true" />
-                {t("onboarding.retry")}
-              </Button>
-            ) : null}
-            <Button onClick={props.onNext}>
-              {t("onboarding.next")}
-              <ArrowRight aria-hidden="true" />
-            </Button>
-          </StepActions>
-        </StepCard>
-      ) : null}
-
-      {props.step === "vision" ? (
-        <StepCard title={t("onboarding.stepVision")}>
-          {selectedAgent ? (
-            <p className="text-sm text-muted-foreground">
-              {t("onboarding.ceoAgent")}: <span className="font-medium text-foreground">{selectedAgent.name}</span>
-            </p>
-          ) : null}
-          <div className="grid gap-2">
-            <Label htmlFor="founder-vision">{t("onboarding.founderVision")}</Label>
-            <ComposerInput
-              id="founder-vision"
-              onChange={(event) => props.onVisionChange(event.target.value)}
-              placeholder={t("onboarding.visionPlaceholder")}
-              value={props.founderVision}
-            />
-          </div>
-          {props.founderVisionError ? (
-            <Alert role="alert" variant="danger">
-              {props.founderVisionError}
-            </Alert>
-          ) : null}
-          <div className="grid gap-2">
-            <span className="text-sm font-medium leading-none text-foreground" id="permission-mode-label">
-              {t("onboarding.permissionMode")}
-            </span>
-            <RadioGroup
-              aria-labelledby="permission-mode-label"
-              className="sm:grid-cols-3"
-              onValueChange={props.onPermissionModeChange}
-              value={props.permissionMode}
-            >
-              {permissionOptions.map((option) => (
-                <Label
-                  className="flex cursor-pointer items-center gap-3 rounded-[var(--r-reading)] border border-border bg-background px-3 py-3 font-normal transition-colors hover:bg-accent has-[[data-state=checked]]:border-primary has-[[data-state=checked]]:bg-secondary"
-                  htmlFor={`permission-mode-${option.value}`}
-                  key={option.value}
+    <>
+      {!review && (
+        <CompanyFlowPage
+          eyebrow={t("onboarding.eyebrow")}
+          title={t("app.title")}
+          titleId="onboarding-background-title"
+          status={c.policy}
+          statusIcon={<ShieldCheck aria-hidden="true" />}
+        >
+          <Card className="grid gap-4 p-6">
+            <h2 className="text-lg font-semibold">{c.formTitle}</h2>
+            <p>{c.formDescription}</p>
+            <div className="h-24 rounded-[var(--r-reading)] bg-muted" />
+          </Card>
+        </CompanyFlowPage>
+      )}
+      <Dialog.Root
+        open
+        onOpenChange={(open) => {
+          if (!open) {
+            if (onCancel) onCancel();
+            else showForm();
+          }
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Overlay className="story-overlay" />
+          <Dialog.Content
+            ref={modal}
+            className="story-modal"
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              if (launcher.current?.isConnected) launcher.current.focus();
+            }}
+            onPointerDownOutside={(event) => event.preventDefault()}
+          >
+            <div className="story-top">
+              <span className="story-kicker">
+                {form ? "auto-crop" : c.example}
+              </span>
+              <div className="story-top-actions">
+                <LanguageSwitch />
+                {!form && (
+                  <Button variant="ghost" size="sm" onClick={showForm}>
+                    {c.skip}
+                    <ArrowRight aria-hidden="true" />
+                  </Button>
+                )}
+                {onCancel && (
+                  <Button
+                    aria-label={c.close}
+                    variant="ghost"
+                    size="icon"
+                    onClick={onCancel}
+                  >
+                    <X aria-hidden="true" />
+                  </Button>
+                )}
+              </div>
+            </div>
+            <Dialog.Title className="story-title">
+              {form ? c.formTitle : c.titles[scene]}
+            </Dialog.Title>
+            {form ? (
+              <>
+                <Dialog.Description className="text-sm text-muted-foreground">
+                  {c.formDescription}
+                </Dialog.Description>
+                <form
+                  className="story-form"
+                  onSubmit={(event) => event.preventDefault()}
                 >
-                  <RadioGroupItem id={`permission-mode-${option.value}`} value={option.value} />
-                  {option.label}
-                </Label>
-              ))}
-            </RadioGroup>
-          </div>
-          {props.createError ? (
-            <Alert role="alert" variant="danger">
-              {props.createError}
-            </Alert>
-          ) : null}
-          <StepActions>
-            <Button disabled={props.isCreating} onClick={props.onBack} variant="ghost">
-              <ArrowLeft aria-hidden="true" />
-              {t("onboarding.back")}
-            </Button>
-            <Button disabled={props.isCreating} onClick={props.onCreateCompany}>
-              <Play aria-hidden="true" />
-              {props.isCreating ? t("onboarding.creating") : t("menu.createCompany")}
-            </Button>
-          </StepActions>
-        </StepCard>
-      ) : null}
-    </CompanyFlowPage>
+                  <div>
+                    <Label htmlFor="company-name">{c.name}</Label>
+                    <Input
+                      id="company-name"
+                      autoComplete="organization"
+                      placeholder={c.namePlaceholder}
+                      value={draft.name}
+                      onChange={(event) =>
+                        setDraft({ ...draft, name: event.target.value })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="founder-vision">{c.goal}</Label>
+                    <textarea
+                      id="founder-vision"
+                      className="story-vision"
+                      placeholder={c.goalPlaceholder}
+                      value={draft.vision}
+                      onChange={(event) =>
+                        setDraft({ ...draft, vision: event.target.value })
+                      }
+                    />
+                  </div>
+                  <div className="story-note" role="status">
+                    <strong>{c.unavailable}</strong>
+                    <p>{c.boundary}</p>
+                  </div>
+                  <div className="story-form-actions">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => {
+                        selectScene(0);
+                        setForm(false);
+                      }}
+                    >
+                      <Play aria-hidden="true" />
+                      {c.watch}
+                    </Button>
+                    <Button type="submit" disabled>
+                      {c.generate}
+                      <ArrowRight aria-hidden="true" />
+                    </Button>
+                  </div>
+                  <p className="story-fine">{c.draft}</p>
+                </form>
+              </>
+            ) : (
+              <>
+                <StoryScene
+                  key={playback}
+                  scene={scene}
+                  elapsed={elapsed}
+                  reduced={reduced}
+                  c={c}
+                />
+                <Dialog.Description className="story-description">
+                  {c.descriptions[scene]}
+                </Dialog.Description>
+                <nav
+                  className="story-progress"
+                  aria-label={language === "zh" ? "演示章节" : "Demo chapters"}
+                >
+                  {c.steps.map((label, index) => (
+                    <button
+                      key={label}
+                      aria-current={index === scene ? "step" : undefined}
+                      onClick={() => selectScene(index)}
+                    >
+                      <span className="story-progress-track">
+                        <span
+                          style={{
+                            width:
+                              index < scene
+                                ? "100%"
+                                : index === scene
+                                  ? `${finished ? 100 : (elapsed / duration) * 100}%`
+                                  : "0%",
+                          }}
+                        />
+                      </span>
+                      {index + 1} · {label}
+                    </button>
+                  ))}
+                </nav>
+                <div className="story-navigation">
+                  <Button
+                    variant="ghost"
+                    disabled={scene === 0}
+                    onClick={() => selectScene(scene - 1)}
+                  >
+                    <ArrowLeft aria-hidden="true" />
+                    {c.back}
+                  </Button>
+                  <Button
+                    onClick={() =>
+                      scene === 3 ? showForm() : selectScene(scene + 1)
+                    }
+                  >
+                    {scene === 3 ? c.create : c.next}
+                    <ArrowRight aria-hidden="true" />
+                  </Button>
+                </div>
+                <p className="story-fine">{c.disclaimer}</p>
+              </>
+            )}
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+    </>
   );
-}
-
-function StepProgress({ step }: { step: OnboardingStep }) {
-  const current = onboardingSteps.indexOf(step);
-
-  return (
-    <div aria-hidden="true" className="grid grid-cols-3 gap-2">
-      {onboardingSteps.map((id, index) => (
-        <span className={cn("h-1 rounded-[var(--r-pill)] bg-border", index <= current && "bg-primary")} key={id} />
-      ))}
-    </div>
-  );
-}
-
-function StepCard({ children, title }: { children: ReactNode; title: string }) {
-  return (
-    <Card className="grid gap-5 p-4 sm:p-6">
-      <h2 className="text-base font-semibold text-foreground">{title}</h2>
-      {children}
-    </Card>
-  );
-}
-
-function StepActions({ children }: { children: ReactNode }) {
-  return <div className="flex flex-wrap justify-end gap-2">{children}</div>;
 }

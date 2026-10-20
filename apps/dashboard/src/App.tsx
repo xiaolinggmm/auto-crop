@@ -37,7 +37,7 @@ import { CompanyCreationLoading } from "./pages/CompanyCreationLoading";
 import { Deliverables } from "./pages/Deliverables";
 import { CeoOffice } from "./pages/CeoOffice";
 import { DepartmentPage } from "./pages/DepartmentPage";
-import { Onboarding, type OnboardingStep } from "./pages/Onboarding";
+import { Onboarding } from "./pages/Onboarding";
 import { OperationsDiagnostics } from "./pages/OperationsDiagnostics";
 import { Settings } from "./pages/Settings";
 import { isLanguageId, LanguageProvider, readCurrentLanguage, type LanguageId } from "./ui/language";
@@ -61,13 +61,7 @@ export default function App({ apiClient }: AppProps) {
   const defaultLanguage = useMemo(() => getInitialLanguage(), []);
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [agentLoadState, setAgentLoadState] = useState<AgentLoadState>("idle");
-  const [selectedAgentId, setSelectedAgentId] = useState("");
-  const [companyName, setCompanyName] = useState("");
-  const [companyNameError, setCompanyNameError] = useState<string | null>(null);
-  const [agentSelectionError, setAgentSelectionError] = useState<string | null>(null);
-  const [founderVision, setFounderVision] = useState("");
-  const [founderVisionError, setFounderVisionError] = useState<string | null>(null);
-  const [permissionMode, setPermissionMode] = useState("balanced");
+  const permissionMode = "balanced";
   const [blueprint, setBlueprint] = useState<CreateCompanyResponse | null>(null);
   // Read by the event-stream callbacks, which outlive the render that subscribed them: the stream
   // stays open across view changes, because events published while it reconnects are lost.
@@ -105,7 +99,7 @@ export default function App({ apiClient }: AppProps) {
   locationRef.current = location;
   // The company the founder left to create a new one, so the Onboarding Wizard can go back to it.
   const [returnCompanyId, setReturnCompanyId] = useState<string | null>(null);
-  const [onboardingStep, setOnboardingStep] = useState<OnboardingStep>("company");
+  const [reviewOnboarding, setReviewOnboarding] = useState(false);
   const creationCompleteTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -241,7 +235,6 @@ export default function App({ apiClient }: AppProps) {
     setHumanActions(response.humanActions ?? []);
     setVisionGaps(response.visionGaps ?? []);
     setWaitStates(response.waitStates ?? []);
-    setSelectedAgentId(response.company.selectedCeoAgentId ?? "");
     if (response.company.status !== "creating") {
       clearCreationIdempotencyKey();
     }
@@ -310,26 +303,21 @@ export default function App({ apiClient }: AppProps) {
   useEffect(() => {
     // The creation view names the CEO; after a refresh straight into it the agents were never listed.
     // The Workbench names each department's agent.
-    const needsAgents = (view === "onboarding" && onboardingStep === "agents") || view === "creating" || view === "workbench";
+    const needsAgents = view === "creating" || view === "workbench";
     if (needsAgents && agentLoadState === "idle") {
       void detectAgents();
     }
-  }, [agentLoadState, onboardingStep, view]);
+  }, [agentLoadState, view]);
 
   async function detectAgents() {
     setAgentLoadState("loading");
-    setAgentSelectionError(null);
 
     try {
       const response = await client.listAgents();
       setAgents(response.agents);
       setAgentLoadState("ready");
-      const detectedCodex = response.agents.find((agent) => agent.id === "codex" && agent.detected);
-      const firstDetected = response.agents.find((agent) => agent.detected);
-      setSelectedAgentId((current) => current || ((detectedCodex ?? firstDetected)?.id ?? ""));
     } catch {
       setAgents([]);
-      setSelectedAgentId("");
       setAgentLoadState("failed");
     }
   }
@@ -388,7 +376,7 @@ export default function App({ apiClient }: AppProps) {
   }, [blueprint?.company.id, client]);
 
   const commands = workbenchCommands({
-    canCreateCompany: view === "onboarding" && onboardingStep === "vision",
+    canCreateCompany: false,
     isCreating,
     companyStatus: blueprint?.company.status ?? null,
     onCreateCompany: handleCreateCompany,
@@ -400,18 +388,7 @@ export default function App({ apiClient }: AppProps) {
   // Two shortcuts remain, and both ask the command model whether they can run.
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
-      if (!isCommandShortcut(event) || isEditingText(event.target)) {
-        return;
-      }
-
-      if (event.key === "Enter" && view === "onboarding" && !isCreating) {
-        event.preventDefault();
-        if (onboardingStep === "vision") {
-          const createCommand = commands["create-company"];
-          if (createCommand.enabled) void createCommand.run();
-        } else {
-          goToNextStep();
-        }
+      if (reviewOnboarding || !isCommandShortcut(event) || isEditingText(event.target)) {
         return;
       }
 
@@ -426,49 +403,9 @@ export default function App({ apiClient }: AppProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   });
 
-  async function handleCreateCompany() {
-    if (!validateCompanyName() || !validateSelectedAgent() || !validateFounderVision()) {
-      return;
-    }
-
-    setIsCreating(true);
-    setView("creating");
-    setCreateError(null);
-    setBlueprint(null);
-    setProof([]);
-    setBusinessArtifacts([]);
-    setReplanProposals([]);
-    setHumanActions([]);
-    setVisionGaps([]);
-    setWaitStates([]);
-    setReviews([]);
-    setEvents([]);
-    setCreationEvents([]);
-    setTaskProgressEvents([]);
-    setTaskCompletionEvents([]);
-    setFounderDecisions([]);
-    setCeoIntakes([]);
-    try {
-      const response = await client.createCompany({
-        companyName: companyName.trim(),
-        founderVision: founderVision.trim(),
-        locale: readCurrentLanguage() ?? defaultLanguage,
-        selectedCeoAgentId: selectedAgentId,
-        permissionMode,
-        assets: [],
-        creationIdempotencyKey: getOrCreateCreationIdempotencyKey(),
-      });
-      writeCurrentCompanyId(response.company.id);
-      setReturnCompanyId(null);
-      applyCompanyState(response, ceoOfficeLocation);
-    } catch (error) {
-      setView("onboarding");
-      setOnboardingStep("vision");
-      setCreateError((error as Error).message);
-    } finally {
-      setIsCreating(false);
-    }
-  }
+  // Creation is unavailable until the MAH connection contract is implemented.
+  // Keep the command disabled and never fall back to the legacy direct-agent API.
+  function handleCreateCompany() {}
 
   async function handleRetryCompanyCreation() {
     const companyId = blueprint?.company.id;
@@ -485,92 +422,6 @@ export default function App({ apiClient }: AppProps) {
       setCreateError((error as Error).message);
     } finally {
       setIsCreating(false);
-    }
-  }
-
-  function handleCompanyNameChange(value: string) {
-    setCompanyName(value);
-    if (value.trim()) {
-      setCompanyNameError(null);
-    }
-  }
-
-  function handleFounderVisionChange(value: string) {
-    setFounderVision(value);
-    if (value.trim()) {
-      setFounderVisionError(null);
-    }
-  }
-
-  function handleSelectAgent(agentId: string) {
-    setSelectedAgentId(agentId);
-    setAgentSelectionError(null);
-  }
-
-  function validateCompanyName() {
-    if (companyName.trim()) {
-      setCompanyNameError(null);
-      return true;
-    }
-
-    setCompanyNameError("Company name is required.");
-    return false;
-  }
-
-  function validateSelectedAgent() {
-    const selectedAgent = agents.find((agent) => agent.id === selectedAgentId && agent.detected);
-
-    if (selectedAgent) {
-      setAgentSelectionError(null);
-      return true;
-    }
-
-    setAgentSelectionError("Select one detected CEO Agent.");
-    return false;
-  }
-
-  function validateFounderVision() {
-    if (founderVision.trim()) {
-      setFounderVisionError(null);
-      return true;
-    }
-
-    setFounderVisionError("Founder vision is required.");
-    return false;
-  }
-
-  function goToNextStep() {
-    if (isCreating || view === "creating") {
-      return;
-    }
-
-    if (onboardingStep === "company") {
-      if (validateCompanyName()) {
-        setOnboardingStep("agents");
-      }
-      return;
-    }
-
-    if (onboardingStep === "agents") {
-      if (validateSelectedAgent()) {
-        setOnboardingStep("vision");
-      }
-      return;
-    }
-
-    void handleCreateCompany();
-  }
-
-  function goToPreviousStep() {
-    if (isCreating || view === "creating") {
-      return;
-    }
-
-    setCreateError(null);
-    if (onboardingStep === "vision") {
-      setOnboardingStep("agents");
-    } else if (onboardingStep === "agents") {
-      setOnboardingStep("company");
     }
   }
 
@@ -836,12 +687,6 @@ export default function App({ apiClient }: AppProps) {
     setHumanActions([]);
     setVisionGaps([]);
     setWaitStates([]);
-    setCompanyName("");
-    setCompanyNameError(null);
-    setFounderVision("");
-    setFounderVisionError(null);
-    setAgentSelectionError(null);
-    setOnboardingStep("company");
     setView("onboarding");
   }
 
@@ -863,13 +708,13 @@ export default function App({ apiClient }: AppProps) {
 
   if (view === "creating") {
     // After a refresh the setup form is empty; the company being created knows its own choices.
-    const creatingAgentId = blueprint?.company.selectedCeoAgentId ?? selectedAgentId;
+    const creatingAgentId = blueprint?.company.selectedCeoAgentId ?? "";
     const otherCompany = pickStartupCompany(companies.filter((company) => company.id !== blueprint?.company.id));
     const selectedAgent = agents.find((agent) => agent.id === creatingAgentId) ?? null;
 
     return renderModernAppFrame(
       <CompanyCreationLoading
-        companyName={blueprint?.company.name ?? companyName.trim()}
+        companyName={blueprint?.company.name ?? ""}
         events={creationEvents}
         isFailed={blueprint?.company.status === "creation_failed"}
         isRetrying={isCreating}
@@ -898,6 +743,7 @@ export default function App({ apiClient }: AppProps) {
         >
           {renderWorkbenchPage(blueprint)}
         </WorkbenchFrame>
+        {reviewOnboarding && <Onboarding review onCancel={() => setReviewOnboarding(false)} />}
       </div>,
     );
   }
@@ -920,6 +766,7 @@ export default function App({ apiClient }: AppProps) {
           companiesLoadError={companyListLoadError}
           companiesLoadState={companyListLoadState}
           company={company.company}
+          onReviewOnboarding={() => setReviewOnboarding(true)}
           onCreateNewCompany={() => handleCreateNewCompany()}
           onLoadCompanies={() => void loadCompanies()}
           onOpenCompany={(companyId) => void openCompany(companyId)}
@@ -992,29 +839,7 @@ export default function App({ apiClient }: AppProps) {
   }
 
   return renderModernAppFrame(
-    <Onboarding
-      agents={agents}
-      agentLoadState={agentLoadState}
-      agentSelectionError={agentSelectionError}
-      companyName={companyName}
-      companyNameError={companyNameError}
-      createError={createError}
-      founderVision={founderVision}
-      founderVisionError={founderVisionError}
-      isCreating={isCreating}
-      onBack={goToPreviousStep}
-      onCancel={returnCompanyId ? () => void openCompany(returnCompanyId) : undefined}
-      onCompanyNameChange={handleCompanyNameChange}
-      onCreateCompany={handleCreateCompany}
-      onNext={goToNextStep}
-      onPermissionModeChange={setPermissionMode}
-      onRetryAgents={detectAgents}
-      onSelectAgent={handleSelectAgent}
-      onVisionChange={handleFounderVisionChange}
-      permissionMode={permissionMode}
-      selectedAgentId={selectedAgentId}
-      step={onboardingStep}
-    />,
+    <Onboarding onCancel={returnCompanyId ? () => void openCompany(returnCompanyId) : undefined} />,
   );
 }
 
@@ -1409,23 +1234,6 @@ function clearCreationIdempotencyKey(): void {
   }
 
   window.localStorage.removeItem(creationIdempotencyKeyStorageKey);
-}
-
-function getOrCreateCreationIdempotencyKey(): string {
-  if (typeof window === "undefined" || !window.localStorage) {
-    return `creation-${Date.now()}`;
-  }
-
-  const existing = window.localStorage.getItem(creationIdempotencyKeyStorageKey);
-  if (existing) {
-    return existing;
-  }
-
-  const key = typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `creation-${Date.now()}`;
-  window.localStorage.setItem(creationIdempotencyKeyStorageKey, key);
-  return key;
 }
 
 function readCurrentLocation(): WorkbenchLocation | null {
