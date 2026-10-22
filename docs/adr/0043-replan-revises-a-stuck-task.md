@@ -2,6 +2,8 @@
 
 Status: proposed
 
+Amendment: [ADR 0049](0049-mah-direct-tasks-bind-executor-and-runtime-action.md) adds a separately authorized CEO Reassignment Decision. Ordinary Revision retains the assigned-agent restriction below; only that budgeted decision can change it.
+
 A Replan Proposal has two modes. A **Split** replaces a task too large for one run with two to five smaller ones, as replanning does today. A **Revision** keeps the task and rewrites what it is asked to do, and may amend the planned verification requirements that judge it in the same proposal, confirmed by the founder once. Replanning is available exactly where a task's Holds offer `request_replan`.
 
 ## Context

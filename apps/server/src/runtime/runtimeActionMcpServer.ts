@@ -35,7 +35,13 @@ export function handleRuntimeActionMcpMessage(message: JsonRpcRequest, env: Runt
         {
           name: TOOL_NAME,
           description: "Submit the task's Artifact Envelope candidate to the Auto-Crop runtime.",
-          inputSchema: artifactEnvelopeInputSchema(runtimeContext(env)?.contract?.proofRefs?.acceptedTypes),
+          inputSchema: {
+            ...artifactEnvelopeInputSchema(runtimeContext(env)?.contract?.proofRefs?.acceptedTypes),
+            properties: {
+              ...artifactEnvelopeInputSchema(runtimeContext(env)?.contract?.proofRefs?.acceptedTypes).properties,
+              submission_id: { type: "string", minLength: 1, description: "Stable ID for this submission; reuse only when retrying the identical envelope." },
+            },
+          },
         },
       ],
     });
@@ -58,6 +64,7 @@ export function handleRuntimeActionMcpMessage(message: JsonRpcRequest, env: Runt
       },
       params.arguments,
       context.contract,
+      isRecord(params.arguments) && typeof params.arguments.submission_id === "string" ? params.arguments.submission_id : undefined,
     );
     return response(id, {
       content: [{ type: "text", text: JSON.stringify(result) }],

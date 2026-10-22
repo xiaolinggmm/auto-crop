@@ -2,6 +2,25 @@ import type { DatabaseClient } from "./client";
 
 export function migrate(database: DatabaseClient): void {
   database.exec(`
+    CREATE TABLE IF NOT EXISTS reassignment_run_lineage (
+      run_id TEXT PRIMARY KEY REFERENCES agent_runs(id) ON DELETE CASCADE,
+      task_id TEXT NOT NULL,
+      decision_id TEXT NOT NULL,
+      FOREIGN KEY (task_id, decision_id) REFERENCES reassignment_decisions(task_id, id)
+    );
+    CREATE TABLE IF NOT EXISTS runtime_candidate_dispositions (
+      company_id TEXT NOT NULL,
+      task_id TEXT NOT NULL,
+      run_id TEXT NOT NULL,
+      PRIMARY KEY (company_id, task_id, run_id)
+    );
+    CREATE TABLE IF NOT EXISTS reassignment_decisions (
+      task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      id TEXT NOT NULL,
+      record TEXT NOT NULL,
+      PRIMARY KEY (task_id, id)
+    );
+
     CREATE TABLE IF NOT EXISTS companies (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,

@@ -1,3 +1,4 @@
+import { requestCeoReassignment, withdrawCeoReassignment } from "../runtime/reassignment";
 import { executionOverview } from "../runtime/executionOverview";
 import { requestBudgetStop } from "../runtime/budgetStop";
 import { defaultExecutionRegistry } from "../runtime/executionControl";
@@ -87,7 +88,8 @@ export type SchedulerWakeReason =
   | "budget_authorized"
   | "company_created"
   | "company_resumed"
-  | "ceo_intake_received";
+  | "ceo_intake_received"
+  | "ceo_reassigned";
 const creationAttemptTimeoutMs = 10 * 60 * 1000;
 const creationAttemptGraceMs = 30 * 1000;
 
@@ -949,6 +951,42 @@ async function routeRequest(
       recovery: result.recovery,
       parentAggregation: parentAggregation ? summarizeParentAggregation(parentAggregation, options.repositories) : undefined,
     });
+    return;
+  }
+
+  const withdrawReassignmentMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/reassignment-decisions\/([^/]+)$/);
+  if (method === "DELETE" && withdrawReassignmentMatch) {
+    try {
+      const decision = withdrawCeoReassignment(options.repositories, withdrawReassignmentMatch[1], decodeURIComponent(withdrawReassignmentMatch[2]));
+      sendJson(response, 200, { decision });
+    } catch (error) { sendJson(response, 404, { error: error instanceof Error ? error.message : String(error) }); }
+    return;
+  }
+
+  const reassignmentMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/reassignment-decisions$/);
+  if (reassignmentMatch && (method === "GET" || method === "POST")) {
+    const task = options.repositories.getTask(reassignmentMatch[1]);
+    if (!task) { sendJson(response, 404, { error: "Task not found" }); return; }
+    if (method === "GET") {
+      sendJson(response, 200, { decisions: options.repositories.reassignments.list(task.id) });
+      return;
+    }
+    const body = await readJson<Record<string, unknown>>(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)
+        || Object.keys(body).some(key => !["requestId", "note"].includes(key))
+        || typeof body.requestId !== "string" || !body.requestId.trim() || body.requestId.length > 160
+        || (body.note !== undefined && (typeof body.note !== "string" || body.note.length > 4000))) {
+      sendJson(response, 400, { error: "Provide requestId and optional note only; the CEO alone selects the executor." });
+      return;
+    }
+    try {
+      const decision = await requestCeoReassignment({ repositories: options.repositories, projectRoot: options.projectRoot,
+        taskId: task.id, requestId: body.requestId, note: body.note as string | undefined, agents: options.agents, now: options.now });
+      if (decision.status === "applied") options.requestSchedulerWake?.("ceo_reassigned");
+      sendJson(response, decision.status === "pending" ? 202 : 200, { decision });
+    } catch (error) {
+      sendJson(response, 409, { error: error instanceof Error ? error.message : String(error) });
+    }
     return;
   }
 

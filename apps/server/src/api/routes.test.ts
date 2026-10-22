@@ -530,6 +530,34 @@ describe("API routes", () => {
     await fixture.close();
   });
 
+  it("accepts CEO reassignment requests but rejects caller-selected executors", async () => {
+    const alternate = createMockAgentAdapter({ id: "claude-code", name: "Claude", capabilities: ["code"] });
+    const fixture = await startFixtureServer({ extraAgents: [alternate] });
+    try {
+      const created = await createCompanyForApi(fixture);
+      const task = activatedTasks(fixture, created.company.id, 1)[0]!;
+      applyTaskTransition({ repositories: fixture.repositories, task, status: "failed", executionSummary: { latestFailureReason: "agent_failed" } });
+      const url = `${fixture.baseUrl}/api/tasks/${task.id}/reassignment-decisions`;
+      const refused = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ requestId: "r1", assigneeAgentId: "claude-code" }) });
+      expect(refused.status).toBe(400);
+      expect(fixture.repositories.reassignments.list(task.id)).toEqual([]);
+      expect(await getJson(url)).toEqual({ decisions: [] });
+      const requested = await postJson<{ decision: { status: string } }>(url, { requestId: "r2" });
+      // The existing fixture CEO returns a blueprint, which cannot be interpreted as a reassignment.
+      expect(requested.decision.status).toBe("failed");
+      expect(fixture.repositories.getTask(task.id)?.assigneeAgentId).toBe(task.assigneeAgentId);
+      const terminal = await fetch(`${url}/r2`, { method: "DELETE" });
+      expect(terminal.status).toBe(200);
+      expect(await terminal.json()).toMatchObject({ decision: { status: "failed" } });
+      expect((await fetch(`${url}/missing`, { method: "DELETE" })).status).toBe(404);
+      const pending = fixture.repositories.reassignments.get(task.id, "r2")!;
+      fixture.repositories.reassignments.save({ ...pending, id: "pending-request", status: "pending" });
+      const withdrawn = await fetch(`${url}/pending-request`, { method: "DELETE" });
+      expect(withdrawn.status).toBe(200);
+      expect(await withdrawn.json()).toMatchObject({ decision: { status: "withdrawn" } });
+    } finally { await fixture.close(); }
+  });
+
   it("creates and confirms replan proposals through the API", async () => {
     const fixture = await startFixtureServer();
     const created = await postJson<{ company: { id: string } }>(`${fixture.baseUrl}/api/companies`, {
@@ -3845,6 +3873,7 @@ describe("department subtask Founder Decision lifecycle", () => {
 async function startFixtureServer(options: {
   now?: () => Date;
   ceoAgent?: AgentAdapter;
+  extraAgents?: AgentAdapter[];
   plannerOutput?: string;
   schedulerWakeRequests?: SchedulerWakeReason[];
   useDefaultCreateId?: boolean;
@@ -3885,7 +3914,7 @@ async function startFixtureServer(options: {
   const serverOptions = {
     projectRoot,
     repositories,
-    agents: [codex],
+    agents: [codex, ...(options.extraAgents ?? [])],
     log: options.log,
     now: options.now ?? (() => new Date("2026-08-17T00:00:00.000Z")),
     requestSchedulerWake: (reason: SchedulerWakeReason) => options.schedulerWakeRequests?.push(reason),

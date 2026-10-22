@@ -1,3 +1,4 @@
+import { createReassignmentStore } from "./reassignments";
 import { createExecutionBudgetStore } from "./executionBudget";
 import { createExecutionRecoveryStore } from "./executionRecovery";
 import { createExecutionRetentionStore } from "./executionRetention";
@@ -64,6 +65,25 @@ export function createRepositories(database: DatabaseClient) {
   let savepointDepth = 0;
 
   return {
+    reassignments: createReassignmentStore(database),
+    getTaskExecutionEpoch(taskId: string): number {
+      const row = database.prepare("SELECT COALESCE(execution_epoch, 0) AS epoch FROM tasks WHERE id = ?").get(taskId) as { epoch: number } | undefined;
+      return row?.epoch ?? 0;
+    },
+    claimTaskProofRecovery(taskId: string, status: Task["status"], epoch: number, candidateRunId: string | null): boolean {
+      return database.prepare(`UPDATE tasks SET execution_epoch = execution_epoch WHERE id = ? AND status = ?
+        AND COALESCE(execution_epoch, 0) = ?
+        AND NOT EXISTS (SELECT 1 FROM agent_runs WHERE task_id = tasks.id AND status = 'running')
+        AND NOT EXISTS (SELECT 1 FROM task_locks WHERE task_id = tasks.id)
+        AND NOT EXISTS (SELECT 1 FROM workspace_claims WHERE task_id = tasks.id)
+        AND NOT EXISTS (SELECT 1 FROM agent_runs WHERE id = ? AND owner_epoch IS NOT NULL AND owner_epoch <> COALESCE(tasks.execution_epoch, 0))`).run(taskId, status, epoch, candidateRunId).changes > 0;
+    },
+    hasRuntimeCandidateDisposition(companyId: string, taskId: string, runId: string): boolean {
+      return Boolean(database.prepare("SELECT 1 FROM runtime_candidate_dispositions WHERE company_id = ? AND task_id = ? AND run_id = ?").get(companyId, taskId, runId));
+    },
+    recordRuntimeCandidateDisposition(companyId: string, taskId: string, runId: string): boolean {
+      return database.prepare("INSERT OR IGNORE INTO runtime_candidate_dispositions (company_id, task_id, run_id) VALUES (?, ?, ?)").run(companyId, taskId, runId).changes > 0;
+    },
     executionBudget: createExecutionBudgetStore(database),
     executionRecovery: createExecutionRecoveryStore(database),
     executionRetention: createExecutionRetentionStore(database),
@@ -1478,6 +1498,7 @@ export function createRepositories(database: DatabaseClient) {
     },
 
     createAgentRun(agentRun: AgentRun): void {
+      this.transaction(() => {
       database
         .prepare(
           `INSERT INTO agent_runs (
@@ -1501,6 +1522,8 @@ export function createRepositories(database: DatabaseClient) {
           agentRun.failureMessage ?? null,
           agentRun.ownerEpoch ?? null,
         );
+      this.reassignments.linkRun(agentRun.id, agentRun.taskId);
+      });
     },
 
     /**

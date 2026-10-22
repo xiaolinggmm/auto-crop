@@ -39,7 +39,7 @@ describe("runtime action MCP server", () => {
       timeout: 30_000,
     });
 
-    expect(result.stderr).toBe("");
+    expect(result.stderr.replace(/\(node:\d+\) ExperimentalWarning: SQLite[^\n]*\n\(Use `node --trace-warnings \.\.\.` to show where the warning was created\)\n/g, "")).toBe("");
     expect(JSON.parse(result.stdout)).toMatchObject({ id: 1, result: { isError: false, structuredContent: { ok: true } } });
     expect(readdirSync(candidateDir)).toHaveLength(1);
   });
@@ -78,6 +78,23 @@ describe("runtime action MCP server", () => {
     expect(response).toMatchObject({
       result: { tools: [{ inputSchema: { properties: { payload: { type: "object" }, lineage: { type: "object" } } } }] },
     });
+  });
+
+  it("uses explicit submission IDs across MCP requests and rejects revoked calls", () => {
+    const candidateDir = mkdtempSync(join(tmpdir(), "auto-crop-mcp-idempotency-"));
+    createdDirs.push(candidateDir);
+    const context = env({ AUTO_CROP_RUNTIME_ACTION_DIR: candidateDir });
+    const call = (id: number, submission_id: string, subtype: string) => handleRuntimeActionMcpMessage({
+      jsonrpc: "2.0", id, method: "tools/call", params: { name: "submit_artifact_envelope", arguments: { ...validEnvelope(subtype), submission_id } },
+    }, context);
+    call(1, "a", "first");
+    call(2, "b", "second");
+    call(3, "a", "first");
+    const channel = createRuntimeActionChannel({ candidateDir });
+    const run = { companyId: "company_1", taskId: "task_1", runId: "run_1" };
+    expect(channel.latestTaskSubmission(run).envelope?.artifactSubtype).toBe("second");
+    channel.discardTask(run);
+    expect(call(4, "c", "late")).toMatchObject({ result: { isError: true, structuredContent: { code: "run_closed" } } });
   });
 
   it("submits an envelope into the file-backed runtime action channel", () => {

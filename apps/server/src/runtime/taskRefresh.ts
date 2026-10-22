@@ -135,6 +135,7 @@ export function recoverProofIfPossible(
     return { kind: "not_applicable" };
   }
 
+  const expectedEpoch = input.repositories.getTaskExecutionEpoch(task.id);
   const proofSchema = input.proofSchemas?.find((schema) => schema.id === task.proofSchemaId);
   if (!proofSchema || !task.workspacePath) {
     return { kind: "not_found" };
@@ -148,7 +149,13 @@ export function recoverProofIfPossible(
 
   const { proof, workspacePath } = recovered;
   const taskContext = { companyId: task.companyId, taskId: task.id };
-  const submission = input.runtimeActionChannel.latestTaskSubmission(taskContext);
+  const candidateContext = input.runtimeActionChannel.latestTaskRunContext(taskContext);
+  if (candidateContext && input.repositories.hasRuntimeCandidateDisposition(task.companyId, task.id, candidateContext.runId)) {
+    return { kind: "not_applicable" };
+  }
+  const submission = candidateContext
+    ? input.runtimeActionChannel.selectRunSubmission(candidateContext)
+    : { envelope: null, rejection: null };
   const businessArtifact = captureBusinessArtifact({
     envelope: submission.envelope,
     rejectedSubmission: submission.rejection,
@@ -177,143 +184,154 @@ export function recoverProofIfPossible(
     return { kind: "still_unreviewable", validationErrors: businessArtifact.validationErrors };
   }
 
-  for (const item of proof) {
-    input.repositories.appendProof(item);
-  }
-  input.repositories.createBusinessArtifact(businessArtifact);
-  // Captured: the candidate is now a Business Artifact and must not be recaptured as a second one.
-  input.runtimeActionChannel.discardTask(taskContext);
-
-  if (unblockRequest) {
-    const parked = parkOnUnblockRequest({ repositories: input.repositories, task, artifact: businessArtifact, now: input.now, createId: input.createId });
-    const refreshedTask = input.repositories.getTask(task.id);
-    if (!refreshedTask) {
-      throw new Error(`Task disappeared after parking on its Unblock Request: ${task.id}`);
+  // Evidence collection and candidate closure are complete. Only business DB writes belong here.
+  return input.repositories.transaction(() => {
+    if (!input.repositories.claimTaskProofRecovery(task.id, task.status, expectedEpoch, candidateContext?.runId ?? null)) {
+      return { kind: "not_applicable" as const };
     }
-    return {
-      kind: "recovered",
-      result: {
-        task: refreshedTask,
-        event: parked.taskEvent,
-        progressEvent: parked.progressEvent,
-        proof,
-        businessArtifacts: [businessArtifact],
-        recovery: {
-          status: "recovered",
-          message: "Found a Blocker Report asking a person for input; the task now waits on that Human Action.",
+    if (candidateContext) {
+      // Recheck disposition after the conditional first-write claim.
+      if (!input.repositories.recordRuntimeCandidateDisposition(task.companyId, task.id, candidateContext.runId)) {
+        return { kind: "not_applicable" as const };
+      }
+    }
+    for (const item of proof) {
+      input.repositories.appendProof(item);
+    }
+    input.repositories.createBusinessArtifact(businessArtifact);
+    // Candidate evidence remains in the channel; the transactional disposition prevents recapture.
+
+    if (unblockRequest) {
+      const parked = parkOnUnblockRequest({ repositories: input.repositories, task, artifact: businessArtifact, now: input.now, createId: input.createId });
+      const refreshedTask = input.repositories.getTask(task.id);
+      if (!refreshedTask) {
+        throw new Error(`Task disappeared after parking on its Unblock Request: ${task.id}`);
+      }
+      return {
+        kind: "recovered",
+        result: {
+          task: refreshedTask,
+          event: parked.taskEvent,
+          progressEvent: parked.progressEvent,
+          proof,
+          businessArtifacts: [businessArtifact],
+          recovery: {
+            status: "recovered",
+            message: "Found a Blocker Report asking a person for input; the task now waits on that Human Action.",
+          },
         },
-      },
-    };
-  }
+      };
+    }
 
-  if (unreviewable) {
-    const now = input.now ?? (() => new Date());
-    const createId = input.createId ?? defaultCreateId;
-    const timestamp = now().toISOString();
-    const failureReason = businessArtifactFailureReason(businessArtifact);
-    const failureMessage = businessArtifactFailureMessage(task, businessArtifact);
+    if (unreviewable) {
+      const now = input.now ?? (() => new Date());
+      const createId = input.createId ?? defaultCreateId;
+      const timestamp = now().toISOString();
+      const failureReason = businessArtifactFailureReason(businessArtifact);
+      const failureMessage = businessArtifactFailureMessage(task, businessArtifact);
 
-    applyTaskTransition({
-      repositories: input.repositories,
-      task,
-      status: "blocked",
-      executionSummary: {
-        latestFailureReason: failureReason,
-        latestFailureMessage: failureMessage,
+      applyTaskTransition({
+        repositories: input.repositories,
+        task,
+        status: "blocked",
+        executionSummary: {
+          latestFailureReason: failureReason,
+          latestFailureMessage: failureMessage,
+          dependencyNote: null,
+        },
+        hold: {
+          kind: "invalid_business_artifact",
+          subjectKind: "business_artifact",
+          subjectId: businessArtifact.id,
+          reason: failureMessage,
+        },
+        now: input.now,
+        createId: input.createId,
+      });
+
+      const event: TaskEvent = {
+        id: createId("task_event"),
+        companyId: task.companyId,
+        taskId: task.id,
+        type: "task_blocked",
+        message: failureMessage,
+        createdAt: timestamp,
+        status: "blocked",
+        failureReason,
+        failureMessage,
+        executionProfileName: null,
+        requestedTimeoutMs: null,
+        effectiveTimeoutMs: null,
         dependencyNote: null,
-      },
-      hold: {
-        kind: "invalid_business_artifact",
-        subjectKind: "business_artifact",
-        subjectId: businessArtifact.id,
-        reason: failureMessage,
-      },
+        artifactWorkspacePath: task.artifactWorkspacePath ?? workspacePath,
+      };
+      input.repositories.appendTaskEvent(event);
+
+      const progressEvent: TaskProgressEvent = {
+        id: createId("task_progress"),
+        companyId: task.companyId,
+        departmentId: task.departmentId,
+        parentTaskId: task.parentTaskId ?? task.id,
+        subjectTaskId: task.id,
+        step: "blocked",
+        status: "blocked",
+        label: failureMessage,
+        detail: businessArtifact.validationErrors.join("\n") || null,
+        createdAt: timestamp,
+      };
+      input.repositories.appendTaskProgressEvent(progressEvent);
+
+      const refreshedTask = input.repositories.getTask(task.id);
+      if (!refreshedTask) {
+        throw new Error(`Task disappeared after business artifact recovery gate: ${task.id}`);
+      }
+
+      return {
+        kind: "recovered",
+        result: {
+          task: refreshedTask,
+          event,
+          progressEvent,
+          proof,
+          businessArtifacts: [businessArtifact],
+          recovery: {
+            status: "recovered",
+            message: "Found checkable proof, but blocked before CEO review because the business artifact is not reviewable.",
+          },
+        },
+      };
+    }
+
+    if (task.artifactWorkspacePath && task.artifactWorkspacePath !== workspacePath) {
+      input.repositories.updateTaskArtifactWorkspacePath(task.id, workspacePath);
+    }
+
+    // Recovered proof is a delivery like a finished run's, and gets the same policy: failed verdicts,
+    // Founder Decisions, internal subtask delivery, Automatic Acceptance or CEO review — never a shortcut.
+    const finalized = finalizeDelivery({
+      repositories: input.repositories,
+      task: input.repositories.getTask(task.id) ?? task,
+      artifact: businessArtifact,
+      source: "proof_recovery",
       now: input.now,
       createId: input.createId,
     });
 
-    const event: TaskEvent = {
-      id: createId("task_event"),
-      companyId: task.companyId,
-      taskId: task.id,
-      type: "task_blocked",
-      message: failureMessage,
-      createdAt: timestamp,
-      status: "blocked",
-      failureReason,
-      failureMessage,
-      executionProfileName: null,
-      requestedTimeoutMs: null,
-      effectiveTimeoutMs: null,
-      dependencyNote: null,
-      artifactWorkspacePath: task.artifactWorkspacePath ?? workspacePath,
-    };
-    input.repositories.appendTaskEvent(event);
-
-    const progressEvent: TaskProgressEvent = {
-      id: createId("task_progress"),
-      companyId: task.companyId,
-      departmentId: task.departmentId,
-      parentTaskId: task.parentTaskId ?? task.id,
-      subjectTaskId: task.id,
-      step: "blocked",
-      status: "blocked",
-      label: failureMessage,
-      detail: businessArtifact.validationErrors.join("\n") || null,
-      createdAt: timestamp,
-    };
-    input.repositories.appendTaskProgressEvent(progressEvent);
-
-    const refreshedTask = input.repositories.getTask(task.id);
-    if (!refreshedTask) {
-      throw new Error(`Task disappeared after business artifact recovery gate: ${task.id}`);
-    }
-
     return {
       kind: "recovered",
       result: {
-        task: refreshedTask,
-        event,
-        progressEvent,
+        task: finalized.task,
+        event: finalized.events.find((event) => event.taskId === task.id) ?? appendRecoveryEvent(input, finalized.task),
+        ...(finalized.progressEvent ? { progressEvent: finalized.progressEvent } : {}),
         proof,
-        businessArtifacts: [businessArtifact],
+        businessArtifacts: [input.repositories.getCurrentBusinessArtifactForTask(task.id) ?? businessArtifact],
         recovery: {
           status: "recovered",
-          message: "Found checkable proof, but blocked before CEO review because the business artifact is not reviewable.",
+          message: recoveryMessage(finalized.outcome),
         },
       },
     };
-  }
-
-  if (task.artifactWorkspacePath && task.artifactWorkspacePath !== workspacePath) {
-    input.repositories.updateTaskArtifactWorkspacePath(task.id, workspacePath);
-  }
-
-  // Recovered proof is a delivery like a finished run's, and gets the same policy: failed verdicts,
-  // Founder Decisions, internal subtask delivery, Automatic Acceptance or CEO review — never a shortcut.
-  const finalized = finalizeDelivery({
-    repositories: input.repositories,
-    task: input.repositories.getTask(task.id) ?? task,
-    artifact: businessArtifact,
-    source: "proof_recovery",
-    now: input.now,
-    createId: input.createId,
   });
-
-  return {
-    kind: "recovered",
-    result: {
-      task: finalized.task,
-      event: finalized.events.find((event) => event.taskId === task.id) ?? appendRecoveryEvent(input, finalized.task),
-      ...(finalized.progressEvent ? { progressEvent: finalized.progressEvent } : {}),
-      proof,
-      businessArtifacts: [input.repositories.getCurrentBusinessArtifactForTask(task.id) ?? businessArtifact],
-      recovery: {
-        status: "recovered",
-        message: recoveryMessage(finalized.outcome),
-      },
-    },
-  };
 }
 
 /** Recovery always answers with an event; an outcome that appended none of its own gets this one. */

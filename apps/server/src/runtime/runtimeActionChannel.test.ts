@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRuntimeActionChannel } from "./runtimeActionChannel";
@@ -183,3 +183,63 @@ function validEnvelope(subtype: string) {
     lineage: {},
   };
 }
+
+describe("durable candidate selection", () => {
+  const context = { companyId: "company", taskId: "task", runId: "run" };
+  it("imports an existing JSON candidate once without deleting its audit source", () => {
+    const candidateDir = tempCandidateDir();
+    writeFileSync(join(candidateDir, "company-task-run.json"), JSON.stringify({ context, envelope: {
+      artifactKind: "deliverable", artifactRole: "implementation", artifactSubtype: "legacy", taskType: "engineering.implementation", payload: {}, lineage: {},
+    }, rejection: null }));
+    const channel = createRuntimeActionChannel({ candidateDir });
+    expect(channel.selectRunSubmission(context).envelope?.artifactSubtype).toBe("legacy");
+    channel.discardTask(context);
+    expect(createRuntimeActionChannel({ candidateDir }).selectRunSubmission(context).envelope).toBeNull();
+  });
+
+  it("reopens the same frozen candidate after a failed business transaction", async () => {
+    const candidateDir = tempCandidateDir();
+    const channel = createRuntimeActionChannel({ candidateDir });
+    channel.submitArtifactEnvelope(context, validEnvelope("accepted"), undefined, "submission-a");
+    const selected = channel.selectRunSubmission(context);
+    const { DatabaseSync } = await import("node:sqlite");
+    const business = new DatabaseSync(join(candidateDir, "business.sqlite"));
+    business.exec("CREATE TABLE effects (value TEXT); BEGIN; INSERT INTO effects VALUES ('partial'); ROLLBACK");
+    business.close();
+    const reopened = createRuntimeActionChannel({ candidateDir });
+    expect(reopened.selectRunSubmission(context)).toEqual(selected);
+    expect(selected.envelope?.artifactSubtype).toBe("accepted");
+    expect(reopened.submitArtifactEnvelope(context, validEnvelope("accepted"), undefined, "submission-a")).toMatchObject({ ok: true });
+    expect(reopened.submitArtifactEnvelope(context, validEnvelope("late"))).toMatchObject({ ok: false, code: "run_closed" });
+  });
+  it("does not reorder an old idempotent replay or accept conflicting content", () => {
+    const candidateDir = tempCandidateDir();
+    const channel = createRuntimeActionChannel({ candidateDir });
+    const first = channel.submitArtifactEnvelope(context, validEnvelope("a"), undefined, "a");
+    channel.submitArtifactEnvelope(context, {}, undefined, "invalid");
+    channel.submitArtifactEnvelope(context, validEnvelope("c"), undefined, "c");
+    const reopened = createRuntimeActionChannel({ candidateDir });
+    expect(reopened.submitArtifactEnvelope(context, validEnvelope("a"), undefined, "a")).toEqual(first);
+    expect(reopened.submitArtifactEnvelope(context, validEnvelope("changed"), undefined, "a")).toMatchObject({ ok: false, code: "submission_conflict" });
+    expect(reopened.selectRunSubmission(context).envelope?.artifactSubtype).toBe("c");
+  });
+  it("revokes only the named old run without closing its successor", () => {
+    const channel = createRuntimeActionChannel();
+    channel.beginRun(context);
+    channel.beginRun({ ...context, runId: "successor" });
+    channel.revokeRun(context);
+    channel.beginRun(context); // A delayed duplicate dispatch cannot revoke the successor.
+    expect(channel.submitArtifactEnvelope(context, validEnvelope("old"))).toMatchObject({ ok: false, code: "run_closed" });
+    expect(channel.submitArtifactEnvelope({ ...context, runId: "successor" }, validEnvelope("new"))).toMatchObject({ ok: true });
+  });
+  it("retains superseded evidence but rejects late submissions", () => {
+    const candidateDir = tempCandidateDir();
+    const channel = createRuntimeActionChannel({ candidateDir });
+    channel.submitArtifactEnvelope(context, validEnvelope("old"));
+    channel.discardTask(context);
+    const reopened = createRuntimeActionChannel({ candidateDir });
+    expect(reopened.submitArtifactEnvelope(context, validEnvelope("late"))).toMatchObject({ ok: false, code: "run_closed" });
+    expect(reopened.selectRunSubmission(context).envelope).toBeNull();
+    expect(reopened.auditRunSubmissions(context)).toHaveLength(1);
+  });
+});

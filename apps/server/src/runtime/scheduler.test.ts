@@ -611,6 +611,9 @@ describe("runSchedulerOnce", () => {
       const run = client
         .prepare("SELECT status FROM agent_runs WHERE task_id = ?")
         .get("task_1") as { status: string };
+      const candidateRun = client.prepare("SELECT id FROM agent_runs WHERE task_id = ?").get("task_1") as { id: string };
+      const reopenedCandidates = createProjectRuntimeActionChannel(projectRoot);
+      expect(reopenedCandidates.selectRunSubmission({ companyId: "company_1", taskId: "task_1", runId: candidateRun.id }).envelope).not.toBeNull();
       // Nothing was settled: the run is exactly where it was before the settlement began…
       expect(run.status).toBe("running");
       expect(repositories.getTask("task_1")?.status).toBe("running");
@@ -1276,7 +1279,7 @@ describe("runSchedulerOnce", () => {
     client.close();
   });
 
-  it("does not dispatch to an adapter whose launch support is unavailable, and falls back to one that can launch", async () => {
+  it("keeps the assigned executor when it is unavailable instead of substituting a capability match", async () => {
     const { projectRoot, repositories, client } = createSchedulerFixture([
       createTaskRecord("task_1", "queued", "low"),
     ]);
@@ -1327,11 +1330,17 @@ describe("runSchedulerOnce", () => {
     expect(warnings).toHaveLength(1);
     expect(warnings[0]?.message).toContain("Old Worker does not support --tools.");
 
-    // A launchable capability match takes the task instead of the unavailable assignee.
+    // A capability match must never replace the CEO-assigned executor.
     const result = await runSchedulerOnce({ ...input, adapters: [unavailable, fallback] });
 
-    expect(result.started).toEqual(["task_1"]);
-    expect(runs).toEqual(["execution_brief", "work"]);
+    expect(result.started).toEqual([]);
+    expect(runs).toEqual([]);
+    expect(repositories.getTask("task_1")?.assigneeAgentId).toBe("mock-worker");
+    const missing = await runSchedulerOnce({ ...input, adapters: [fallback] });
+    expect(missing.started).toEqual([]);
+    expect(runs).toEqual([]);
+    await expect(runSchedulerOnce({ ...input, adapters: [fallback], executionBackend: "mah" })).rejects.toMatchObject({ code: "mah_protocol_unavailable" });
+    expect(repositories.listTaskLocks()).toEqual([]);
 
     client.close();
   });

@@ -6,7 +6,7 @@ import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
-import { refreshTaskDependencyState } from "./taskRefresh";
+import { refreshTaskDependencyState, recoverProofIfPossible } from "./taskRefresh";
 import { recoverTask } from "./taskRecovery";
 import { applyTaskTransition } from "./taskTransition";
 import { createRuntimeActionChannel, type RuntimeActionChannel } from "./runtimeActionChannel";
@@ -113,6 +113,44 @@ describe("refreshTaskDependencyState proof recovery", () => {
 
   // Recovered proof gets the scheduler's delivery policy, so an eligible ordinary deliverable is accepted
   // automatically rather than always sent to CEO review (see deliveryFinalization).
+  it("does not settle a recovered candidate after the task ownership epoch changes", () => {
+    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-recovery-stale-"));
+    createdDirs.push(workspacePath);
+    writeFileSync(join(workspacePath, "output.patch"), "diff --git a/a.ts b/a.ts\n");
+    leaveValidDelivery();
+    const fixture = createFixture([{ ...createTaskRecord(), workspacePath, status: "failed", latestFailureReason: "no_proof" }]);
+    const channel = { ...runtimeActionChannel, selectRunSubmission: (context: Parameters<typeof runtimeActionChannel.selectRunSubmission>[0]) => {
+      const selected = runtimeActionChannel.selectRunSubmission(context);
+      fixture.repositories.nextExecutionEpoch("task_1");
+      return selected;
+    } };
+    const result = recoverProofIfPossible({ runtimeActionChannel: channel, repositories: fixture.repositories, taskId: "task_1", proofSchemas: [{ id: "repo-diff", description: "diff", acceptedTypes: ["diff"] }] }, fixture.repositories.getTask("task_1")!);
+    expect(result).toEqual({ kind: "not_applicable" });
+    expect(fixture.repositories.listBusinessArtifactsForTask("task_1")).toEqual([]);
+  });
+
+  it("rolls recovery back without losing the candidate, then records a durable disposition", () => {
+    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-recovery-rollback-"));
+    createdDirs.push(workspacePath);
+    const candidateDir = join(workspacePath, "candidates");
+    runtimeActionChannel = createRuntimeActionChannel({ candidateDir });
+    writeFileSync(join(workspacePath, "output.patch"), "diff --git a/a.ts b/a.ts\n");
+    leaveValidDelivery();
+    const fixture = createFixture([{ ...createTaskRecord(), workspacePath, status: "failed", latestFailureReason: "no_proof" }]);
+    const input = { runtimeActionChannel, repositories: fixture.repositories, taskId: "task_1", proofSchemas: [{ id: "repo-diff", description: "diff", acceptedTypes: ["diff" as const] }] };
+    expect(() => refreshTaskDependencyState({ ...input, repositories: { ...fixture.repositories, createBusinessArtifact: () => { throw new Error("business fault"); } } })).toThrow("business fault");
+    expect(fixture.repositories.listProofsForTask("task_1")).toHaveLength(0);
+    expect(fixture.repositories.hasRuntimeCandidateDisposition("company_1", "task_1", "run_unfinished")).toBe(false);
+    const staleTask = fixture.repositories.getTask("task_1")!;
+    const reopened = createRuntimeActionChannel({ candidateDir });
+    expect(reopened.latestTaskSubmission({ companyId: "company_1", taskId: "task_1" }).envelope).not.toBeNull();
+    refreshTaskDependencyState({ ...input, runtimeActionChannel: reopened });
+    expect(fixture.repositories.hasRuntimeCandidateDisposition("company_1", "task_1", "run_unfinished")).toBe(true);
+    expect(recoverProofIfPossible({ ...input, runtimeActionChannel: reopened }, staleTask)).toEqual({ kind: "not_applicable" });
+    expect(fixture.repositories.listBusinessArtifactsForTask("task_1")).toHaveLength(1);
+    expect(reopened.auditRunSubmissions({ companyId: "company_1", taskId: "task_1", runId: "run_unfinished" })).toHaveLength(1);
+  });
+
   it("recovers controlled repo-diff output from failed no-proof tasks and finalizes it like a finished run", () => {
     const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
     createdDirs.push(workspacePath);

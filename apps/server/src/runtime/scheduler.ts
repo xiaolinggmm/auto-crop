@@ -1,3 +1,4 @@
+import { assertExecutionBackendAvailable, executorRefusalMarker, type ExecutionBackend } from "./executionBackend";
 import { parkExhaustedTask } from "./budgetAuthorization";
 import { isBudgetExhaustion, resolveBudgetSnapshot, systemExecutionClock, type BudgetPolicy, type ExecutionClock } from "./budgetPolicy";
 import { BudgetInterrupted, RunBudget } from "./runBudget";
@@ -92,6 +93,7 @@ export type SchedulerEvent = {
 
 export type RunSchedulerOnceInput = {
   projectRoot: string;
+  executionBackend?: ExecutionBackend;
   /** Internal opt-in; production defaults to observe until P4.2/P4.3 are complete. */
   executionBudget?: Partial<BudgetPolicy>;
   executionClock?: ExecutionClock;
@@ -150,6 +152,7 @@ export type RunSchedulerOnceResult = {
 };
 
 export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<RunSchedulerOnceResult> {
+  assertExecutionBackendAvailable(input.executionBackend);
   const now = input.now ?? (() => new Date());
   const createId = input.createId ?? defaultCreateId;
   const registry = input.executionRegistry ?? defaultExecutionRegistry;
@@ -267,6 +270,10 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
         let observer: RunObserver | null = null;
         let budget: RunBudget | null = null;
         function settleRun(...args: Parameters<typeof settleObservedRun>): boolean {
+          // Close candidate admission before entering the business transaction, including failed runs.
+          const candidateContext = { companyId: task.companyId, taskId: task.id, runId: args[1] };
+          if (args[2].status === "cancelled") runtimeActionChannel.revokeRun(candidateContext);
+          else runtimeActionChannel.selectRunSubmission(candidateContext);
           if (budget && args[2].status === "complete") budget.ensure();
           if (budget) args[2] = { ...args[2], budgetCheck: () => budget!.settlementUsage(args[2].status === "complete") };
           const lengths = { completed: result.completed.length, failed: result.failed.length, blocked: result.blocked.length };
@@ -511,7 +518,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
             if (budgetSnapshot) result.started.push(task.id);
             // This run supersedes whatever an earlier run of the task left as a candidate: recovery
             // must never recapture a delivery from a run that is not the task's latest.
-            runtimeActionChannel.discardTask({ companyId: task.companyId, taskId: task.id });
+            runtimeActionChannel.beginRun({ companyId: task.companyId, taskId: task.id, runId: agentRunId });
             heldForRunId = agentRunId;
             ownerEpoch = claimed;
             heldWorkspacePath = runWorkspacePath;
@@ -808,7 +815,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
             }
           }
           const submission = agentResult.status === "complete"
-            ? runtimeActionChannel.consumeRunSubmission({
+            ? runtimeActionChannel.selectRunSubmission({
                 companyId: task.companyId,
                 taskId: task.id,
                 runId: agentRunId,
@@ -887,6 +894,9 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
               settled.repositories.appendProof(item);
             }
             persistArtifact(settled, businessArtifact);
+            if (agentResult.status === "complete") {
+              settled.repositories.recordRuntimeCandidateDisposition(task.companyId, task.id, agentRunId);
+            }
           };
           /**
            * Publish the handoff package the next task reads as this task's output.
@@ -2375,21 +2385,9 @@ function emitTaskEvent(input: RunSchedulerOnceInput, record: TaskEvent): void {
   });
 }
 
-/** Adapters that may run `task`, most preferred first: its assignee, then capability matches. */
+/** Assignment is a CEO decision. Execution never substitutes a capability match. */
 function adapterCandidates(adapters: AgentAdapter[], task: Task): AgentAdapter[] {
-  const byAssignee = adapters.filter((adapter) => adapter.id === task.assigneeAgentId);
-  const byCapability = adapters.filter(
-    (adapter) =>
-      adapter.id !== task.assigneeAgentId &&
-      task.requiredCapabilities.every((capability) => adapter.capabilities.includes(capability)),
-  );
-  const candidates = [...byAssignee, ...byCapability];
-
-  if (candidates.length === 0) {
-    throw new Error(`No adapter available for task ${task.id}`);
-  }
-
-  return candidates;
+  return adapters.filter((adapter) => adapter.id === task.assigneeAgentId);
 }
 
 /**
@@ -2401,8 +2399,10 @@ function appendLaunchUnavailableWarningOnce(
   task: Task,
   unavailable: AdapterLaunchSupport[],
 ): void {
-  const reasons = unavailable.flatMap((support) => support.warnings).join(" ");
-  const message = `Task warning: ${task.title} / not dispatched: no agent adapter can launch it / ${reasons}`;
+  const reasons = unavailable.flatMap((support) => support.warnings).join(" ")
+    || `Assigned executor ${task.assigneeAgentId} is not configured.`;
+  const marker = executorRefusalMarker(task.assigneeAgentId, input.repositories.getTaskExecutionEpoch(task.id));
+  const message = `Task warning: ${task.title} / not dispatched: ${marker} / ${reasons}`;
   const latest = input.repositories
     .listTaskEventsForCompany(task.companyId)
     .filter((event) => event.taskId === task.id)
