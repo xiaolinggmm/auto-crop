@@ -6,7 +6,7 @@ import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
-import { refreshTaskDependencyState } from "./taskRefresh";
+import { refreshTaskDependencyState, recoverProofIfPossible } from "./taskRefresh";
 import { recoverTask } from "./taskRecovery";
 import { applyTaskTransition } from "./taskTransition";
 import { createRuntimeActionChannel, type RuntimeActionChannel } from "./runtimeActionChannel";
@@ -26,6 +26,29 @@ beforeEach(() => {
 });
 
 describe("refreshTaskDependencyState proof recovery", () => {
+  it.each(["valid", "missing", "stale"])("recovers only current MAH snapshot evidence: %s", (scenario) => {
+    const snapshot = mkdtempSync(join(tmpdir(), "mah-recovery-")); createdDirs.push(snapshot);
+    writeFileSync(join(snapshot, "actual-checks.txt"), "3 tests passed");
+    const task = { ...createTaskRecord(), proofSchemaId: "test-output", status: "failed" as const, latestFailureReason: "no_proof" as const };
+    const { repositories, client } = createFixture([task]);
+    repositories.createAgentRun({ id: "run_unfinished", taskId: task.id, agentId: "mah", status: "failed", logPath: "status.log", startedAt: "2026-10-22", finishedAt: "2026-10-22" });
+    repositories.mahExecutions.save({ runId: "run_unfinished", taskId: task.id, companyId: task.companyId, mahTaskId: "uuid", projectRoot: snapshot, requestDigest: "digest", state: "completed", createdAt: "now", detail: "", ownerEpoch: scenario === "stale" ? 1 : 0, deliveryWorkspacePath: snapshot });
+    leaveDelivery({ artifact_kind: "deliverable", artifact_role: "report", artifact_subtype: "tests", task_type: "test", payload: { outcome_summary: "Tests passed", execution_report: { conclusion: "Pass", vision_impact: "Verified", remaining_gap: "None", recommendation: "Review" } }, lineage: {}, proof_refs: [{ type: "command_output", uri: scenario === "missing" ? "missing.txt" : "actual-checks.txt" }] });
+    const result = recoverProofIfPossible({ repositories, taskId: task.id, runtimeActionChannel, proofSchemas: [{ id: "test-output", description: "test output", acceptedTypes: ["command_output"] }] }, task);
+    if (scenario !== "valid") {
+      expect(result.kind).toBe(scenario === "missing" ? "still_unreviewable" : "not_applicable");
+      expect(repositories.listProofsForTask(task.id)).toEqual([]);
+      expect(repositories.mahExecutions.blocksDispatch(task.id)).toBe(true);
+      client.close();
+      return;
+    }
+    expect(result.kind).toBe("recovered");
+    expect(repositories.listProofsForTask(task.id)[0]?.uri).toBe(join(snapshot, "actual-checks.txt"));
+    expect(repositories.getTask(task.id)?.workspacePath).toBe(snapshot);
+    expect(repositories.mahExecutions.blocksDispatch(task.id)).toBe(false);
+    client.close();
+  });
+
   it("keeps a parent task blocked when manual refresh sees a blocked department subtask before review subtasks", () => {
     const parent = {
       ...createTaskRecord(),
@@ -113,6 +136,44 @@ describe("refreshTaskDependencyState proof recovery", () => {
 
   // Recovered proof gets the scheduler's delivery policy, so an eligible ordinary deliverable is accepted
   // automatically rather than always sent to CEO review (see deliveryFinalization).
+  it("does not settle a recovered candidate after the task ownership epoch changes", () => {
+    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-recovery-stale-"));
+    createdDirs.push(workspacePath);
+    writeFileSync(join(workspacePath, "output.patch"), "diff --git a/a.ts b/a.ts\n");
+    leaveValidDelivery();
+    const fixture = createFixture([{ ...createTaskRecord(), workspacePath, status: "failed", latestFailureReason: "no_proof" }]);
+    const channel = { ...runtimeActionChannel, selectRunSubmission: (context: Parameters<typeof runtimeActionChannel.selectRunSubmission>[0]) => {
+      const selected = runtimeActionChannel.selectRunSubmission(context);
+      fixture.repositories.nextExecutionEpoch("task_1");
+      return selected;
+    } };
+    const result = recoverProofIfPossible({ runtimeActionChannel: channel, repositories: fixture.repositories, taskId: "task_1", proofSchemas: [{ id: "repo-diff", description: "diff", acceptedTypes: ["diff"] }] }, fixture.repositories.getTask("task_1")!);
+    expect(result).toEqual({ kind: "not_applicable" });
+    expect(fixture.repositories.listBusinessArtifactsForTask("task_1")).toEqual([]);
+  });
+
+  it("rolls recovery back without losing the candidate, then records a durable disposition", () => {
+    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-recovery-rollback-"));
+    createdDirs.push(workspacePath);
+    const candidateDir = join(workspacePath, "candidates");
+    runtimeActionChannel = createRuntimeActionChannel({ candidateDir });
+    writeFileSync(join(workspacePath, "output.patch"), "diff --git a/a.ts b/a.ts\n");
+    leaveValidDelivery();
+    const fixture = createFixture([{ ...createTaskRecord(), workspacePath, status: "failed", latestFailureReason: "no_proof" }]);
+    const input = { runtimeActionChannel, repositories: fixture.repositories, taskId: "task_1", proofSchemas: [{ id: "repo-diff", description: "diff", acceptedTypes: ["diff" as const] }] };
+    expect(() => refreshTaskDependencyState({ ...input, repositories: { ...fixture.repositories, createBusinessArtifact: () => { throw new Error("business fault"); } } })).toThrow("business fault");
+    expect(fixture.repositories.listProofsForTask("task_1")).toHaveLength(0);
+    expect(fixture.repositories.hasRuntimeCandidateDisposition("company_1", "task_1", "run_unfinished")).toBe(false);
+    const staleTask = fixture.repositories.getTask("task_1")!;
+    const reopened = createRuntimeActionChannel({ candidateDir });
+    expect(reopened.latestTaskSubmission({ companyId: "company_1", taskId: "task_1" }).envelope).not.toBeNull();
+    refreshTaskDependencyState({ ...input, runtimeActionChannel: reopened });
+    expect(fixture.repositories.hasRuntimeCandidateDisposition("company_1", "task_1", "run_unfinished")).toBe(true);
+    expect(recoverProofIfPossible({ ...input, runtimeActionChannel: reopened }, staleTask)).toEqual({ kind: "not_applicable" });
+    expect(fixture.repositories.listBusinessArtifactsForTask("task_1")).toHaveLength(1);
+    expect(reopened.auditRunSubmissions({ companyId: "company_1", taskId: "task_1", runId: "run_unfinished" })).toHaveLength(1);
+  });
+
   it("recovers controlled repo-diff output from failed no-proof tasks and finalizes it like a finished run", () => {
     const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
     createdDirs.push(workspacePath);

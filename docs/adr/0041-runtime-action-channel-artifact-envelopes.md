@@ -1,6 +1,8 @@
 # Runtime Action Channel Submits Artifact Envelopes
 
-Status: proposed
+Status: accepted for direct adapters. [ADR 0050](0050-mah-cli-delegation-and-file-delivery.md) adds validated MAH file delivery as an alternative ingress to the same Candidate and settlement model.
+
+Amendment: [ADR 0049](0049-mah-direct-tasks-bind-executor-and-runtime-action.md) supersedes the candidate deletion and consumption rules below. New dispatch invalidates prior-run eligibility without deleting audit evidence; candidates remain replayable through committed settlement and receipt acknowledgement.
 
 Auto-Crop will introduce a **Runtime Action Channel** for task delivery: an Agent Run submits an **Artifact Envelope** through a controlled runtime action, and the runtime validates and settles it into Proof, Business Artifacts, task outcome, Holds, and completion events. The channel is scoped to task-delivery facts in this decision; a future daemon or paired computer may use the same idea as a broader agent action surface, but daemon, pairing, wake streams, online/offline projection, and same-turn steering are not part of this slice.
 

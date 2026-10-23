@@ -1,3 +1,5 @@
+import { cancelMahExecution, receiveMahExecution, reconcileMahExecution, type MahCommand } from "../adapters/mahCli";
+import { requestCeoReassignment, withdrawCeoReassignment } from "../runtime/reassignment";
 import { executionOverview } from "../runtime/executionOverview";
 import { requestBudgetStop } from "../runtime/budgetStop";
 import { defaultExecutionRegistry } from "../runtime/executionControl";
@@ -72,6 +74,7 @@ import {
 import { createProjectRuntimeActionChannel } from "../runtime/runtimeActionChannel";
 
 export type ApiServerOptions = {
+  mahCommand?: MahCommand;
   projectRoot: string;
   repositories: ReturnType<typeof createRepositories>;
   agents: AgentAdapter[];
@@ -87,7 +90,8 @@ export type SchedulerWakeReason =
   | "budget_authorized"
   | "company_created"
   | "company_resumed"
-  | "ceo_intake_received";
+  | "ceo_intake_received"
+  | "ceo_reassigned";
 const creationAttemptTimeoutMs = 10 * 60 * 1000;
 const creationAttemptGraceMs = 30 * 1000;
 
@@ -949,6 +953,59 @@ async function routeRequest(
       recovery: result.recovery,
       parentAggregation: parentAggregation ? summarizeParentAggregation(parentAggregation, options.repositories) : undefined,
     });
+    return;
+  }
+
+  const mahMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/mah-executions(?:\/([^/]+)\/(reconcile|cancel|receive))?$/);
+  if (mahMatch && (method === "GET" || method === "POST")) {
+    const task = options.repositories.getTask(mahMatch[1]);
+    if (!task) { sendJson(response, 404, { error: "Task not found" }); return; }
+    if (method === "GET" && !mahMatch[2]) {
+      sendJson(response, 200, { executions: options.repositories.mahExecutions.list(task.id) }); return;
+    }
+    const record = mahMatch[2] ? options.repositories.mahExecutions.get(decodeURIComponent(mahMatch[2])) : null;
+    if (method !== "POST" || !record || record.taskId !== task.id) { sendJson(response, 404, { error: "MAH execution not found" }); return; }
+    try {
+      const integration = { repositories: options.repositories, projectRoot: options.projectRoot, command: options.mahCommand };
+      const execution = mahMatch[3] === "cancel" ? await cancelMahExecution(integration, record.runId) : mahMatch[3] === "receive" ? await receiveMahExecution(integration, record.runId) : await reconcileMahExecution(integration, record.runId);
+      sendJson(response, 200, { execution });
+    } catch (error) { sendJson(response, 409, { error: String(error) }); }
+    return;
+  }
+
+  const withdrawReassignmentMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/reassignment-decisions\/([^/]+)$/);
+  if (method === "DELETE" && withdrawReassignmentMatch) {
+    try {
+      const decision = withdrawCeoReassignment(options.repositories, withdrawReassignmentMatch[1], decodeURIComponent(withdrawReassignmentMatch[2]));
+      sendJson(response, 200, { decision });
+    } catch (error) { sendJson(response, 404, { error: error instanceof Error ? error.message : String(error) }); }
+    return;
+  }
+
+  const reassignmentMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/reassignment-decisions$/);
+  if (reassignmentMatch && (method === "GET" || method === "POST")) {
+    const task = options.repositories.getTask(reassignmentMatch[1]);
+    if (!task) { sendJson(response, 404, { error: "Task not found" }); return; }
+    if (method === "GET") {
+      sendJson(response, 200, { decisions: options.repositories.reassignments.list(task.id) });
+      return;
+    }
+    const body = await readJson<Record<string, unknown>>(request);
+    if (!body || typeof body !== "object" || Array.isArray(body)
+        || Object.keys(body).some(key => !["requestId", "note"].includes(key))
+        || typeof body.requestId !== "string" || !body.requestId.trim() || body.requestId.length > 160
+        || (body.note !== undefined && (typeof body.note !== "string" || body.note.length > 4000))) {
+      sendJson(response, 400, { error: "Provide requestId and optional note only; the CEO alone selects the executor." });
+      return;
+    }
+    try {
+      const decision = await requestCeoReassignment({ repositories: options.repositories, projectRoot: options.projectRoot,
+        taskId: task.id, requestId: body.requestId, note: body.note as string | undefined, agents: options.agents, now: options.now });
+      if (decision.status === "applied") options.requestSchedulerWake?.("ceo_reassigned");
+      sendJson(response, decision.status === "pending" ? 202 : 200, { decision });
+    } catch (error) {
+      sendJson(response, 409, { error: error instanceof Error ? error.message : String(error) });
+    }
     return;
   }
 

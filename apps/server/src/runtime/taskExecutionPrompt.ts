@@ -6,6 +6,7 @@ import { buildProofContractInstructions } from "./proofContract";
 import { renderSettledFacts, type SettledFact } from "./settledFacts";
 
 export type BuildTaskExecutionPromptInput = {
+  deliverySurface?: "action" | "file";
   company: Company;
   task: Task;
   handoffs: TaskHandoff[];
@@ -115,6 +116,7 @@ function proofRefInstructions(acceptedProofTypes: ProofType[] | undefined, proof
 
 function buildCapabilityGrantInstructions(
   grant: AgentCapabilityGrant | undefined,
+  delegated = false,
 ): string[] {
   if (!grant) {
     return [];
@@ -123,7 +125,7 @@ function buildCapabilityGrantInstructions(
   return [
     "## Granted Capabilities",
     "",
-    "This run holds exactly these capabilities, and nothing else:",
+    delegated ? "Auto-Crop authorizes the following task activities. MAH owns provider permission enforcement; these are task constraints, not a claim of CLI tool isolation:" : "This run holds exactly these capabilities, and nothing else:",
     ...grant.granted.map((capability) => `- ${describeRuntimeCapability(capability)}`),
     ...(grant.withheld.length > 0
       ? [
@@ -229,9 +231,9 @@ export function buildTaskExecutionPrompt(input: BuildTaskExecutionPromptInput): 
   const artifactInstructions = [
     "## Business Artifact",
     "",
-    "Submit exactly one task delivery by calling `submit_artifact_envelope` before finishing.",
-    "The tool accepts only the Artifact Envelope payload; do not include task id, company id, run id, runtime URLs, database access, or filesystem authority.",
-    "If the tool returns errors, correct the envelope and call it again; the last accepted call is your delivery.",
+    input.deliverySurface === "file" ? "Submit exactly one file delivery using the MAH Task artifact protocol specified below; do not call submit_artifact_envelope." : "Submit exactly one task delivery by calling `submit_artifact_envelope` before finishing.",
+    input.deliverySurface === "file" ? "The Artifact Envelope does not supply trusted task identity; use only the enclosing delivery context supplied by the runtime." : "The tool accepts only the Artifact Envelope payload; do not include task id, company id, run id, runtime URLs, database access, or filesystem authority.",
+    input.deliverySurface === "file" ? "Validate JSON with a serializer and the provided schema before publishing. Preserve results; do not rerun substantive work to repair syntax." : "If the tool returns errors, correct the envelope and call it again; the last accepted call is your delivery.",
     "Use this envelope shape:",
     JSON.stringify(
       {
@@ -314,7 +316,7 @@ export function buildTaskExecutionPrompt(input: BuildTaskExecutionPromptInput): 
     "A choice on one of these kinds is the founder's to make, not yours.",
   ];
   const proofInstructions = buildProofContractInstructions(task);
-  const grantInstructions = buildCapabilityGrantInstructions(grant);
+  const grantInstructions = buildCapabilityGrantInstructions(grant, input.deliverySurface === "file");
   const verificationInstructions = buildVerificationInstructions(input.verification, languageName);
   const settledFacts = renderSettledFacts(input.settledFacts ?? []);
   const basePrompt = [

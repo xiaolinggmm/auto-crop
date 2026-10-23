@@ -59,7 +59,7 @@ export async function resolveLaunchableAdapter(candidates: AgentAdapter[]): Prom
     const contractCapabilities = adapter.resolveContractCapabilities
       ? await adapter.resolveContractCapabilities()
       : adapter.contractCapabilities ?? [];
-    if (!contractCapabilities.includes("artifact_envelope")) {
+    if (!contractCapabilities.includes("artifact_envelope") && !contractCapabilities.includes("file_delivery")) {
       unavailable.push(unavailableLaunchSupport(
         adapter.id,
         `${adapter.name} cannot submit an Artifact Envelope; it is unavailable for task runs.`,

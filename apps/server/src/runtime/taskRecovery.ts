@@ -321,6 +321,10 @@ export function recoverTask(input: RecoverTaskInput): RecoverTaskResult {
     };
   }
 
+  if (input.repositories.mahExecutions.blocksDispatch(currentTask.id)) {
+    throw new Error("MAH execution or file delivery is unresolved. Reconcile/receive the existing UUID; do not rerun the task.");
+  }
+
   if (!isTaskRecoveryEligible(currentTask)) {
     throw new Error(`Task ${currentTask.id} cannot be recovered from status ${currentTask.status}.`);
   }
