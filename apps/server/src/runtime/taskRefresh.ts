@@ -19,6 +19,9 @@ import { refreshDependencyTasks } from "./dependencyCascade";
 import { refreshParentTaskAggregationTask } from "./parentTaskAggregation";
 import { applyTaskTransition } from "./taskTransition";
 import { captureProofs } from "./proof";
+import { dirname } from "node:path";
+import { collectMahFileDelivery } from "./mahFileDelivery";
+import { proofRefsToProof } from "./proofReferences";
 import type { RuntimeActionChannel } from "./runtimeActionChannel";
 
 export type RefreshTaskDependencyStateInput = {
@@ -141,13 +144,6 @@ export function recoverProofIfPossible(
     return { kind: "not_found" };
   }
 
-  const recovered = recoverProofFromKnownWorkspaces(input, task, proofSchema);
-
-  if (!recovered) {
-    return { kind: "not_found" };
-  }
-
-  const { proof, workspacePath } = recovered;
   const taskContext = { companyId: task.companyId, taskId: task.id };
   const candidateContext = input.runtimeActionChannel.latestTaskRunContext(taskContext);
   if (candidateContext && input.repositories.hasRuntimeCandidateDisposition(task.companyId, task.id, candidateContext.runId)) {
@@ -156,6 +152,34 @@ export function recoverProofIfPossible(
   const submission = candidateContext
     ? input.runtimeActionChannel.selectRunSubmission(candidateContext)
     : { envelope: null, rejection: null };
+  const latestRunId = input.repositories.reassignments.latestRunId(task.id);
+  const mah = latestRunId ? input.repositories.mahExecutions.get(latestRunId) : null;
+  let recovered: { proof: Proof[]; workspacePath: string } | null;
+  if (mah) {
+    if (mah.state !== "completed" || !mah.deliveryWorkspacePath || candidateContext?.runId !== mah.runId || mah.ownerEpoch !== expectedEpoch) {
+      return { kind: "not_applicable" };
+    }
+    try {
+      if (mah.deliveryManifestSha256) {
+        const snapshot = collectMahFileDelivery({
+          deliveryRoot: mah.deliveryWorkspacePath,
+          archiveRoot: dirname(dirname(mah.deliveryWorkspacePath)),
+          expected: { companyId: mah.companyId, taskId: mah.taskId, runId: mah.runId, mahTaskId: mah.mahTaskId },
+          contract: { locale: input.repositories.getCompany(task.companyId)?.locale ?? "en", requireDetails: mah.context?.requireExecutionDetails ?? true, proofRefs: { proofSchemaId: proofSchema.id, acceptedTypes: proofSchema.acceptedTypes } },
+        });
+        if (snapshot.manifestSha256 !== mah.deliveryManifestSha256) throw new Error("MAH snapshot manifest integrity mismatch");
+      }
+      const refs = proofRefsToProof({ refs: submission.envelope?.proofRefs ?? [], task: { ...task, workspacePath: mah.deliveryWorkspacePath }, proofSchema, commandOutputFromFile: true, logPath: "", createId: input.createId ?? defaultCreateId });
+      if (refs.errors.length) return { kind: "still_unreviewable", validationErrors: refs.errors };
+      recovered = submission.envelope ? { proof: refs.proofs, workspacePath: mah.deliveryWorkspacePath } : null;
+    } catch (error) {
+      return { kind: "still_unreviewable", validationErrors: [String(error)] };
+    }
+  } else {
+    recovered = recoverProofFromKnownWorkspaces(input, task, proofSchema);
+  }
+  if (!recovered) return { kind: "not_found" };
+  const { proof, workspacePath } = recovered;
   const businessArtifact = captureBusinessArtifact({
     envelope: submission.envelope,
     rejectedSubmission: submission.rejection,
@@ -180,6 +204,7 @@ export function recoverProofIfPossible(
   // A recaptured Unblock Request is not "still unreviewable": it is the task asking for input, and
   // parking it on that request is real progress out of the invalid-delivery Hold (ADR 0042).
   const unblockRequest = unblockRequestOf(businessArtifact);
+  if (mah && proof.length === 0 && !unblockRequest) return { kind: "not_found" };
   if (unreviewable && !unblockRequest && input.repositories.listOpenTaskHolds(task.id).some((hold) => hold.kind === "invalid_business_artifact")) {
     return { kind: "still_unreviewable", validationErrors: businessArtifact.validationErrors };
   }
@@ -195,6 +220,7 @@ export function recoverProofIfPossible(
         return { kind: "not_applicable" as const };
       }
     }
+    if (mah) input.repositories.updateTaskWorkspacePath(task.id, workspacePath);
     for (const item of proof) {
       input.repositories.appendProof(item);
     }
@@ -404,7 +430,10 @@ function listProofRecoveryWorkspacePaths(
   repositories: ReturnType<typeof createRepositories>,
   task: Task,
 ): string[] {
+  const latestRunId = repositories.reassignments.latestRunId(task.id);
+  const mahSnapshot = latestRunId ? repositories.mahExecutions.get(latestRunId)?.deliveryWorkspacePath : undefined;
   const candidates = [
+    mahSnapshot,
     task.workspacePath,
     task.artifactWorkspacePath,
     ...repositories

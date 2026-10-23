@@ -2,6 +2,14 @@ import type { DatabaseClient } from "./client";
 
 export function migrate(database: DatabaseClient): void {
   database.exec(`
+    CREATE TABLE IF NOT EXISTS mah_executions (
+      run_id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      record TEXT NOT NULL,
+      state TEXT NOT NULL
+    );
+    DROP INDEX IF EXISTS mah_one_unresolved_task;
+    CREATE INDEX IF NOT EXISTS mah_executions_task ON mah_executions(task_id);
     CREATE TABLE IF NOT EXISTS reassignment_run_lineage (
       run_id TEXT PRIMARY KEY REFERENCES agent_runs(id) ON DELETE CASCADE,
       task_id TEXT NOT NULL,

@@ -7,7 +7,8 @@ export type AgentCapability = string;
 export type AdapterContractCapability =
   | "structured_execution_brief"
   | "restricted_launch_isolation"
-  | "artifact_envelope";
+  | "artifact_envelope"
+  | "file_delivery";
 
 export type AgentRunRequest = {
   taskId: string;
@@ -15,6 +16,8 @@ export type AgentRunRequest = {
   promptPath: string;
   workspacePath: string;
   metadata: Record<string, string>;
+  /** Runtime-selected immutable inputs for delegated execution. */
+  inputDirectories?: Array<{path: string; mountPath: string}>;
   timeoutMs?: number;
   /**
    * What this run is permitted to do. Resolved once by the runtime (ADR 0021); an adapter translates
@@ -84,6 +87,8 @@ export type RunObservationSink = {
 };
 
 export type AgentRunResult = {
+  /** Runtime-owned immutable delivery snapshot; never an executor-supplied path. */
+  deliveryWorkspacePath?: string;
   status: "complete" | "failed";
   exitCode: number | null;
   stdout: string;

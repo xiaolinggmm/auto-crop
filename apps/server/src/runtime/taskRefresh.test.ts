@@ -26,6 +26,29 @@ beforeEach(() => {
 });
 
 describe("refreshTaskDependencyState proof recovery", () => {
+  it.each(["valid", "missing", "stale"])("recovers only current MAH snapshot evidence: %s", (scenario) => {
+    const snapshot = mkdtempSync(join(tmpdir(), "mah-recovery-")); createdDirs.push(snapshot);
+    writeFileSync(join(snapshot, "actual-checks.txt"), "3 tests passed");
+    const task = { ...createTaskRecord(), proofSchemaId: "test-output", status: "failed" as const, latestFailureReason: "no_proof" as const };
+    const { repositories, client } = createFixture([task]);
+    repositories.createAgentRun({ id: "run_unfinished", taskId: task.id, agentId: "mah", status: "failed", logPath: "status.log", startedAt: "2026-10-22", finishedAt: "2026-10-22" });
+    repositories.mahExecutions.save({ runId: "run_unfinished", taskId: task.id, companyId: task.companyId, mahTaskId: "uuid", projectRoot: snapshot, requestDigest: "digest", state: "completed", createdAt: "now", detail: "", ownerEpoch: scenario === "stale" ? 1 : 0, deliveryWorkspacePath: snapshot });
+    leaveDelivery({ artifact_kind: "deliverable", artifact_role: "report", artifact_subtype: "tests", task_type: "test", payload: { outcome_summary: "Tests passed", execution_report: { conclusion: "Pass", vision_impact: "Verified", remaining_gap: "None", recommendation: "Review" } }, lineage: {}, proof_refs: [{ type: "command_output", uri: scenario === "missing" ? "missing.txt" : "actual-checks.txt" }] });
+    const result = recoverProofIfPossible({ repositories, taskId: task.id, runtimeActionChannel, proofSchemas: [{ id: "test-output", description: "test output", acceptedTypes: ["command_output"] }] }, task);
+    if (scenario !== "valid") {
+      expect(result.kind).toBe(scenario === "missing" ? "still_unreviewable" : "not_applicable");
+      expect(repositories.listProofsForTask(task.id)).toEqual([]);
+      expect(repositories.mahExecutions.blocksDispatch(task.id)).toBe(true);
+      client.close();
+      return;
+    }
+    expect(result.kind).toBe("recovered");
+    expect(repositories.listProofsForTask(task.id)[0]?.uri).toBe(join(snapshot, "actual-checks.txt"));
+    expect(repositories.getTask(task.id)?.workspacePath).toBe(snapshot);
+    expect(repositories.mahExecutions.blocksDispatch(task.id)).toBe(false);
+    client.close();
+  });
+
   it("keeps a parent task blocked when manual refresh sees a blocked department subtask before review subtasks", () => {
     const parent = {
       ...createTaskRecord(),

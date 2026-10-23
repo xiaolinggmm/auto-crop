@@ -22,6 +22,8 @@ export type RuntimeActionChannel = {
   revokeRun(context: RuntimeActionRunContext): void;
   latestTaskRunContext(context: RuntimeActionTaskContext): RuntimeActionRunContext | null;
   selectRunSubmission(context: RuntimeActionRunContext): RunSubmission;
+  /** Runtime-only file recovery: never exposed by MCP; cannot replace a frozen valid candidate. */
+  importFileCandidate(context: RuntimeActionRunContext, envelope: unknown, contract?: DeliveryContractOptions): SubmitArtifactEnvelopeResult;
   /** Compatibility read-and-hide. Settlement must use selectRunSubmission instead. */
   consumeRunSubmission(context: RuntimeActionRunContext): RunSubmission;
   latestTaskSubmission(context: RuntimeActionTaskContext): RunSubmission;
@@ -79,16 +81,24 @@ export function createRuntimeActionChannel(options: RuntimeActionChannelOptions 
     const row = db.prepare("SELECT envelope,rejection FROM submissions WHERE company=? AND task=? AND run=? ORDER BY (envelope IS NOT NULL) DESC, sequence DESC LIMIT 1").get(...identity(context));
     return row ? decode(row) : NOTHING;
   }
-  return {
-    submitArtifactEnvelope(context, envelope, contract, submissionId = randomUUID()) {
+  function submit(context: RuntimeActionRunContext, envelope: unknown, contract: DeliveryContractOptions | undefined, submissionId: string, fileImport = false): SubmitArtifactEnvelopeResult {
       return withStore((db) => {
         ensureRun(db, context);
         const run = db.prepare("SELECT closed,revoked FROM runs WHERE company=? AND task=? AND run=?").get(...identity(context))!;
         if (run.revoked) return reject("run_closed", "This run no longer accepts submissions.");
+        if (fileImport) {
+          const selected = read(db, context).envelope;
+          if (selected) {
+            const incoming = parseArtifactEnvelope(envelope);
+            return incoming.success && canonical(selected) === canonical(incoming.value)
+              ? { ok: true, ignoredIdentityFields: incoming.ignoredIdentityFields }
+              : reject("submission_conflict", "A frozen valid candidate already exists.");
+          }
+        }
         const content = canonical({ envelope, contract: contract ?? null });
         const previous = db.prepare("SELECT content,result FROM submissions WHERE company=? AND task=? AND run=? AND submission_id=?").get(...identity(context), submissionId);
         if (previous) return previous.content === content ? JSON.parse(previous.result as string) as SubmitArtifactEnvelopeResult : reject("submission_conflict", "Submission ID already has different content.");
-        if (run.closed) return reject("run_closed", "This run no longer accepts new submissions.");
+        if (run.closed && !fileImport) return reject("run_closed", "This run no longer accepts new submissions.");
         const parsed = parseArtifactEnvelope(envelope);
         const errors = parsed.success ? contract ? artifactEnvelopeContractErrors(parsed.value, contract) : [] : parsed.errors;
         const valid = parsed.success && errors.length === 0;
@@ -98,7 +108,10 @@ export function createRuntimeActionChannel(options: RuntimeActionChannelOptions 
         db.prepare("UPDATE runs SET hidden=0 WHERE company=? AND task=? AND run=?").run(...identity(context));
         return result;
       });
-    },
+  }
+  return {
+    submitArtifactEnvelope: (context, envelope, contract, submissionId = randomUUID()) => submit(context, envelope, contract, submissionId),
+    importFileCandidate: (context, envelope, contract) => submit(context, envelope, contract, "runtime-file-import", true),
     beginRun(context) {
       withStore((db) => {
         // A retried old begin must not revoke the already-running successor.

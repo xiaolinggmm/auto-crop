@@ -1,10 +1,12 @@
+import { proofRefsToProof } from "./proofReferences";
+import { createMahCliAdapter } from "../adapters/mahCli";
 import { assertExecutionBackendAvailable, executorRefusalMarker, type ExecutionBackend } from "./executionBackend";
 import { parkExhaustedTask } from "./budgetAuthorization";
 import { isBudgetExhaustion, resolveBudgetSnapshot, systemExecutionClock, type BudgetPolicy, type ExecutionClock } from "./budgetPolicy";
 import { BudgetInterrupted, RunBudget } from "./runBudget";
 import { EXECUTION_BRIEF_TIMEOUT_MS, prepareExecutionBrief } from "./executionBrief";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import { resolveLaunchableAdapter } from "../adapters/registry";
 import type { AdapterLaunchSupport } from "../adapters/launchPolicy";
 import type { AgentAdapter, AgentRunResult, RunObservationSink } from "../adapters/types";
@@ -94,6 +96,8 @@ export type SchedulerEvent = {
 export type RunSchedulerOnceInput = {
   projectRoot: string;
   executionBackend?: ExecutionBackend;
+  /** Injectable MAH boundary for contract tests; never a fallback adapter. */
+  mahAdapter?: AgentAdapter;
   /** Internal opt-in; production defaults to observe until P4.2/P4.3 are complete. */
   executionBudget?: Partial<BudgetPolicy>;
   executionClock?: ExecutionClock;
@@ -152,7 +156,9 @@ export type RunSchedulerOnceResult = {
 };
 
 export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<RunSchedulerOnceResult> {
-  assertExecutionBackendAvailable(input.executionBackend);
+  const backend = input.executionBackend ?? process.env.AUTO_CROP_EXECUTION_BACKEND ?? "direct";
+  assertExecutionBackendAvailable(backend, Boolean(input.mahAdapter || process.env.AUTO_CROP_MAH_PROJECT_ROOT));
+  const mahAdapter = backend === "mah" ? input.mahAdapter ?? createMahCliAdapter(input) : null;
   const now = input.now ?? (() => new Date());
   const createId = input.createId ?? defaultCreateId;
   const registry = input.executionRegistry ?? defaultExecutionRegistry;
@@ -350,7 +356,12 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
 
           // Decided before the task is marked running: a task whose adapters cannot launch stays where it
           // is rather than failing on a CLI's unknown-option error.
-          const launch = await resolveLaunchableAdapter(adapterCandidates(input.adapters, task));
+          // An unresolved external submission survives worker death and backend switches.
+          if (input.repositories.mahExecutions.blocksDispatch(task.id)) {
+            appendLaunchUnavailableWarningOnce(input, task, [{ adapterId: "mah", isolationLevel: "unavailable", supportedFlags: [], missingFlags: [], warnings: ["MAH execution unresolved; reconcile the recorded UUID before any new dispatch."] }]);
+            return;
+          }
+          const launch = await resolveLaunchableAdapter(mahAdapter ? [mahAdapter] : adapterCandidates(input.adapters, task));
           if (!launch.launchable) {
             appendLaunchUnavailableWarningOnce(input, task, launch.unavailable);
             return;
@@ -410,7 +421,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
             input.repositories.updateTaskWorkspacePath(task.id, taskWorkspace.root);
           }
           const verifying = isVerifyingTask(input.repositories, task);
-          const runWorkspacePath = verifying
+          let runWorkspacePath = verifying
             ? taskWorkspace.root
             : resolveRunWorkspace(input.repositories, task) ?? taskWorkspace.root;
           const verificationPreparation = prepareVerificationInputs({
@@ -594,6 +605,10 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
               promptPath: "",
               workspacePath: runWorkspacePath,
               metadata: { departmentId: task.departmentId, proofSchemaId: task.proofSchemaId },
+              ...(backend === "mah" ? { inputDirectories: [
+                ...handoffs.filter(h => h.handoffPackagePath).map(h => ({ path: dirname(h.handoffPackagePath!), mountPath: `.auto-crop-inputs/${h.upstreamTaskId}` })),
+                ...(verificationPromptContext.inputs?.targets ?? []).map(target => ({ path: join(runWorkspacePath, target.path), mountPath: target.path })),
+              ] } : {}),
               timeoutMs: timeoutResolution.effectiveTimeoutMs,
               grant,
               observe,
@@ -657,12 +672,14 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
                   task,
                   company,
                   handoffs,
+                  deliverySurface: backend === "mah" ? "file" : "action",
                   grant,
                   acceptedProofTypes: proofRefPolicy.acceptedTypes,
                   verification: verificationPromptContext,
                   settledFacts,
                   companyContextNotes: listCompanyContextNotes(input.repositories, company.id),
                 }) +
+                  (backend === "mah" ? "\nAccepted upstream handoff packages are attached under: " + handoffs.filter(h => h.handoffPackagePath).map(h => `${h.upstreamTaskId}: .auto-crop-inputs/${h.upstreamTaskId}`).join(", ") : "") +
                   executionBriefPrompt(preparation),
               });
             } else {
@@ -758,6 +775,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
             observer?.enterPhase("finalizing", agentResult.status === "complete" ? "work_complete" : "work_failed");
             observer?.beat();
           }
+          if (agentResult.deliveryWorkspacePath) runWorkspacePath = agentResult.deliveryWorkspacePath;
           let proof: Proof[] = [];
           if (agentResult.status === "complete") {
             try {
@@ -826,6 +844,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
           const proofRefValidation = actionEnvelope?.proofRefs
             ? proofRefsToProof({
                 refs: actionEnvelope.proofRefs,
+                commandOutputFromFile: Boolean(agentResult.deliveryWorkspacePath),
                 task: { ...task, workspacePath: runWorkspacePath },
                 proofSchema: input.proofSchemas?.find((schema) => schema.id === task.proofSchemaId),
                 logPath,
@@ -890,6 +909,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
            * writer that owns the run, so they are written from inside the settlement transaction.
            */
           const recordRunOutput = (settled: RunSchedulerOnceInput): void => {
+            if (agentResult?.deliveryWorkspacePath) settled.repositories.updateTaskWorkspacePath(task.id, agentResult.deliveryWorkspacePath);
             for (const item of proof) {
               settled.repositories.appendProof(item);
             }
@@ -2495,91 +2515,6 @@ function failureMessage(
   }
 
   return `Task failed: ${task.title} / agent_failed.`;
-}
-
-function proofRefsToProof(input: {
-  refs: ProofReference[];
-  task: Task;
-  proofSchema?: ProofSchema;
-  logPath: string;
-  createId: (prefix: string) => string;
-}): { proofs: Proof[]; errors: string[] } {
-  if (!input.proofSchema) {
-    return { proofs: [], errors: [`no proof schema configured for ${input.task.proofSchemaId}`] };
-  }
-
-  const proofs: Proof[] = [];
-  const policy = { proofSchemaId: input.proofSchema.id, acceptedTypes: input.proofSchema.acceptedTypes };
-  const errors = proofRefTypeErrors(input.refs, policy);
-  input.refs.forEach((ref, index) => {
-    if (!policy.acceptedTypes.includes(ref.type)) {
-      return;
-    }
-
-    const uri = resolveProofRefUri({
-      ref,
-      index,
-      workspacePath: input.task.workspacePath,
-      logPath: input.logPath,
-      errors,
-    });
-    if (!uri) {
-      return;
-    }
-
-    proofs.push({
-      id: input.createId("proof"),
-      taskId: input.task.id,
-      type: ref.type,
-      uri,
-      summary: ref.summary ?? `Proof reference: ${uri}`,
-      verifiedAt: null,
-    });
-  });
-
-  return { proofs, errors };
-}
-
-function resolveProofRefUri(input: {
-  ref: ProofReference;
-  index: number;
-  workspacePath: string | null;
-  logPath: string;
-  errors: string[];
-}): string | null {
-  if (input.ref.type === "command_output") {
-    return input.logPath;
-  }
-
-  if (input.ref.type === "url" || input.ref.type === "deployment") {
-    try {
-      const url = new URL(input.ref.uri);
-      if (url.protocol === "http:" || url.protocol === "https:") {
-        return input.ref.uri;
-      }
-    } catch {
-      // fall through to the structured error below
-    }
-    input.errors.push(`proof_refs[${input.index}].uri must be an http(s) URL for ${input.ref.type}`);
-    return null;
-  }
-
-  if (!input.workspacePath) {
-    input.errors.push(`proof_refs[${input.index}].uri cannot be resolved because the task has no workspace`);
-    return null;
-  }
-
-  const absolute = resolve(input.workspacePath, input.ref.uri);
-  const relativePath = relative(input.workspacePath, absolute);
-  if (relativePath === "" || relativePath.startsWith("..") || isAbsolute(relativePath)) {
-    input.errors.push(`proof_refs[${input.index}].uri resolves outside the task workspace`);
-    return null;
-  }
-  if (!existsSync(absolute)) {
-    input.errors.push(`proof_refs[${input.index}].uri does not exist in the task workspace`);
-    return null;
-  }
-  return absolute;
 }
 
 function defaultCreateId(prefix: string): string {

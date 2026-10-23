@@ -1,6 +1,6 @@
 # MAH Direct Tasks Bind One Executor and One Runtime Action Surface
 
-Status: accepted
+Status: superseded by [ADR 0050](0050-mah-cli-delegation-and-file-delivery.md) for MAH integration. The body records the previous executor-binding proposal; durable Candidate and settlement principles are retained.
 
 ## Context
 

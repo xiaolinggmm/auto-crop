@@ -1,6 +1,6 @@
 # Runtime Action Channel Submits Artifact Envelopes
 
-Status: proposed
+Status: accepted for direct adapters. [ADR 0050](0050-mah-cli-delegation-and-file-delivery.md) adds validated MAH file delivery as an alternative ingress to the same Candidate and settlement model.
 
 Amendment: [ADR 0049](0049-mah-direct-tasks-bind-executor-and-runtime-action.md) supersedes the candidate deletion and consumption rules below. New dispatch invalidates prior-run eligibility without deleting audit evidence; candidates remain replayable through committed settlement and receipt acknowledgement.
 

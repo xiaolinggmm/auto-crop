@@ -67,6 +67,29 @@ describe("task locks", () => {
 });
 
 describe("runSchedulerOnce", () => {
+  it("delegates to MAH rather than the assignee and captures only the returned file workspace", async () => {
+    const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
+    const snapshot = join(projectRoot, "snapshot"); mkdirSync(snapshot);
+    let mahCalls = 0; let directCalls = 0;
+    const mah: AgentAdapter = { id: "mah", name: "MAH", capabilities: [], contractCapabilities: ["file_delivery"], detect: async () => true,
+      run: async request => {
+        mahCalls++;
+        expect(request.metadata.phase).not.toBe("execution_brief");
+        expect(request.prompt).not.toContain("calling `submit_artifact_envelope`");
+        expect(request.prompt).toContain("file delivery");
+        request.runtimeActions!.submitArtifactEnvelope({ artifact_kind: "deliverable", artifact_role: "implementation", artifact_subtype: "report", task_type: "engineering", payload: { outcome_summary: "Implemented", execution_report: { work_summary: "Implemented", evidence: "Diff", conclusion: "Done", vision_impact: "Useful", remaining_gap: "None", recommendation: "Review" } }, lineage: {} });
+        return { status: "complete", exitCode: 0, stdout: "", stderr: "", deliveryWorkspacePath: snapshot };
+      } };
+    const direct = createMockAgentAdapter({ id: "mock-worker", name: "Direct", capabilities: ["code"] });
+    direct.run = async () => { directCalls++; throw new Error("fallback forbidden"); };
+    await runSchedulerOnce({ projectRoot, repositories, workerId: "worker", maxTasks: 1, adapters: [direct], executionBackend: "mah", mahAdapter: mah,
+      approvalRequired: () => false, proofCollector: ({ task }) => { expect(task.workspacePath).toBe(snapshot); return [createProofForTask(task)]; }, emit: () => {} });
+    expect(mahCalls).toBe(1); expect(directCalls).toBe(0);
+    expect(repositories.getTask("task_1")?.workspacePath).toBe(snapshot);
+    expect(client.prepare("SELECT agent_id FROM agent_runs WHERE task_id = ?").get("task_1")).toMatchObject({ agent_id: "mah" });
+    client.close();
+  });
+
   it("settles an action-submitted artifact envelope without the file shim", async () => {
     const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
     const adapter: AgentAdapter = {
@@ -1339,7 +1362,7 @@ describe("runSchedulerOnce", () => {
     const missing = await runSchedulerOnce({ ...input, adapters: [fallback] });
     expect(missing.started).toEqual([]);
     expect(runs).toEqual([]);
-    await expect(runSchedulerOnce({ ...input, adapters: [fallback], executionBackend: "mah" })).rejects.toMatchObject({ code: "mah_protocol_unavailable" });
+    await expect(runSchedulerOnce({ ...input, adapters: [fallback], executionBackend: "mah" })).rejects.toMatchObject({ code: "mah_configuration_missing" });
     expect(repositories.listTaskLocks()).toEqual([]);
 
     client.close();

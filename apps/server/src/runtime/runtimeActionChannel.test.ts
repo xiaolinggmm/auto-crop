@@ -19,6 +19,17 @@ function tempCandidateDir(): string {
 }
 
 describe("RuntimeActionChannel", () => {
+  it("imports a validated file after closure without reopening admission or replacing frozen evidence", () => {
+    const channel = createRuntimeActionChannel();
+    const context = { companyId: "c", taskId: "t", runId: "r" };
+    channel.selectRunSubmission(context);
+    expect(channel.importFileCandidate(context, validEnvelope("file"))).toMatchObject({ ok: true });
+    expect(channel.submitArtifactEnvelope(context, validEnvelope("late"))).toMatchObject({ ok: false, code: "run_closed" });
+    expect(channel.importFileCandidate(context, validEnvelope("changed"))).toMatchObject({ ok: false });
+    expect(channel.selectRunSubmission(context).envelope?.artifactSubtype).toBe("file");
+    channel.revokeRun(context);
+    expect(channel.importFileCandidate(context, validEnvelope("file"))).toMatchObject({ ok: false, code: "run_closed" });
+  });
   const context = { companyId: "company_1", taskId: "task_1", runId: "run_1" };
 
   it("stores the last valid envelope for a run", () => {

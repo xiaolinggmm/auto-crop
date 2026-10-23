@@ -1,5 +1,7 @@
 # MAH Execution Binding Implementation Plan
 
+Historical plan: superseded for MAH integration by [the CLI delegation plan](mah-cli-delegation-plan.md) and ADR 0050. The Auto-Crop-only delivery record below describes commit 4ebcaf5, not the new backend.
+
 Status: full MAH integration remains proposed and blocked at P0. A separately authorized Auto-Crop-only foundation is implemented on `codex/mah-execution-governance`; see the bounded acceptance record below. No live MAH/provider acceptance is claimed.
 
 Authority: [ADR 0049](adr/0049-mah-direct-tasks-bind-executor-and-runtime-action.md), [Execution Governance Glossary](../GLOSSARY.md), [ADR 0035](adr/0035-a-settlement-is-one-transaction.md).

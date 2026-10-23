@@ -1,11 +1,27 @@
 # Auto-Crop Execution Governance
 
-This context defines how Auto-Crop assigns work, binds an execution environment, and receives governed runtime outcomes.
+This context defines how Auto-Crop assigns work, delegates execution and receives governed runtime outcomes. MAH delegation follows ADR 0050; executor-binding terms below describe the historical ADR 0049 proposal.
 
 ## Language
 
+**MAH Delegation**:
+One Auto-Crop execution attempt entrusted to one MAH Task, with MAH responsible for its internal executor choices.
+_Avoid_: Fixed executor binding, provider invocation
+
+**File Delivery**:
+A Task-scoped envelope and its referenced files offered for Auto-Crop validation. File publication alone is not business completion.
+_Avoid_: Accepted Business Artifact, final response
+
+**Delivery Snapshot**:
+The preserved content of a received File Delivery against which validation and recovery are performed.
+_Avoid_: Live workspace, latest file
+
+**Unresolved Delegation**:
+A delegation whose external execution or business delivery cannot yet be safely closed. It does not authorize a replacement execution.
+_Avoid_: Failed submission, retryable timeout
+
 **Task Assignee**:
-The Agent selected by the CEO to own a Task's execution responsibility.
+The Agent selected by the CEO to own a Task's business responsibility. Under MAH delegation, this does not identify the provider MAH selects.
 _Avoid_: Executor, model
 
 **Executor Binding**:

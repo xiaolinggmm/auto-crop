@@ -1,3 +1,4 @@
+import { cancelMahExecution, receiveMahExecution, reconcileMahExecution, type MahCommand } from "../adapters/mahCli";
 import { requestCeoReassignment, withdrawCeoReassignment } from "../runtime/reassignment";
 import { executionOverview } from "../runtime/executionOverview";
 import { requestBudgetStop } from "../runtime/budgetStop";
@@ -73,6 +74,7 @@ import {
 import { createProjectRuntimeActionChannel } from "../runtime/runtimeActionChannel";
 
 export type ApiServerOptions = {
+  mahCommand?: MahCommand;
   projectRoot: string;
   repositories: ReturnType<typeof createRepositories>;
   agents: AgentAdapter[];
@@ -951,6 +953,23 @@ async function routeRequest(
       recovery: result.recovery,
       parentAggregation: parentAggregation ? summarizeParentAggregation(parentAggregation, options.repositories) : undefined,
     });
+    return;
+  }
+
+  const mahMatch = url.pathname.match(/^\/api\/tasks\/([^/]+)\/mah-executions(?:\/([^/]+)\/(reconcile|cancel|receive))?$/);
+  if (mahMatch && (method === "GET" || method === "POST")) {
+    const task = options.repositories.getTask(mahMatch[1]);
+    if (!task) { sendJson(response, 404, { error: "Task not found" }); return; }
+    if (method === "GET" && !mahMatch[2]) {
+      sendJson(response, 200, { executions: options.repositories.mahExecutions.list(task.id) }); return;
+    }
+    const record = mahMatch[2] ? options.repositories.mahExecutions.get(decodeURIComponent(mahMatch[2])) : null;
+    if (method !== "POST" || !record || record.taskId !== task.id) { sendJson(response, 404, { error: "MAH execution not found" }); return; }
+    try {
+      const integration = { repositories: options.repositories, projectRoot: options.projectRoot, command: options.mahCommand };
+      const execution = mahMatch[3] === "cancel" ? await cancelMahExecution(integration, record.runId) : mahMatch[3] === "receive" ? await receiveMahExecution(integration, record.runId) : await reconcileMahExecution(integration, record.runId);
+      sendJson(response, 200, { execution });
+    } catch (error) { sendJson(response, 409, { error: String(error) }); }
     return;
   }
 
