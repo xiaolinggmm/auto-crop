@@ -3014,7 +3014,7 @@ describe("Dashboard App", () => {
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
     await user.click(within(screen.getByRole("group", { name: "Language" })).getByRole("button", { name: "中文" }));
 
-    expect(screen.getByRole("heading", { name: "说出愿景，组建你的团队" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "让复杂目标变得清晰" })).toBeInTheDocument();
     expect(window.localStorage.getItem("auto-crop.currentLanguage")).toBe("zh");
   });
 
@@ -3111,7 +3111,7 @@ describe("Dashboard App", () => {
     try {
       render(<App apiClient={api} />);
 
-      expect(await screen.findByRole("heading", { name: "说出愿景，组建你的团队" })).toBeInTheDocument();
+      expect(await screen.findByRole("heading", { name: "让复杂目标变得清晰" })).toBeInTheDocument();
       expect(within(screen.getByRole("group", { name: "语言" })).getByRole("button", { name: "中文" })).toHaveAttribute(
         "aria-pressed",
         "true",
