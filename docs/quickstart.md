@@ -33,6 +33,17 @@ AUTO_CROP_PORT=8787 pnpm --filter @auto-crop/cli start
 
 The CLI creates `.auto-crop/state.sqlite`, starts the local API server, detects Claude Code and Codex adapters, and prints the local server URL.
 
+For MAH-backed task execution, set the managed project and slot before startup:
+
+```bash
+export AUTO_CROP_EXECUTION_BACKEND=mah
+export AUTO_CROP_MAH_CLI=/Applications/MAH.app/Contents/Resources/bin/mah
+export AUTO_CROP_MAH_PROJECT_ROOT=/absolute/path/to/managed/mah/project
+export AUTO_CROP_MAH_SLOT=background
+```
+
+The slot defaults to `background`. If the account has only interactive capacity, explicitly set `AUTO_CROP_MAH_SLOT=interactive`. Startup checks the selected slot and does not fall back silently.
+
 Future package usage is intended to be:
 
 ```bash

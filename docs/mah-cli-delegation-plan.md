@@ -31,9 +31,12 @@ Set these in the environment of the Auto-Crop server/worker (including any super
 export AUTO_CROP_EXECUTION_BACKEND=mah
 export AUTO_CROP_MAH_CLI=/Applications/MAH.app/Contents/Resources/bin/mah
 export AUTO_CROP_MAH_PROJECT_ROOT=/absolute/path/to/managed/mah/project
+export AUTO_CROP_MAH_SLOT=background
 ```
 
 `AUTO_CROP_MAH_PROJECT_ROOT` is explicit and must be the existing canonical MAH managed project root. It is **not** automatically the Auto-Crop application source directory or generated task workspace. MAH chooses its execution worktrees. Leave backend unset or set it to `direct` for the existing adapters; a failed MAH submission never switches to direct automatically. Existing unresolved MAH records block dispatch even if configuration is changed to direct.
+
+`AUTO_CROP_MAH_SLOT` accepts `background` (the default) or `interactive`. Startup reads MAH quota before launching a Worker and refuses unavailable capacity. When an account has no background slot, the user may explicitly opt into `interactive`; Auto-Crop never consumes the foreground slot as a silent fallback. The selected class is pinned in the durable MAH execution record and request digest.
 
 Planning/CEO calls retain their existing adapters. Only scheduler task execution delegates to MAH. The execution brief is synthesized locally without a provider invocation. MAH receives task activity constraints but Auto-Crop does not claim CLI-enforced tool isolation; required capabilities withheld by company policy cause refusal before submission.
 

@@ -143,6 +143,17 @@ The CLI will:
 - Detect available Claude Code and Codex adapters.
 - Print the local dashboard/API URL.
 
+To delegate task execution to MAH, configure its managed project and slot class before starting:
+
+```bash
+export AUTO_CROP_EXECUTION_BACKEND=mah
+export AUTO_CROP_MAH_CLI=/Applications/MAH.app/Contents/Resources/bin/mah
+export AUTO_CROP_MAH_PROJECT_ROOT=/absolute/path/to/managed/mah/project
+export AUTO_CROP_MAH_SLOT=background
+```
+
+The slot defaults to `background`. Accounts without background capacity may explicitly use `interactive`; startup checks availability and never switches slots silently.
+
 During development, run the dashboard separately:
 
 ```bash

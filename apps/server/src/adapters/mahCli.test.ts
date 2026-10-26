@@ -5,7 +5,8 @@ import { join } from "node:path";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { openState } from "../runtime/fixtures/budgetState";
-import { createMahCliAdapter, receiveMahExecution, reconcileMahExecution, type MahCommand } from "./mahCli";
+import { createMahCliAdapter, preflightMahSlot, receiveMahExecution, reconcileMahExecution, type MahCommand } from "./mahCli";
+import * as mahCliModule from "./mahCli";
 import { createProjectRuntimeActionChannel } from "../runtime/runtimeActionChannel";
 import { recoverProofIfPossible } from "../runtime/taskRefresh";
 import { applyTaskTransition } from "../runtime/taskTransition";
@@ -30,6 +31,42 @@ const json = (v: unknown) => ({ exitCode: 0, stdout: JSON.stringify(v), stderr: 
 const carriers = (id: string, status = "completed", projectRoot = "") => json({ schema_version: 1, project_root: projectRoot, carrier_facts: [{ task_id: id, task_runtime: { read_state: "ready", status }, task_index: { read_state: "ready", status }, scheduler: { read_state: "absent" } }] });
 
 describe("MAH CLI delegation", () => {
+  it("resolves only supported execution slot configuration", () => {
+    const resolveSlot = (mahCliModule as unknown as { resolveMahSlotClass?: (value?: string) => string }).resolveMahSlotClass;
+    expect(resolveSlot).toBeTypeOf("function");
+    expect(resolveSlot!()).toBe("background");
+    expect(resolveSlot!("background")).toBe("background");
+    expect(resolveSlot!("interactive")).toBe("interactive");
+    expect(() => resolveSlot!("review")).toThrow(/AUTO_CROP_MAH_SLOT.*background.*interactive/);
+  });
+
+  it("exposes a startup preflight for MAH slot availability", () => {
+    expect((mahCliModule as unknown as { preflightMahSlot?: unknown }).preflightMahSlot).toBeTypeOf("function");
+  });
+
+  it("passes startup preflight when the selected MAH slot is available", async () => {
+    const root = realpathSync(mkdtempSync(join(tmpdir(), "mah-preflight-")));
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    await expect(preflightMahSlot({
+      command: async args => {
+        expect(args).toEqual(["personal-os", "quota", "list", "--project-root", root, "--format", "json"]);
+        return json({ ok: true, agent_slots: { interactive: 1, background: 1, review: 0 } });
+      },
+      mahProjectRoot: root,
+      slotClass: "background",
+    })).resolves.toBeUndefined();
+  });
+
+  it("fails startup preflight with an interactive opt-in hint before submitting", async () => {
+    const root = realpathSync(mkdtempSync(join(tmpdir(), "mah-preflight-")));
+    cleanups.push(() => rmSync(root, { recursive: true, force: true }));
+    await expect(preflightMahSlot({
+      command: async () => json({ ok: true, agent_slots: { interactive: 1, background: 0, review: 0 } }),
+      mahProjectRoot: root,
+      slotClass: "background",
+    })).rejects.toThrow(/background.*unavailable.*AUTO_CROP_MAH_SLOT=interactive/i);
+  });
+
   it("uses MAH routing and task artifacts, snapshots delivery and never runs a preparation provider", async () => {
     const calls: string[][] = [];
     let id = "";
@@ -50,6 +87,23 @@ describe("MAH CLI delegation", () => {
     expect(calls.flat()).not.toContain("--agent");
     expect(f.adapter.contractCapabilities).not.toContain("structured_execution_brief");
     expect(f.repositories.mahExecutions.list("task_1")[0]?.state).toBe("completed");
+  });
+
+  it("submits and persists the explicitly selected interactive slot", async () => {
+    const calls: string[][] = [];
+    let id = "";
+    const f = fixture(async args => {
+      calls.push(args);
+      if (args[1] === "submit") { id = args[args.indexOf("--task-id") + 1]!; return json({ task_id: id, admission_status: "ready" }); }
+      if (args[1] === "show") return json({ ok: true, task: { task_id: id, status: "failed" } });
+      return carriers(id, "failed", f.root);
+    });
+
+    await createMahCliAdapter({ ...f.options, slotClass: "interactive" } as typeof f.options).run(f.request);
+
+    const submit = calls.find(args => args[1] === "submit")!;
+    expect(submit[submit.indexOf("--personal-os-slot") + 1]).toBe("interactive");
+    expect(f.repositories.mahExecutions.list("task_1")[0]).toMatchObject({ slotClass: "interactive" });
   });
 
   it("persists UUID before submit and never resubmits after an ambiguous failure, including a new adapter", async () => {

@@ -7,6 +7,7 @@ import {
   createApiServer,
   createClaudeCodeAdapter,
   createCodexAdapter,
+  createMahCliAdapter,
   createDatabaseClient,
   createProofCollector,
   createRepositories,
@@ -16,8 +17,15 @@ import {
   runFinalFounderReportJobs,
   runSchedulerOnce,
   executionBudgetFromEnvironment,
+  assertExecutionBackendAvailable,
+  mahCommand as createMahCommand,
+  preflightMahSlot,
+  resolveMahSlotClass,
   type BudgetPolicy,
   type AgentAdapter,
+  type ExecutionBackend,
+  type MahCommand,
+  type MahSlotClass,
   type SchedulerEvent,
   type SchedulerWakeReason,
 } from "@auto-crop/server";
@@ -41,6 +49,10 @@ export type StartAutoCropOptions = {
   agents?: AgentAdapter[];
   schedulerIntervalMs?: number;
   log?: (line: string) => void;
+  executionBackend?: ExecutionBackend;
+  mahCommand?: MahCommand;
+  mahProjectRoot?: string;
+  mahSlotClass?: MahSlotClass;
 };
 
 export type StartedAutoCrop = {
@@ -57,9 +69,22 @@ export async function startAutoCrop(options: StartAutoCropOptions): Promise<Star
   const stateDir = join(options.projectRoot, ".auto-crop");
   mkdirSync(stateDir, { recursive: true });
 
+  const requestedExecutionBackend = options.executionBackend ?? process.env.AUTO_CROP_EXECUTION_BACKEND ?? "direct";
+  const mahProjectRoot = options.mahProjectRoot ?? process.env.AUTO_CROP_MAH_PROJECT_ROOT;
+  assertExecutionBackendAvailable(requestedExecutionBackend, Boolean(mahProjectRoot));
+  const executionBackend: ExecutionBackend = requestedExecutionBackend === "mah" ? "mah" : "direct";
+  const mahSlotClass = executionBackend === "mah" ? options.mahSlotClass ?? resolveMahSlotClass() : "background";
+  const runMahCommand = options.mahCommand ?? createMahCommand();
+  if (executionBackend === "mah") {
+    await preflightMahSlot({ command: runMahCommand, mahProjectRoot: mahProjectRoot!, slotClass: mahSlotClass });
+  }
+
   const database = createDatabaseClient(join(stateDir, "state.sqlite"));
   migrate(database);
   const repositories = createRepositories(database);
+  const mahAdapter = executionBackend === "mah"
+    ? createMahCliAdapter({ repositories, projectRoot: options.projectRoot, mahProjectRoot, command: runMahCommand, slotClass: mahSlotClass })
+    : undefined;
   const agents = options.agents ?? [createClaudeCodeAdapter({ log }), createCodexAdapter({ log })];
 
   for (const agent of agents) {
@@ -89,6 +114,8 @@ export async function startAutoCrop(options: StartAutoCropOptions): Promise<Star
     log,
     projectRoot: options.projectRoot,
     repositories,
+    executionBackend,
+    mahAdapter,
     createId,
     publish: (event) => apiServer.events.publish(event),
   });
@@ -127,6 +154,8 @@ export function startSchedulerLoop(input: {
   projectRoot: string;
   publish: Parameters<typeof runSchedulerOnce>[0]["emit"];
   repositories: ReturnType<typeof createRepositories>;
+  executionBackend?: ExecutionBackend;
+  mahAdapter?: AgentAdapter;
   createId?: (prefix: string) => string;
 }) {
   const workerId = input.workerId ?? createId("cli-worker");
@@ -192,6 +221,8 @@ export function startSchedulerLoop(input: {
     try {
       const result = await runSchedulerOnce({
         projectRoot: input.projectRoot,
+        executionBackend: input.executionBackend,
+        mahAdapter: input.mahAdapter,
         repositories: input.repositories,
         adapters: input.agents,
         workerId,

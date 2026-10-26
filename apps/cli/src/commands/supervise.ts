@@ -4,7 +4,22 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { acquireSupervisorOwnership } from "./supervisorOwnership";
 import { createId } from "@auto-crop/core";
-import { createDatabaseClient, createRepositories, migrate, Supervisor, executionBudgetFromEnvironment, recoveryModeFromEnvironment, retentionPolicyFromEnvironment } from "@auto-crop/server";
+import {
+  assertExecutionBackendAvailable,
+  createDatabaseClient,
+  createRepositories,
+  executionBudgetFromEnvironment,
+  mahCommand as createMahCommand,
+  migrate,
+  preflightMahSlot,
+  recoveryModeFromEnvironment,
+  resolveMahSlotClass,
+  retentionPolicyFromEnvironment,
+  Supervisor,
+  type ExecutionBackend,
+  type MahCommand,
+  type MahSlotClass,
+} from "@auto-crop/server";
 
 /**
  * How often the supervisor sweeps for work the worker cannot report itself.
@@ -27,6 +42,10 @@ export type SuperviseOptions = {
   scanIntervalMs?: number;
   restartDelayMs?: number;
   log?: (line: string) => void;
+  executionBackend?: ExecutionBackend;
+  mahCommand?: MahCommand;
+  mahProjectRoot?: string;
+  mahSlotClass?: MahSlotClass;
 };
 
 export type SupervisedAutoCrop = {
@@ -47,6 +66,18 @@ export type SupervisedAutoCrop = {
  */
 export async function superviseAutoCrop(options: SuperviseOptions): Promise<SupervisedAutoCrop> {
   executionBudgetFromEnvironment(); // Fail before starting any Worker if opt-in configuration is invalid.
+  const requestedExecutionBackend = options.executionBackend ?? process.env.AUTO_CROP_EXECUTION_BACKEND ?? "direct";
+  const mahProjectRoot = options.mahProjectRoot ?? process.env.AUTO_CROP_MAH_PROJECT_ROOT;
+  assertExecutionBackendAvailable(requestedExecutionBackend, Boolean(mahProjectRoot));
+  const executionBackend: ExecutionBackend = requestedExecutionBackend === "mah" ? "mah" : "direct";
+  const mahSlotClass = executionBackend === "mah" ? options.mahSlotClass ?? resolveMahSlotClass() : "background";
+  if (executionBackend === "mah") {
+    await preflightMahSlot({
+      command: options.mahCommand ?? createMahCommand(),
+      mahProjectRoot: mahProjectRoot!,
+      slotClass: mahSlotClass,
+    });
+  }
   const recoveryMode = recoveryModeFromEnvironment();
   const retention = retentionPolicyFromEnvironment();
   const log = options.log ?? console.log;
@@ -156,7 +187,15 @@ export async function superviseAutoCrop(options: SuperviseOptions): Promise<Supe
         ? options.spawnWorker(ownerId)
         : spawn(process.execPath, [...process.execArgv, fileURLToPath(new URL("../index.ts", import.meta.url)), "__worker"], {
           stdio: ["inherit", "inherit", "inherit", "ipc"],
-          env: { ...process.env, INIT_CWD: projectRoot },
+          env: {
+            ...process.env,
+            INIT_CWD: projectRoot,
+            AUTO_CROP_EXECUTION_BACKEND: executionBackend,
+            ...(executionBackend === "mah" ? {
+              AUTO_CROP_MAH_PROJECT_ROOT: mahProjectRoot,
+              AUTO_CROP_MAH_SLOT: mahSlotClass,
+            } : {}),
+          },
         });
       const child = worker;
       if (child.pid) ownership.recordWorker(child.pid);
