@@ -409,13 +409,18 @@ export const RUNTIME_ACTION_MCP_SERVER_NAME = "auto-crop-runtime-actions";
  * resolves against a directory that has no `node_modules`.
  */
 export function runtimeActionMcpServer(context: RuntimeActionMcpContext): RuntimeActionMcpServer {
-  const serverPath = fileURLToPath(new URL("../runtime/runtimeActionMcpServer.ts", import.meta.url));
-  const tsxLoader = pathToFileURL(createRequire(import.meta.url).resolve("tsx")).href;
+  const packagedServerPath = process.env.AUTO_CROP_RUNTIME_ACTION_SERVER;
+  const serverPath = packagedServerPath
+    ?? fileURLToPath(new URL("../runtime/runtimeActionMcpEntry.ts", import.meta.url));
+  const args = packagedServerPath
+    ? [serverPath]
+    : ["--import", pathToFileURL(createRequire(import.meta.url).resolve("tsx")).href, serverPath];
   return {
     name: RUNTIME_ACTION_MCP_SERVER_NAME,
     command: process.execPath,
-    args: ["--import", tsxLoader, serverPath],
+    args,
     env: {
+      ...(packagedServerPath ? { ELECTRON_RUN_AS_NODE: "1" } : {}),
       AUTO_CROP_RUNTIME_ACTION_DIR: context.candidateDir,
       AUTO_CROP_RUNTIME_ACTION_COMPANY_ID: context.companyId,
       AUTO_CROP_RUNTIME_ACTION_TASK_ID: context.taskId,

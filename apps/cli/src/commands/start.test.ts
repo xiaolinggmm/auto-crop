@@ -67,6 +67,43 @@ describe("startAutoCrop", () => {
     }
   });
 
+  it("serves a production dashboard and keeps API routes on the same origin", async () => {
+    const projectRoot = createTempProjectRoot();
+    const dashboardRoot = join(projectRoot, "dashboard");
+    mkdirSync(join(dashboardRoot, "assets"), { recursive: true });
+    writeFileSync(join(dashboardRoot, "index.html"), "<main>Auto Crop Desktop</main>");
+    writeFileSync(join(dashboardRoot, "assets", "app.js"), "console.log('desktop');");
+    const started = await startAutoCrop({
+      projectRoot,
+      dashboardRoot,
+      agents: [],
+      schedulerIntervalMs: 60_000,
+      log: () => undefined,
+    });
+
+    try {
+      const home = await fetch(started.url);
+      expect(home.status).toBe(200);
+      expect(home.headers.get("content-type")).toContain("text/html");
+      expect(await home.text()).toContain("Auto Crop Desktop");
+
+      const asset = await fetch(`${started.url}/assets/app.js`);
+      expect(asset.status).toBe(200);
+      expect(asset.headers.get("content-type")).toContain("text/javascript");
+      expect(await asset.text()).toContain("desktop");
+
+      const spaRoute = await fetch(`${started.url}/company/example`);
+      expect(spaRoute.status).toBe(200);
+      expect(await spaRoute.text()).toContain("Auto Crop Desktop");
+
+      const api = await fetch(`${started.url}/api/agents`);
+      expect(api.status).toBe(200);
+      expect(await api.json()).toEqual({ agents: [] });
+    } finally {
+      await started.close();
+    }
+  });
+
   it("automatically runs queued tasks through the scheduler loop", async () => {
     const projectRoot = createTempProjectRoot();
     const logs: string[] = [];

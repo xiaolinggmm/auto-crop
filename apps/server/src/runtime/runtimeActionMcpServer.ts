@@ -1,5 +1,4 @@
 import { createInterface } from "node:readline";
-import { fileURLToPath } from "node:url";
 import type { Locale, ProofType } from "@auto-crop/core";
 import { artifactEnvelopeInputSchema } from "./artifactEnvelope";
 import { createRuntimeActionChannel, type DeliveryContractOptions } from "./runtimeActionChannel";
@@ -128,7 +127,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+export function runRuntimeActionMcpServer(): void {
   const lines = createInterface({ input: process.stdin, terminal: false });
   lines.on("line", (line) => {
     try {

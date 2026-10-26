@@ -562,6 +562,21 @@ describe("CLI command template adapter", () => {
     expect(existsSync(new URL(server.args[1]!))).toBe(true);
   });
 
+  it("launches the packaged action server without a TypeScript loader", () => {
+    const previous = process.env.AUTO_CROP_RUNTIME_ACTION_SERVER;
+    process.env.AUTO_CROP_RUNTIME_ACTION_SERVER = "/Applications/Auto Crop/resources/runtime-action.cjs";
+    try {
+      const server = runtimeActionMcpServer(actionRequest.runtimeActions!.mcp!);
+
+      expect(server.command).toBe(process.execPath);
+      expect(server.args).toEqual(["/Applications/Auto Crop/resources/runtime-action.cjs"]);
+      expect(server.env.ELECTRON_RUN_AS_NODE).toBe("1");
+    } finally {
+      if (previous === undefined) delete process.env.AUTO_CROP_RUNTIME_ACTION_SERVER;
+      else process.env.AUTO_CROP_RUNTIME_ACTION_SERVER = previous;
+    }
+  });
+
   it("pre-approves the delivery tool for Claude Code so a no-prompt run can call it", async () => {
     const runtimeActionMcp = { server: runtimeActionMcpServer(actionRequest.runtimeActions!.mcp!), configPath: "/tmp/mcp.json" };
     const launchSupport = (await claudeWith(CLAUDE_HELP).launchPlan!()).support;

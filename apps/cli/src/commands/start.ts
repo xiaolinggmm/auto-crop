@@ -32,6 +32,7 @@ import {
 const HEARTBEAT_INTERVAL_MS = 20_000;
 
 export type StartAutoCropOptions = {
+  dashboardRoot?: string;
   projectRoot: string;
   host?: string;
   workerId?: string;
@@ -72,6 +73,7 @@ export async function startAutoCrop(options: StartAutoCropOptions): Promise<Star
 
   let scheduler: ReturnType<typeof startSchedulerLoop> | undefined;
   const apiServer = createApiServer({
+    dashboardRoot: options.dashboardRoot,
     projectRoot: options.projectRoot,
     repositories,
     agents,

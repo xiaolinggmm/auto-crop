@@ -72,8 +72,10 @@ import {
   summarizeFounderReport,
 } from "../runtime/founderReportProjection";
 import { createProjectRuntimeActionChannel } from "../runtime/runtimeActionChannel";
+import { serveDashboardFile } from "./staticDashboard";
 
 export type ApiServerOptions = {
+  dashboardRoot?: string;
   mahCommand?: MahCommand;
   projectRoot: string;
   repositories: ReturnType<typeof createRepositories>;
@@ -1247,6 +1249,8 @@ async function routeRequest(
     return;
   }
 
+  if (method === "GET" && options.dashboardRoot
+    && await serveDashboardFile(response, options.dashboardRoot, url.pathname)) return;
   sendJson(response, 404, { error: "Not found" });
 }
 

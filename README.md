@@ -6,6 +6,15 @@ It helps a founder run a "zero-person company" from their own computer: create a
 
 The project currently includes a local CLI runtime, a React dashboard, a SQLite-backed server, built-in Claude Code and Codex adapters, and a scheduler that coordinates agent work with proof collection, review, recovery, and a kill switch.
 
+## Install the desktop app
+
+For normal use, download the installer for your operating system from GitHub Releases. The desktop app
+contains its own runtime and Dashboard, so Node.js, pnpm, terminal commands, and a source checkout are
+not required. On first launch, choose the local project Auto Crop may operate on.
+
+Claude Code or Codex must still be installed and signed in locally. Auto Crop detects them after the
+project opens. See the [desktop installation and release guide](docs/desktop-distribution.md).
+
 ## What It Looks Like
 
 auto-crop gives you a local control panel for running an agent company. Departments, tasks, proof, reviews, and recovery stay visible in one dashboard.
@@ -16,7 +25,7 @@ The output can be a real working artifact. In this example, a founder vision was
 
 ![generated website example](docs/assets/generated-website-example.png)
 
-## Quick Start
+## Quick Start From Source
 
 1. Clone the repository:
 
