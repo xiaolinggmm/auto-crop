@@ -1,6 +1,8 @@
 # Quickstart
 
-This guide is for running auto-crop from a source checkout.
+This guide is for running auto-crop from a source checkout. For normal use, download a desktop
+installer from GitHub Releases and follow [Desktop distribution](desktop-distribution.md); release
+users do not need Node.js or pnpm.
 
 ## Requirements
 

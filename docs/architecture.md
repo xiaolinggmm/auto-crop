@@ -177,6 +177,6 @@ The global kill switch sets global pause, prevents new scheduler claims, cancels
 ## Known Limits
 
 - `node:sqlite` is experimental on Node 24.
-- The packaged dashboard serving/opening flow is still future work.
+- Public macOS releases need an Apple signing identity and notarization secrets to avoid Gatekeeper warnings.
 - Approval decision UI and real-agent smoke tests remain planned.
 - Playwright E2E requires a working Chromium environment.

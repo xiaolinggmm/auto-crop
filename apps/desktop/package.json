@@ -1,0 +1,60 @@
+{
+  "name": "@auto-crop/desktop",
+  "version": "0.1.0",
+  "description": "Local desktop runtime for running an agent company with Auto Crop.",
+  "author": "MAH",
+  "private": true,
+  "type": "module",
+  "main": "dist/main.mjs",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "pnpm build && electron .",
+    "dist": "pnpm build && electron-builder",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "typescript": "^5.9.2"
+  },
+  "build": {
+    "appId": "bot.mah.auto-crop",
+    "productName": "Auto Crop",
+    "executableName": "auto-crop",
+    "asar": true,
+    "npmRebuild": false,
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      { "from": "../dashboard/dist", "to": "dashboard" },
+      { "from": "../../LICENSE", "to": "LICENSE" },
+      { "from": "dist/worker.mjs", "to": "worker.mjs" },
+      { "from": "dist/worker.mjs.map", "to": "worker.mjs.map" },
+      { "from": "dist/runtime-action.mjs", "to": "runtime-action.mjs" },
+      { "from": "dist/runtime-action.mjs.map", "to": "runtime-action.mjs.map" }
+    ],
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": ["dmg", "zip"]
+    },
+    "win": {
+      "target": ["nsis"]
+    },
+    "linux": {
+      "category": "Development",
+      "target": ["AppImage"]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
