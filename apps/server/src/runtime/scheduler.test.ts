@@ -154,7 +154,7 @@ describe("runSchedulerOnce", () => {
       if (args[1] === "execution-carriers") return reply({schema_version: 1, project_root: root, carrier_facts: [{task_id: uuid, task_runtime: {read_state: "ready", status: "failed"}, task_index: {read_state: "ready", status: "failed"}, scheduler: {read_state: "absent"}}]});
       throw new Error(`Unexpected MAH command: ${args.join(" ")}`);
     };
-    const input = {projectRoot, repositories, workerId: "worker", maxTasks: 1, adapters: [], mahCommand: command, approvalRequired: () => false, emit: () => {}};
+    const input = {projectRoot, repositories, workerId: "worker", maxTasks: 1, adapters: [], mahCommand: command, approvalRequired: () => false, proofCollector: () => [], emit: () => {}};
     expect((await runSchedulerOnce(input)).started).toEqual([]);
     await vi.waitFor(async () => expect((await runSchedulerOnce(input)).started).toEqual(["task_1"]));
     expect(calls.filter(args => args[1] === "submit")).toHaveLength(1);
