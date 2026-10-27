@@ -1,6 +1,6 @@
 import { isBudgetExhaustion } from "./budgetPolicy";
 import { executionBudgetFacts } from "./budgetStop";
-import type { AgentFailureReason, AgentRun } from "@auto-crop/core";
+import type { AgentFailureReason, AgentRun } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { recordExecutionEvent } from "./executionEvents";
 

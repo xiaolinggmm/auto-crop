@@ -55,15 +55,15 @@ export const DEFAULT_RETENTION_POLICY: RetentionPolicy = {
 };
 
 /**
- * Retention is on unless `AUTO_CROP_RETENTION=off`. Unlike the budget and recovery policies, the
+ * Retention is on unless `CORDANTRY_RETENTION=off`. Unlike the budget and recovery policies, the
  * default is the bounded behaviour: the unbounded one is the defect. Overrides come from
- * `AUTO_CROP_RETENTION_JSON`; anything invalid refuses to start rather than falling back.
+ * `CORDANTRY_RETENTION_JSON`; anything invalid refuses to start rather than falling back.
  */
 export function retentionPolicyFromEnvironment(env = process.env): RetentionPolicy | null {
-  const mode = env.AUTO_CROP_RETENTION ?? RETENTION_POLICY_VERSION;
+  const mode = env.CORDANTRY_RETENTION ?? RETENTION_POLICY_VERSION;
   if (mode === "off") return null;
-  if (mode !== RETENTION_POLICY_VERSION) throw new Error(`AUTO_CROP_RETENTION must be off or ${RETENTION_POLICY_VERSION}`);
-  const configured: unknown = JSON.parse(env.AUTO_CROP_RETENTION_JSON ?? "{}");
+  if (mode !== RETENTION_POLICY_VERSION) throw new Error(`CORDANTRY_RETENTION must be off or ${RETENTION_POLICY_VERSION}`);
+  const configured: unknown = JSON.parse(env.CORDANTRY_RETENTION_JSON ?? "{}");
   if (!configured || typeof configured !== "object" || Array.isArray(configured)) throw new Error("Retention configuration must be a JSON object");
   const policy = { ...DEFAULT_RETENTION_POLICY };
   for (const [key, value] of Object.entries(configured)) {

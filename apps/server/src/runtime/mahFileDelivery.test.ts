@@ -30,7 +30,7 @@ describe("MAH file delivery", () => {
   it("retains the exact verification inputs alongside output and verifies them on replay", () => {
     const { input } = fixture();
     const content = Buffer.from("accepted upstream version");
-    const inputFiles = [{ path: ".auto-crop-verification/upstream/files/report.md", data: content.toString("base64"), sha256: createHash("sha256").update(content).digest("hex") }];
+    const inputFiles = [{ path: ".cordantry-verification/upstream/files/report.md", data: content.toString("base64"), sha256: createHash("sha256").update(content).digest("hex") }];
     const snapshot = delivery.collectMahFileDelivery({ ...input, inputFiles });
     expect(readFileSync(join(snapshot.workspacePath, inputFiles[0]!.path), "utf8")).toBe("accepted upstream version");
     writeFileSync(join(snapshot.workspacePath, inputFiles[0]!.path), "changed version");

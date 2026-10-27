@@ -38,7 +38,7 @@ When Dependency Cascade or Parent Task Aggregation moves a task to `queued`, the
 - [x] Request `dependency_cascade_queued` after CEO approve cascade queues at least one downstream task.
 - [x] Request `parent_aggregation_queued` after refresh/recover parent aggregation queues at least one parent task.
 - [x] Wire CLI `startSchedulerLoop` to expose `requestWake(reason)`.
-- [x] Pass the scheduler wake function into `createApiServer` from `startAutoCrop`.
+- [x] Pass the scheduler wake function into `createApiServer` from `startCordantry`.
 - [x] Coalesce pending wake ticks and preserve the existing `running` guard.
 - [x] Document that replan confirmation and ordinary task recovery requeue are out of scope for this pass.
 

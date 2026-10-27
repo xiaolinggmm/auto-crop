@@ -1,4 +1,4 @@
-import type { BusinessArtifactKind, BusinessArtifactRole, ProofType } from "@auto-crop/core";
+import type { BusinessArtifactKind, BusinessArtifactRole, ProofType } from "@cordantry/core";
 
 export type ProofReference = {
   type: ProofType;

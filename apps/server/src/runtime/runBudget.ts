@@ -1,4 +1,4 @@
-import type { AgentFailureReason } from "@auto-crop/core";
+import type { AgentFailureReason } from "@cordantry/core";
 import type { AgentRunResult } from "../adapters/types";
 import type { createRepositories } from "../db/repositories";
 import { recordExecutionEvent } from "./executionEvents";

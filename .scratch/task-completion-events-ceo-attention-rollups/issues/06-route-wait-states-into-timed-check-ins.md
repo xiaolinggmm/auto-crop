@@ -1,6 +1,6 @@
 # 06: Route Wait States Into Timed Check-Ins
 
-**What to build:** Next Step Routing should represent external delays as Wait States instead of failures or disappearing work. Wait States should be visible in Company State Snapshot and CEO Office, and they should support a first timed check-in path so Auto-Crop can revisit the fact later.
+**What to build:** Next Step Routing should represent external delays as Wait States instead of failures or disappearing work. Wait States should be visible in Company State Snapshot and CEO Office, and they should support a first timed check-in path so Cordantry can revisit the fact later.
 
 Blocked by: 03: Accept Structured Next Step Items From Business Artifacts.
 

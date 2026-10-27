@@ -19,12 +19,12 @@ afterEach(() => {
 });
 
 describe("workspace layout", () => {
-  it("creates the company root under .auto-crop/companies/<companyId>", () => {
+  it("creates the company root under .cordantry/companies/<companyId>", () => {
     const projectRoot = createTempProjectRoot();
 
     const workspace = createCompanyWorkspace(projectRoot, "company_1");
 
-    expect(workspace.companyRoot).toBe(join(projectRoot, ".auto-crop", "companies", "company_1"));
+    expect(workspace.companyRoot).toBe(join(projectRoot, ".cordantry", "companies", "company_1"));
     expect(existsSync(workspace.companyRoot)).toBe(true);
   });
 
@@ -42,12 +42,12 @@ describe("workspace layout", () => {
     expect(readFileSync(workspace.memoryPath, "utf8")).toContain("# Engineering Memory");
   });
 
-  it("creates task workspaces under .auto-crop/workspaces/<taskId>", () => {
+  it("creates task workspaces under .cordantry/workspaces/<taskId>", () => {
     const projectRoot = createTempProjectRoot();
 
     const workspace = createTaskWorkspace(projectRoot, "task_1");
 
-    expect(workspace.root).toBe(join(projectRoot, ".auto-crop", "workspaces", "task_1"));
+    expect(workspace.root).toBe(join(projectRoot, ".cordantry", "workspaces", "task_1"));
     expect(existsSync(workspace.root)).toBe(true);
   });
 
@@ -71,11 +71,11 @@ describe("workspace layout", () => {
     const projectRoot = createTempProjectRoot();
     const workspace = createTaskWorkspace(projectRoot, "task_1");
     const sourcePath = join(workspace.root, "src", "App.tsx");
-    const handoffPath = join(workspace.root, ".auto-crop-handoff", "package.json");
+    const handoffPath = join(workspace.root, ".cordantry-handoff", "package.json");
     const rootDependencyPath = join(workspace.root, "node_modules", "vite", "index.js");
     const nestedDependencyPath = join(workspace.root, "app", "node_modules", "react", "index.js");
     mkdirSync(join(workspace.root, "src"), { recursive: true });
-    mkdirSync(join(workspace.root, ".auto-crop-handoff"), { recursive: true });
+    mkdirSync(join(workspace.root, ".cordantry-handoff"), { recursive: true });
     mkdirSync(join(workspace.root, "node_modules", "vite"), { recursive: true });
     mkdirSync(join(workspace.root, "app", "node_modules", "react"), { recursive: true });
     writeFileSync(sourcePath, "export default function App() { return null; }\n", "utf8");
@@ -101,7 +101,7 @@ describe("workspace layout", () => {
     expect(() =>
       cleanupGeneratedWorkspaceArtifacts({
         projectRoot,
-        workspacePath: join(projectRoot, ".auto-crop", "companies", "company_1"),
+        workspacePath: join(projectRoot, ".cordantry", "companies", "company_1"),
       }),
     ).toThrow(/not a task workspace/i);
     expect(() =>
@@ -114,7 +114,7 @@ describe("workspace layout", () => {
 });
 
 function createTempProjectRoot(): string {
-  const dir = mkdtempSync(join(tmpdir(), "auto-crop-workspace-"));
+  const dir = mkdtempSync(join(tmpdir(), "cordantry-workspace-"));
   createdDirs.push(dir);
   return dir;
 }

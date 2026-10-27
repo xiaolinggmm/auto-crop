@@ -223,7 +223,7 @@ Checkpoint review is intentionally out of scope for this phase. Do not use check
 Run:
 
 ```bash
-pnpm --filter @auto-crop/dashboard test -- src/App.test.tsx --runInBand
+pnpm --filter @cordantry/dashboard test -- src/App.test.tsx --runInBand
 pnpm test
 pnpm typecheck
 pnpm lint
@@ -255,7 +255,7 @@ pnpm lint
 Run:
 
 ```bash
-pnpm --filter @auto-crop/dashboard test -- src/App.test.tsx --runInBand
+pnpm --filter @cordantry/dashboard test -- src/App.test.tsx --runInBand
 pnpm typecheck
 pnpm lint
 ```

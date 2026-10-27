@@ -17,20 +17,20 @@ jobs:
         include:
           - os: macos-14
             artifact: macos
-            command: pnpm --filter @auto-crop/desktop exec electron-builder --mac dmg zip --arm64 --x64 --publish never
+            command: pnpm --filter @cordantry/desktop exec electron-builder --mac dmg zip --arm64 --x64 --publish never
             files: |
               apps/desktop/release/*.dmg
               apps/desktop/release/*.zip
               apps/desktop/release/*.blockmap
           - os: windows-latest
             artifact: windows
-            command: pnpm --filter @auto-crop/desktop exec electron-builder --win nsis --x64 --publish never
+            command: pnpm --filter @cordantry/desktop exec electron-builder --win nsis --x64 --publish never
             files: |
               apps/desktop/release/*.exe
               apps/desktop/release/*.blockmap
           - os: ubuntu-latest
             artifact: linux
-            command: pnpm --filter @auto-crop/desktop exec electron-builder --linux AppImage --x64 --publish never
+            command: pnpm --filter @cordantry/desktop exec electron-builder --linux AppImage --x64 --publish never
             files: apps/desktop/release/*.AppImage
     runs-on: ${{ matrix.os }}
     steps:
@@ -50,7 +50,7 @@ jobs:
       - run: ${{ matrix.command }}
       - uses: actions/upload-artifact@v4
         with:
-          name: auto-crop-${{ matrix.artifact }}
+          name: cordantry-${{ matrix.artifact }}
           path: ${{ matrix.files }}
           if-no-files-found: error
 

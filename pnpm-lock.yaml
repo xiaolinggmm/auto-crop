@@ -8,10 +8,10 @@ importers:
 
   .:
     devDependencies:
-      '@auto-crop/core':
+      '@cordantry/core':
         specifier: workspace:*
         version: link:packages/core
-      '@auto-crop/server':
+      '@cordantry/server':
         specifier: workspace:*
         version: link:apps/server
       tsx:
@@ -26,10 +26,10 @@ importers:
 
   apps/cli:
     dependencies:
-      '@auto-crop/core':
+      '@cordantry/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@auto-crop/server':
+      '@cordantry/server':
         specifier: workspace:*
         version: link:../server
     devDependencies:
@@ -100,10 +100,10 @@ importers:
         specifier: ^7.1.3
         version: 7.3.6(@types/node@24.13.3)(jiti@1.21.7)(tsx@4.23.12)
     devDependencies:
-      '@auto-crop/core':
+      '@cordantry/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@auto-crop/server':
+      '@cordantry/server':
         specifier: workspace:*
         version: link:../server
       '@playwright/test':
@@ -154,7 +154,7 @@ importers:
 
   apps/server:
     dependencies:
-      '@auto-crop/core':
+      '@cordantry/core':
         specifier: workspace:*
         version: link:../../packages/core
     devDependencies:

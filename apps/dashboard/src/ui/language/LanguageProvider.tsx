@@ -11,7 +11,7 @@ type LanguageContextValue = {
 };
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
-const currentLanguageStorageKey = "auto-crop.currentLanguage";
+const currentLanguageStorageKey = "cordantry.currentLanguage";
 const translations = {
   en: englishTranslations,
   zh: chineseTranslations,

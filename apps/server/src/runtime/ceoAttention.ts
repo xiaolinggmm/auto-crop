@@ -17,8 +17,8 @@ import type {
   TaskDependency,
   VisionGap,
   WaitState,
-} from "@auto-crop/core";
-import { resolveLocalizedText, strategicDecisionKindSchema } from "@auto-crop/core";
+} from "@cordantry/core";
+import { resolveLocalizedText, strategicDecisionKindSchema } from "@cordantry/core";
 import { isCompanyQuiescent, isRuntimeSettledTaskStatus } from "./companyQuiescence";
 
 type AttentionCandidate = {

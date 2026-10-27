@@ -1,7 +1,7 @@
-export const AUTO_CROP_DIR = ".auto-crop";
+export const CORDANTRY_DIR = ".cordantry";
 
 export function companyRoot(companyId: string): string {
-  return `${AUTO_CROP_DIR}/companies/${companyId}`;
+  return `${CORDANTRY_DIR}/companies/${companyId}`;
 }
 
 export function departmentMemoryPath(companyId: string, departmentId: string): string {
@@ -9,5 +9,5 @@ export function departmentMemoryPath(companyId: string, departmentId: string): s
 }
 
 export function taskWorkspacePath(taskId: string): string {
-  return `${AUTO_CROP_DIR}/workspaces/${taskId}`;
+  return `${CORDANTRY_DIR}/workspaces/${taskId}`;
 }

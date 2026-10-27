@@ -23,7 +23,7 @@ for (const viewport of viewports) {
   // Every Workbench page is modern; no Retro UI is left (dashboard ADR 0002).
   test(`captures Workbench screenshots for every page on ${viewport.name}`, async ({ page }, testInfo) => {
     await page.setViewportSize({ height: viewport.height, width: viewport.width });
-    await page.addInitScript((companyId) => window.localStorage.setItem("auto-crop.currentCompanyId", companyId), company.id);
+    await page.addInitScript((companyId) => window.localStorage.setItem("cordantry.currentCompanyId", companyId), company.id);
     await mockApi(page, { companies: [company] });
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1, name: "CEO Office" })).toBeVisible();
@@ -55,7 +55,7 @@ for (const viewport of viewports) {
     // Elapsed time is measured from the event timestamps, so the clock is pinned to 65s after acceptance.
     await page.clock.setFixedTime(new Date("2026-08-17T00:01:05.000Z"));
     for (const outcome of ["creating", "creation_failed"] as const) {
-      await page.addInitScript((companyId) => window.localStorage.setItem("auto-crop.currentCompanyId", companyId), company.id);
+      await page.addInitScript((companyId) => window.localStorage.setItem("cordantry.currentCompanyId", companyId), company.id);
       await mockApi(page, {
         companies: [company],
         company: { ...company, status: outcome, permissionMode: "balanced" },

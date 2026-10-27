@@ -15,7 +15,7 @@ import { storyCopy } from "../components/onboarding/storyCopy";
 import { useLanguage } from "../ui/language";
 import "./onboarding.css";
 
-const draftKey = "auto-crop.onboardingDraft";
+const draftKey = "cordantry.onboardingDraft";
 function readDraft(): { name: string; vision: string; form: boolean } {
   try {
     const value = JSON.parse(sessionStorage.getItem(draftKey) ?? "null");
@@ -139,7 +139,7 @@ export function Onboarding({
           >
             <div className="story-top">
               <span className="story-kicker">
-                {form ? "auto-crop" : c.example}
+                {form ? "Cordantry" : c.example}
               </span>
               <div className="story-top-actions">
                 <LanguageSwitch />

@@ -1,4 +1,4 @@
-import type { Task } from "@auto-crop/core";
+import type { Task } from "@cordantry/core";
 import type { AgentCapabilityGrant, RuntimeCapability } from "../policies/capabilityGrant";
 
 export type TaskExecutionProfileName = "short" | "medium" | "long";
@@ -105,21 +105,21 @@ function resolveEffectiveTimeoutForProfile(
   const requestedTimeoutMs = executionProfile.timeoutMs;
   const warnings: string[] = [];
   let effectiveTimeoutMs = requestedTimeoutMs;
-  const normalOverride = parseTimeoutEnv(env.AUTO_CROP_AGENT_TIMEOUT_MS);
-  const forceOverride = parseTimeoutEnv(env.AUTO_CROP_FORCE_AGENT_TIMEOUT_MS);
+  const normalOverride = parseTimeoutEnv(env.CORDANTRY_AGENT_TIMEOUT_MS);
+  const forceOverride = parseTimeoutEnv(env.CORDANTRY_FORCE_AGENT_TIMEOUT_MS);
 
   if (normalOverride.kind === "invalid") {
-    warnings.push(`Ignored invalid AUTO_CROP_AGENT_TIMEOUT_MS: ${normalOverride.raw}.`);
+    warnings.push(`Ignored invalid CORDANTRY_AGENT_TIMEOUT_MS: ${normalOverride.raw}.`);
   } else if (normalOverride.kind === "valid" && normalOverride.value > requestedTimeoutMs) {
     effectiveTimeoutMs = normalOverride.value;
   } else if (normalOverride.kind === "valid" && normalOverride.value < requestedTimeoutMs) {
     warnings.push(
-      `Ignored AUTO_CROP_AGENT_TIMEOUT_MS=${normalOverride.value} because it is lower than the ${executionProfile.name} profile budget ${requestedTimeoutMs}.`,
+      `Ignored CORDANTRY_AGENT_TIMEOUT_MS=${normalOverride.value} because it is lower than the ${executionProfile.name} profile budget ${requestedTimeoutMs}.`,
     );
   }
 
   if (forceOverride.kind === "invalid") {
-    warnings.push(`Ignored invalid AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: ${forceOverride.raw}.`);
+    warnings.push(`Ignored invalid CORDANTRY_FORCE_AGENT_TIMEOUT_MS: ${forceOverride.raw}.`);
   } else if (forceOverride.kind === "valid") {
     effectiveTimeoutMs = forceOverride.value;
   }

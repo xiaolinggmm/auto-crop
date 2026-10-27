@@ -18,7 +18,7 @@ Three defects fall out of that one constant:
 
 1. **A capability the task needs is absent.** The agent meets the denial mid-run with no vocabulary for it, invents one — "sandbox" — degrades the deliverable to estimates, and still submits `artifact_kind: "deliverable"`, which Automatic Acceptance cannot distinguish from researched findings.
 2. **Capabilities the task does not need are present.** `Bash`, host-wide file reads, and the operator's MCP servers are available to every task in every Permission Mode, including `safe`.
-3. **The run inherits the operator's machine.** The workspace `.auto-crop/workspaces/task_*` sits inside the operated repository, so a run picks up whatever `.claude/` settings, skills, hooks, and `CLAUDE.md` that machine happens to carry. The same task is a different task on a different laptop, and nothing records which one ran.
+3. **The run inherits the operator's machine.** The workspace `.cordantry/workspaces/task_*` sits inside the operated repository, so a run picks up whatever `.claude/` settings, skills, hooks, and `CLAUDE.md` that machine happens to carry. The same task is a different task on a different laptop, and nothing records which one ran.
 
 The runtime already computes an Action Policy from the company's Permission Mode, and every task already declares `requiredCapabilities`. Neither reaches the agent process. The grant is a constant where it should be a function.
 

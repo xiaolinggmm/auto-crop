@@ -18,13 +18,13 @@ const cleanup: Array<() => void> = [];
 afterEach(() => { vi.unstubAllEnvs(); for (const close of cleanup.splice(0).reverse()) close(); });
 
 async function fixture(realProcess = false) {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "auto-crop-recovery-")));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "cordantry-recovery-")));
   cleanup.push(() => rmSync(root, { recursive: true, force: true }));
-  mkdirSync(join(root, ".auto-crop"));
+  mkdirSync(join(root, ".cordantry"));
   const { client, repositories: r } = openState(root);
   mkdirSync(r.getTask("task_1")!.workspacePath!, { recursive: true });
   cleanup.push(() => client.close());
-  vi.stubEnv("AUTO_CROP_FORCE_AGENT_TIMEOUT_MS", "60");
+  vi.stubEnv("CORDANTRY_FORCE_AGENT_TIMEOUT_MS", "60");
   const adapter: AgentAdapter = { id: "codex", name: "fixture", capabilities: ["code"], contractCapabilities: ["structured_execution_brief", "artifact_envelope"], detect: async () => true,
     run: async () => ({ status: "failed", stdout: "", stderr: "connection closed", exitCode: 1,
       failureReason: "agent_failed", terminationConfirmed: true }) };
@@ -53,7 +53,7 @@ it("persists a delayed recovery, survives another connection, and preserves sour
   expect(f.coordinator.consume(f.event).decision.kind).toBe("scheduled");
   drainAutomaticRecoveries({ repositories: f.r, mode: "brief-only-v1", now: () => new Date(0) });
   expect(f.r.getTask("task_1")?.status).toBe("failed");
-  const other = createDatabaseClient(join(f.root, ".auto-crop", "state.sqlite"));
+  const other = createDatabaseClient(join(f.root, ".cordantry", "state.sqlite"));
   try {
     const r = createRepositories(other);
     expect(new RecoveryCoordinator({ repositories: r, mode: "brief-only-v1" }).consume(f.event)).toMatchObject({ alreadyDecided: true, decision: { kind: "scheduled" } });
@@ -153,8 +153,8 @@ it("keeps report-only default and never reinterprets its recorded decision after
   expect(f.coordinator.consume(f.event)).toMatchObject({ alreadyDecided: true, decision: { kind: "report_only" } });
   expect(f.r.executionRecovery.get("task_1")).toBeUndefined();
   expect(recoveryModeFromEnvironment({})).toBe("report_only");
-  expect(() => recoveryModeFromEnvironment({ AUTO_CROP_RECOVERY_MODE: "brief-only-v1" })).toThrow("requires budget-v1");
-  expect(() => recoveryModeFromEnvironment({ AUTO_CROP_RECOVERY_MODE: "typo" })).toThrow("must be");
+  expect(() => recoveryModeFromEnvironment({ CORDANTRY_RECOVERY_MODE: "brief-only-v1" })).toThrow("requires budget-v1");
+  expect(() => recoveryModeFromEnvironment({ CORDANTRY_RECOVERY_MODE: "typo" })).toThrow("must be");
 });
 
 it("rolls back the queue on decision failure and rolls back activation when its event fails", async () => {

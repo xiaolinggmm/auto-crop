@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company, Department, KeyResult, Objective, Proof, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Proof, Task } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -120,12 +120,12 @@ describe("runCompanyReview", () => {
 });
 
 function createReviewFixture() {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-review-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-review-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
   const repositories = createRepositories(client);
-  const logsDir = join(projectRoot, ".auto-crop", "companies", "company_1", "logs");
+  const logsDir = join(projectRoot, ".cordantry", "companies", "company_1", "logs");
   const logPath = join(logsDir, "task_1.log");
   const company: Company = {
     id: "company_1",
@@ -144,7 +144,7 @@ function createReviewFixture() {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: join(projectRoot, ".auto-crop", "companies", "company_1", "departments", "engineering", "Memory.md"),
+    memoryPath: join(projectRoot, ".cordantry", "companies", "company_1", "departments", "engineering", "Memory.md"),
   };
   const objective: Objective = {
     id: "objective_1",
@@ -172,7 +172,7 @@ function createReviewFixture() {
     assigneeAgentId: "codex",
     requiredCapabilities: ["code", "test"],
     proofSchemaId: "test-output",
-    workspacePath: join(projectRoot, ".auto-crop", "workspaces", "task_1"),
+    workspacePath: join(projectRoot, ".cordantry", "workspaces", "task_1"),
     status: "failed",
     riskLevel: "low",
     position: 0,

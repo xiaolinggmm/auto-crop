@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, relative, resolve } from "node:path";
-import type { Proof, ProofSchema, Task } from "@auto-crop/core";
+import type { Proof, ProofSchema, Task } from "@cordantry/core";
 import type { ProofReference } from "./artifactEnvelope";
 import { proofRefTypeErrors } from "./businessArtifact";
 

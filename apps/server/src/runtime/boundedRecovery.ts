@@ -1,4 +1,4 @@
-import type { Task, TaskEvent, TaskProgressEvent } from "@auto-crop/core";
+import type { Task, TaskEvent, TaskProgressEvent } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { recordTaskCompletionEvent } from "./taskCompletion";
 import { applyTaskTransition } from "./taskTransition";

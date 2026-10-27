@@ -8,7 +8,7 @@ Make task failures explainable after refresh and make validation tasks operate o
 
 - Task ordering now works through explicit task `position`.
 - `Build playable prototype` failed because the effective CLI timeout was still 120 seconds.
-- The current `AUTO_CROP_AGENT_TIMEOUT_MS` rule can silently lower a long task from 10 minutes to 2 minutes.
+- The current `CORDANTRY_AGENT_TIMEOUT_MS` rule can silently lower a long task from 10 minutes to 2 minutes.
 - `Validate prototype locally` ran in its own empty workspace, so it could not validate the prototype task's partial or completed output.
 - Failure reason exists in scheduler events, but the database does not persist enough execution detail for dashboard refresh or later diagnosis.
 
@@ -23,8 +23,8 @@ Make task failures explainable after refresh and make validation tasks operate o
 - Include Proof summaries in the Company State Snapshot so Proof views can recover after refresh.
 - Keep Task Execution Profile as the default budget source.
 - Resolve timeout in scheduler/runtime only. Adapters should enforce the already-resolved Effective Timeout and should not read timeout environment variables.
-- Let `AUTO_CROP_AGENT_TIMEOUT_MS` raise a budget only; it must not silently lower a task profile budget.
-- Add a separate `AUTO_CROP_FORCE_AGENT_TIMEOUT_MS` escape hatch for deliberate full override test runs.
+- Let `CORDANTRY_AGENT_TIMEOUT_MS` raise a budget only; it must not silently lower a task profile budget.
+- Add a separate `CORDANTRY_FORCE_AGENT_TIMEOUT_MS` escape hatch for deliberate full override test runs.
 - Do not run dependency consumers when their producer has not reached `review`.
 - Mark blocked dependency consumers as `blocked` with a dependency-specific reason.
 - Let validation tasks use the upstream build task's Artifact Workspace in the first version.
@@ -108,9 +108,9 @@ Resolution order:
 
 1. Resolve the task's Task Execution Profile.
 2. Use the profile timeout as the requested timeout.
-3. If `AUTO_CROP_AGENT_TIMEOUT_MS` is set and is higher than the requested timeout, use it as the effective timeout.
-4. If `AUTO_CROP_AGENT_TIMEOUT_MS` is set and is lower than the requested timeout, ignore it and log a visible warning in Agent Activity.
-5. If `AUTO_CROP_FORCE_AGENT_TIMEOUT_MS` is set, use it as the effective timeout and record that fact in the failure message/log context.
+3. If `CORDANTRY_AGENT_TIMEOUT_MS` is set and is higher than the requested timeout, use it as the effective timeout.
+4. If `CORDANTRY_AGENT_TIMEOUT_MS` is set and is lower than the requested timeout, ignore it and log a visible warning in Agent Activity.
+5. If `CORDANTRY_FORCE_AGENT_TIMEOUT_MS` is set, use it as the effective timeout and record that fact in the failure message/log context.
 6. If either timeout environment variable is not a positive integer, ignore it and log a visible warning in Agent Activity.
 
 The dashboard should display the effective timeout when showing a started or failed run. If requested and effective differ, show both in compact form.
@@ -296,8 +296,8 @@ On refresh:
 Run:
 
 ```bash
-pnpm --filter @auto-crop/server test
-pnpm --filter @auto-crop/server typecheck
-pnpm --filter @auto-crop/dashboard test
-pnpm --filter @auto-crop/dashboard typecheck
+pnpm --filter @cordantry/server test
+pnpm --filter @cordantry/server typecheck
+pnpm --filter @cordantry/dashboard test
+pnpm --filter @cordantry/dashboard typecheck
 ```

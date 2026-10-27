@@ -12,8 +12,8 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "pnpm --filter @auto-crop/dashboard dev --port 5175",
-    env: { AUTO_CROP_API_PROXY: fixtureApiUrl },
+    command: "pnpm --filter @cordantry/dashboard dev --port 5175",
+    env: { CORDANTRY_API_PROXY: fixtureApiUrl },
     reuseExistingServer: !process.env.CI,
     url: "http://127.0.0.1:5175",
   },

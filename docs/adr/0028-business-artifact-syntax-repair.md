@@ -4,7 +4,7 @@ Status: superseded by ADR 0041 (the file delivery it repaired is removed; envelo
 
 ## Context
 
-A real-agent smoke of a `zh` company blocked on a competitor analysis whose work was done. The run researched nine competitors, wrote its report, and wrote `.auto-crop/business-artifact.json` — which did not parse:
+A real-agent smoke of a `zh` company blocked on a competitor analysis whose work was done. The run researched nine competitors, wrote its report, and wrote `.cordantry/business-artifact.json` — which did not parse:
 
 ```
 …，"免登录"已非差异化点；…

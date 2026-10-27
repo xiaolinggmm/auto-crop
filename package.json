@@ -1,13 +1,13 @@
 {
-  "name": "auto-crop",
+  "name": "cordantry",
   "version": "0.0.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@11.9.0",
   "scripts": {
-    "build": "pnpm --filter @auto-crop/dashboard build && pnpm --filter @auto-crop/desktop build",
-    "desktop": "pnpm build && pnpm --filter @auto-crop/desktop dev",
-    "dist": "pnpm --filter @auto-crop/dashboard build && pnpm --filter @auto-crop/desktop dist",
+    "build": "pnpm --filter @cordantry/dashboard build && pnpm --filter @cordantry/desktop build",
+    "desktop": "pnpm build && pnpm --filter @cordantry/desktop dev",
+    "dist": "pnpm --filter @cordantry/dashboard build && pnpm --filter @cordantry/desktop dist",
     "dev": "pnpm -r --parallel --if-present dev",
     "smoke:execution-health": "vitest run apps/cli/src/commands/executionHealth.smoke.test.ts",
     "smoke:desktop": "pnpm build && node scripts/desktop-worker-smoke.mjs",
@@ -20,8 +20,8 @@
     "lint": "pnpm -r --if-present lint"
   },
   "devDependencies": {
-    "@auto-crop/core": "workspace:*",
-    "@auto-crop/server": "workspace:*",
+    "@cordantry/core": "workspace:*",
+    "@cordantry/server": "workspace:*",
     "tsx": "^4.23.12",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"

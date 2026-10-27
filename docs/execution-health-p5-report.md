@@ -29,14 +29,14 @@
 在隔离项目同时设置：
 
 ```bash
-AUTO_CROP_EXECUTION_POLICY=budget-v1 AUTO_CROP_RECOVERY_MODE=brief-only-v1 pnpm --filter @auto-crop/cli start
+CORDANTRY_EXECUTION_POLICY=budget-v1 CORDANTRY_RECOVERY_MODE=brief-only-v1 pnpm --filter @cordantry/cli start
 ```
 
-缺省 `AUTO_CROP_RECOVERY_MODE=report_only`。非法值，或自动恢复与 observe 混用，会在启动 Worker 前报错。程序内部直接创建 Supervisor 的调用者需要显式传入 `recoveryMode`。
+缺省 `CORDANTRY_RECOVERY_MODE=report_only`。非法值，或自动恢复与 observe 混用，会在启动 Worker 前报错。程序内部直接创建 Supervisor 的调用者需要显式传入 `recoveryMode`。
 
 `GET /api/companies/:id/execution-events` 的 `recoveries` 返回队列状态、来源、新 run 与阻止理由；不外发原始日志或包含任务正文的完整清单。完整清单在本地 `execution_recoveries.manifest` 中。
 
-回退先暂停公司新派发并排空/停止活动执行，关闭 Supervisor，再设置 `AUTO_CROP_RECOVERY_MODE=report_only`。pending 条目保留但不执行；已进入普通 queued 的任务必须在暂停状态下确认是否继续或取消，切换开关不会撤销已经排队的工作。保留 `execution_recoveries` 和恢复决策作为永久去重依据，不删表。回退 observe 的预算限制见 [P4 操作说明](execution-budget-opt-in.md)。
+回退先暂停公司新派发并排空/停止活动执行，关闭 Supervisor，再设置 `CORDANTRY_RECOVERY_MODE=report_only`。pending 条目保留但不执行；已进入普通 queued 的任务必须在暂停状态下确认是否继续或取消，切换开关不会撤销已经排队的工作。保留 `execution_recoveries` 和恢复决策作为永久去重依据，不删表。回退 observe 的预算限制见 [P4 操作说明](execution-budget-opt-in.md)。
 
 ## 真实样本
 
@@ -64,15 +64,15 @@ AUTO_CROP_EXECUTION_POLICY=budget-v1 AUTO_CROP_RECOVERY_MODE=brief-only-v1 pnpm 
 采样命令（会调用付费/额度模型，必须单独授权）：
 
 ```bash
-AUTO_CROP_ALLOW_REAL_SAMPLES=codex pnpm sample:execution-health
+CORDANTRY_ALLOW_REAL_SAMPLES=codex pnpm sample:execution-health
 ```
 
 脚本最多执行 9 次，每次上限 60 秒；遇到非预期失败立即停下，不自动重试。重新运行会产生新的调用，不能在本轮 10 次额度之外直接再跑。
 
 原始日志与 `summary.json` 保存在本机临时目录，不提交仓库：
 
-- 首次初始化失败：`/var/folders/92/kxgfp5k13f5_gmm4q8m_hr5c0000gn/T/auto-crop-p5-codex-43tUKC`
-- 9 次正常环境采样：`/var/folders/92/kxgfp5k13f5_gmm4q8m_hr5c0000gn/T/auto-crop-p5-codex-MFZBkm`
+- 首次初始化失败：`/var/folders/92/kxgfp5k13f5_gmm4q8m_hr5c0000gn/T/cordantry-p5-codex-43tUKC`
+- 9 次正常环境采样：`/var/folders/92/kxgfp5k13f5_gmm4q8m_hr5c0000gn/T/cordantry-p5-codex-MFZBkm`
 
 目录权限 0700，日志/摘要 0600。仅用于本轮核查，最迟 2026-10-15 由操作者删除；系统可能提前清理临时目录。本轮没有建立自动清理任务。仓库仅保留以上无原始正文的摘要。
 

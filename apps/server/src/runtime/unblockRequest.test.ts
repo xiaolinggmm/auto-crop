@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company, Task } from "@auto-crop/core";
+import type { Company, Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { createApiServer } from "../api/routes";
 import { createDatabaseClient } from "../db/client";
@@ -295,7 +295,7 @@ function grantedRefutableCapability(request: AgentRunRequest): string {
 }
 
 async function createHarness(scripts: Script[], taskOverrides: Partial<Task> = {}, options: { blockersLeaveProof?: boolean; planner?: AgentAdapter } = {}) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-unblock-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-unblock-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
@@ -303,7 +303,7 @@ async function createHarness(scripts: Script[], taskOverrides: Partial<Task> = {
   repositories.createCompany(company());
   repositories.createDepartment({
     id: "department_1", companyId: "company_1", name: "Research", responsibility: "Research.", leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/research/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/research/Memory.md",
   });
   repositories.createObjective({ id: "objective_1", companyId: "company_1", title: "Find a keyword", status: "active", priority: 1 });
   repositories.createKeyResult({

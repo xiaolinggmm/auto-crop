@@ -42,7 +42,7 @@ export type AdapterLaunchResolution =
 /**
  * The first of `candidates` whose launch support is not `unavailable` and that can deliver. An adapter
  * without a launch plan makes no isolation claim and is launchable with no warnings. Dispatch goes
- * through this so a task is never handed to an installed CLI that cannot run Auto-Crop's launch shape.
+ * through this so a task is never handed to an installed CLI that cannot run Cordantry's launch shape.
  *
  * Delivering means `artifact_envelope`: since ADR 0041 the Runtime Action Channel is the only way a
  * run's delivery reaches the runtime, so an adapter without it would run the work and then settle as a

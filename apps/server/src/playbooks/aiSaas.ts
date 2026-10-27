@@ -1,4 +1,4 @@
-import type { CompanyBlueprint, CompleteLocalizedText } from "@auto-crop/core";
+import type { CompanyBlueprint, CompleteLocalizedText } from "@cordantry/core";
 import type { Playbook, TaskTemplate } from "./types";
 
 function text(en: string, zh: string): CompleteLocalizedText {

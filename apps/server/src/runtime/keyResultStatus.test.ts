@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company } from "@auto-crop/core";
+import type { Company } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -63,7 +63,7 @@ function writeBlueprint() {
   const client = createDatabaseClient(":memory:");
   migrate(client);
   const repositories = createRepositories(client);
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-key-results-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-key-results-"));
   dirs.push(projectRoot);
   const blueprint = aiSaasPlaybook.createBlueprint({
     companyName: "Pricing Page Studio",

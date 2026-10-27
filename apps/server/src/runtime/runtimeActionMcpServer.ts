@@ -1,5 +1,5 @@
 import { createInterface } from "node:readline";
-import type { Locale, ProofType } from "@auto-crop/core";
+import type { Locale, ProofType } from "@cordantry/core";
 import { artifactEnvelopeInputSchema } from "./artifactEnvelope";
 import { createRuntimeActionChannel, type DeliveryContractOptions } from "./runtimeActionChannel";
 
@@ -24,7 +24,7 @@ export function handleRuntimeActionMcpMessage(message: JsonRpcRequest, env: Runt
     return response(id, {
       protocolVersion: "2024-11-05",
       capabilities: { tools: {} },
-      serverInfo: { name: "auto-crop-runtime-actions", version: "0.0.0" },
+      serverInfo: { name: "cordantry-runtime-actions", version: "0.0.0" },
     });
   }
 
@@ -33,7 +33,7 @@ export function handleRuntimeActionMcpMessage(message: JsonRpcRequest, env: Runt
       tools: [
         {
           name: TOOL_NAME,
-          description: "Submit the task's Artifact Envelope candidate to the Auto-Crop runtime.",
+          description: "Submit the task's Artifact Envelope candidate to the Cordantry runtime.",
           inputSchema: {
             ...artifactEnvelopeInputSchema(runtimeContext(env)?.contract?.proofRefs?.acceptedTypes),
             properties: {
@@ -82,12 +82,12 @@ function runtimeContext(env: RuntimeActionMcpEnv): null | {
   runId: string;
   contract?: DeliveryContractOptions;
 } {
-  const candidateDir = env.AUTO_CROP_RUNTIME_ACTION_DIR;
-  const companyId = env.AUTO_CROP_RUNTIME_ACTION_COMPANY_ID;
-  const taskId = env.AUTO_CROP_RUNTIME_ACTION_TASK_ID;
-  const runId = env.AUTO_CROP_RUNTIME_ACTION_RUN_ID;
-  const locale = env.AUTO_CROP_RUNTIME_ACTION_LOCALE;
-  const proofSchemaId = env.AUTO_CROP_RUNTIME_ACTION_PROOF_SCHEMA_ID;
+  const candidateDir = env.CORDANTRY_RUNTIME_ACTION_DIR;
+  const companyId = env.CORDANTRY_RUNTIME_ACTION_COMPANY_ID;
+  const taskId = env.CORDANTRY_RUNTIME_ACTION_TASK_ID;
+  const runId = env.CORDANTRY_RUNTIME_ACTION_RUN_ID;
+  const locale = env.CORDANTRY_RUNTIME_ACTION_LOCALE;
+  const proofSchemaId = env.CORDANTRY_RUNTIME_ACTION_PROOF_SCHEMA_ID;
   if (!candidateDir || !companyId || !taskId || !runId) {
     return null;
   }
@@ -100,12 +100,12 @@ function runtimeContext(env: RuntimeActionMcpEnv): null | {
       ? {
         contract: {
           locale: locale as Locale,
-          requireDetails: env.AUTO_CROP_RUNTIME_ACTION_REQUIRE_EXECUTION_DETAILS === "true",
+          requireDetails: env.CORDANTRY_RUNTIME_ACTION_REQUIRE_EXECUTION_DETAILS === "true",
           ...(proofSchemaId
             ? {
               proofRefs: {
                 proofSchemaId,
-                acceptedTypes: (env.AUTO_CROP_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES ?? "").split(",").filter(Boolean) as ProofType[],
+                acceptedTypes: (env.CORDANTRY_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES ?? "").split(",").filter(Boolean) as ProofType[],
               },
             }
             : {}),

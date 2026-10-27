@@ -1,4 +1,4 @@
-import { deriveKeyResultStatus } from "@auto-crop/core";
+import { deriveKeyResultStatus } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 
 /**

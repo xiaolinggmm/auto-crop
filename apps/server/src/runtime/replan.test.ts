@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest, AgentSession } from "../adapters/types";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
@@ -191,7 +191,7 @@ describe("replan proposals", () => {
       projectRoot: mkdtempTracked(),
       plannerAgent,
       playbook: aiSaasPlaybook,
-      agentSessionEnv: { AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS: "1" },
+      agentSessionEnv: { CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS: "1" },
       now: () => new Date("2026-08-17T00:00:00.000Z"),
       createId: createSequentialIdFactory(),
     });
@@ -274,7 +274,7 @@ describe("replan proposals", () => {
       projectRoot: mkdtempTracked(),
       plannerAgent,
       playbook: aiSaasPlaybook,
-      agentSessionEnv: { AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS: "1" },
+      agentSessionEnv: { CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS: "1" },
       now: () => new Date("2026-08-17T00:00:00.000Z"),
       createId: createSequentialIdFactory(),
     });
@@ -425,7 +425,7 @@ function createFixture(tasks: Task[]) {
 }
 
 function mkdtempTracked(): string {
-  const dir = mkdtempSync(join(tmpdir(), "auto-crop-replan-"));
+  const dir = mkdtempSync(join(tmpdir(), "cordantry-replan-"));
   createdDirs.push(dir);
   return dir;
 }
@@ -452,7 +452,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
 }
 

@@ -1,6 +1,6 @@
 # CEO-Owned Department Review Queue
 
-Auto-Crop will make CEO Office the owner of department review decisions. Departments can submit review requests and track their state, but approval and return decisions belong to CEO Office.
+Cordantry will make CEO Office the owner of department review decisions. Departments can submit review requests and track their state, but approval and return decisions belong to CEO Office.
 
 The first implementation derives CEO pending review items from existing review-ready tasks instead of adding a complete review-request table. The next implementation will make those derived items actionable by recording durable CEO Review Decisions.
 

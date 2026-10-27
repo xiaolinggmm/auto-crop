@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { BusinessArtifact, RiskLevel, Task } from "@auto-crop/core";
+import type { BusinessArtifact, RiskLevel, Task } from "@cordantry/core";
 import { evaluateAutomaticAcceptance } from "./automaticAcceptance";
 
 function createTask(overrides: Partial<Task> = {}): Task {
@@ -179,7 +179,7 @@ describe("evaluateAutomaticAcceptance", () => {
       ["deploy to production", "Deploy the service to production once the brief is signed off."],
       ["production environment", "Provision the production environment for the API."],
       ["custom domain", "Point the custom domain at the new host."],
-      ["register a domain", "We should register the domain autocrop.example this week."],
+      ["register a domain", "We should register the domain cordantry.example this week."],
       ["search console", "Verify the property in Google Search Console."],
       ["submit the sitemap", "Then submit the sitemap to Google for indexing."],
       ["ads account", "Connect the Google Ads account before the campaign."],

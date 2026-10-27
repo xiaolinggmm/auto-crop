@@ -15,7 +15,7 @@ const cleanups: Array<() => void> = [];
 afterEach(() => cleanups.splice(0).forEach(f => f()));
 function fixture(command: MahCommand) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "mah-adapter-")));
-  mkdirSync(join(root, ".auto-crop"));
+  mkdirSync(join(root, ".cordantry"));
   const { repositories, client } = openState(root);
   cleanups.push(() => { client.close(); rmSync(root, { recursive: true, force: true }); });
   const context = { companyId: "company_1", taskId: "task_1", runId: "run-1" };
@@ -60,7 +60,7 @@ describe("MAH CLI delegation", () => {
     });
     expect(await f.adapter.run(f.request)).toMatchObject({ status: "failed", terminationConfirmed: false });
     const id = f.repositories.mahExecutions.list("task_1")[0]!.mahTaskId;
-    const reopened = createDatabaseClient(join(f.root, ".auto-crop", "state.sqlite"));
+    const reopened = createDatabaseClient(join(f.root, ".cordantry", "state.sqlite"));
     try {
       const repositories = createRepositories(reopened);
       expect(repositories.mahExecutions.blocksDispatch("task_1")).toBe(true);

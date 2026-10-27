@@ -15,7 +15,7 @@ import {
   type TaskHold,
   type TaskHoldKind,
   type TaskStatus,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -371,7 +371,7 @@ function createFixture(): {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
   const task: Task = {
     id: "task_1",

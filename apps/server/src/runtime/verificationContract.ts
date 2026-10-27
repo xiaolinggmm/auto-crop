@@ -12,19 +12,19 @@ import {
   type VerificationInputs,
   type VerificationRequirement,
   type VerificationSnapshotTarget,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 
 type Repositories = ReturnType<typeof createRepositories>;
 
 /** Where a verifying task's runtime-made input snapshots live, relative to its own workspace. */
-export const VERIFICATION_INPUTS_DIR = ".auto-crop-inputs";
+export const VERIFICATION_INPUTS_DIR = ".cordantry-inputs";
 
 /**
  * Directories and files never handed over. Runtime bookkeeping is not the producer's output, VCS and
  * dependency caches are not what is being verified, and env files may hold credentials.
  */
-const EXCLUDED_DIRECTORY_NAMES = new Set([".auto-crop", ".auto-crop-handoff", VERIFICATION_INPUTS_DIR, ".git", "node_modules"]);
+const EXCLUDED_DIRECTORY_NAMES = new Set([".cordantry", ".cordantry-handoff", VERIFICATION_INPUTS_DIR, ".git", "node_modules"]);
 const MAX_SNAPSHOT_FILES = 5_000;
 const MAX_SNAPSHOT_BYTES = 50 * 1024 * 1024;
 
@@ -415,7 +415,7 @@ function copyPackagedFileRefs(input: {
   filesDirectory: string;
   byteLimit: number;
 }): { kind: "ready"; relativePaths: Set<string>; bytes: number } | { kind: "failed"; message: string } {
-  const manifestPath = join(input.sourceRoot, ".auto-crop-handoff", "package.json");
+  const manifestPath = join(input.sourceRoot, ".cordantry-handoff", "package.json");
   const relativePaths = new Set<string>();
   if (!existsSync(manifestPath)) {
     return { kind: "ready", relativePaths, bytes: 0 };

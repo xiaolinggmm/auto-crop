@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createDatabaseClient } from "./client";
 import { migrate } from "./schema";
 import { createRepositories } from "./repositories";
-import type { CeoIntake, Company, Department, KeyResult, Objective, Proof, ReplanProposal, Task, TaskCompletionEvent } from "@auto-crop/core";
+import type { CeoIntake, Company, Department, KeyResult, Objective, Proof, ReplanProposal, Task, TaskCompletionEvent } from "@cordantry/core";
 
 const createdDirs: string[] = [];
 
@@ -250,7 +250,7 @@ describe("repositories", () => {
   });
 
   it("recovers queued tasks after reopening the same SQLite database", () => {
-    const dir = mkdtempSync(join(tmpdir(), "auto-crop-db-"));
+    const dir = mkdtempSync(join(tmpdir(), "cordantry-db-"));
     createdDirs.push(dir);
     const databasePath = join(dir, "state.sqlite");
     const records = createRecords();
@@ -297,7 +297,7 @@ describe("repositories", () => {
   });
 
   it("backfills explicit task positions when migrating an existing database", () => {
-    const dir = mkdtempSync(join(tmpdir(), "auto-crop-db-"));
+    const dir = mkdtempSync(join(tmpdir(), "cordantry-db-"));
     createdDirs.push(dir);
     const databasePath = join(dir, "state.sqlite");
     const legacyClient = createDatabaseClient(databasePath);
@@ -366,7 +366,7 @@ describe("repositories", () => {
         "Engineering",
         "Build prototypes.",
         "codex",
-        ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+        ".cordantry/companies/company_1/departments/engineering/Memory.md",
       );
     insertLegacyTask(legacyClient, "task_z", "First legacy task");
     insertLegacyTask(legacyClient, "task_a", "Second legacy task");
@@ -407,7 +407,7 @@ describe("repositories", () => {
       status: "proposed",
       proposalSource: "planner_agent",
       plannerAgentId: "codex",
-      plannerPromptPath: ".auto-crop/companies/company_1/replan-task_1-prompt.md",
+      plannerPromptPath: ".cordantry/companies/company_1/replan-task_1-prompt.md",
       plannerFailureReason: null,
       plannerFailureMessage: null,
       rationale: "Original task exceeded long budget.",
@@ -507,7 +507,7 @@ function createRecords(): {
       name: "Engineering",
       responsibility: "Build prototypes and collect engineering proof.",
       leadAgentId: "codex",
-      memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+      memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
     },
     objective: {
       id: "objective_1",
@@ -535,7 +535,7 @@ function createRecords(): {
       assigneeAgentId: "codex",
       requiredCapabilities: ["code", "frontend"],
       proofSchemaId: "landing-page-proof",
-      workspacePath: ".auto-crop/workspaces/task_1",
+      workspacePath: ".cordantry/workspaces/task_1",
       status: "queued",
       riskLevel: "medium",
       position: 0,
@@ -544,7 +544,7 @@ function createRecords(): {
       id: "proof_1",
       taskId: "task_1",
       type: "file",
-      uri: ".auto-crop/workspaces/task_1/index.html",
+      uri: ".cordantry/workspaces/task_1/index.html",
       summary: "Landing page prototype file created.",
       verifiedAt: null,
     },

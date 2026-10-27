@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import {
   aiSaasPlaybook,
   createDatabaseClient,
@@ -10,8 +10,8 @@ import {
   createRepositories,
   migrate,
   type AgentAdapter,
-} from "@auto-crop/server";
-import { startAutoCrop, startSchedulerLoop } from "./start";
+} from "@cordantry/server";
+import { startCordantry, startSchedulerLoop } from "./start";
 
 const createdDirs: string[] = [];
 
@@ -21,12 +21,12 @@ afterEach(() => {
   }
 });
 
-describe("startAutoCrop", () => {
+describe("startCordantry", () => {
   it("starts the local API server, prints the dashboard URL, and detects configured agents", async () => {
     const projectRoot = createTempProjectRoot();
     const logs: string[] = [];
 
-    const started = await startAutoCrop({
+    const started = await startCordantry({
       projectRoot,
       host: "127.0.0.1",
       port: 0,
@@ -71,9 +71,9 @@ describe("startAutoCrop", () => {
     const projectRoot = createTempProjectRoot();
     const dashboardRoot = join(projectRoot, "dashboard");
     mkdirSync(join(dashboardRoot, "assets"), { recursive: true });
-    writeFileSync(join(dashboardRoot, "index.html"), "<main>Auto Crop Desktop</main>");
+    writeFileSync(join(dashboardRoot, "index.html"), "<main>Cordantry Desktop</main>");
     writeFileSync(join(dashboardRoot, "assets", "app.js"), "console.log('desktop');");
-    const started = await startAutoCrop({
+    const started = await startCordantry({
       projectRoot,
       dashboardRoot,
       agents: [],
@@ -85,7 +85,7 @@ describe("startAutoCrop", () => {
       const home = await fetch(started.url);
       expect(home.status).toBe(200);
       expect(home.headers.get("content-type")).toContain("text/html");
-      expect(await home.text()).toContain("Auto Crop Desktop");
+      expect(await home.text()).toContain("Cordantry Desktop");
 
       const asset = await fetch(`${started.url}/assets/app.js`);
       expect(asset.status).toBe(200);
@@ -94,7 +94,7 @@ describe("startAutoCrop", () => {
 
       const spaRoute = await fetch(`${started.url}/company/example`);
       expect(spaRoute.status).toBe(200);
-      expect(await spaRoute.text()).toContain("Auto Crop Desktop");
+      expect(await spaRoute.text()).toContain("Cordantry Desktop");
 
       const api = await fetch(`${started.url}/api/agents`);
       expect(api.status).toBe(200);
@@ -120,7 +120,7 @@ describe("startAutoCrop", () => {
       output: ["## Human CEO Brief", "Validate.", "```json", JSON.stringify({ brief: "Validate.", blueprint }), "```"].join("\n"),
     });
 
-    const started = await startAutoCrop({
+    const started = await startCordantry({
       projectRoot,
       host: "127.0.0.1",
       port: 0,
@@ -166,7 +166,7 @@ describe("startAutoCrop", () => {
       output: ["## Human CEO Brief", "Validate.", "```json", JSON.stringify({ brief: "Validate.", blueprint }), "```"].join("\n"),
     });
 
-    const started = await startAutoCrop({
+    const started = await startCordantry({
       projectRoot,
       host: "127.0.0.1",
       port: 0,
@@ -187,7 +187,7 @@ describe("startAutoCrop", () => {
         assets: [],
       });
       const state = await waitForCompanyState(started.url, created.company.id, "active");
-      const database = createDatabaseClient(join(projectRoot, ".auto-crop", "state.sqlite"));
+      const database = createDatabaseClient(join(projectRoot, ".cordantry", "state.sqlite"));
       try {
         const repositories = createRepositories(database);
         const creationEvents = repositories.listCompanyEventsForCompany(created.company.id);
@@ -283,7 +283,7 @@ describe("startAutoCrop", () => {
 });
 
 function createTempProjectRoot(): string {
-  const dir = mkdtempSync(join(tmpdir(), "auto-crop-cli-"));
+  const dir = mkdtempSync(join(tmpdir(), "cordantry-cli-"));
   createdDirs.push(dir);
   return dir;
 }
@@ -361,7 +361,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Run local checks.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/memory.md",
   };
 }
 

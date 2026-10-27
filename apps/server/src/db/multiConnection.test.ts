@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { AgentRun, Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { AgentRun, Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import { createDatabaseClient } from "./client";
 import { createRepositories } from "./repositories";
 import { migrate } from "./schema";
@@ -29,7 +29,7 @@ afterEach(() => {
  */
 describe("storage under a second connection", () => {
   const openDatabase = () => {
-    const directory = mkdtempSync(join(tmpdir(), "auto-crop-multi-connection-"));
+    const directory = mkdtempSync(join(tmpdir(), "cordantry-multi-connection-"));
     createdDirs.push(directory);
     const path = join(directory, "state.sqlite");
     const first = createDatabaseClient(path);
@@ -221,7 +221,7 @@ function seedRunningTask(client: ReturnType<typeof createDatabaseClient>): void 
     name: "Engineering",
     responsibility: "Build prototypes.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/memory.md",
   } satisfies Department);
   repositories.createObjective({
     id: "objective_1",
@@ -249,7 +249,7 @@ function seedRunningTask(client: ReturnType<typeof createDatabaseClient>): void 
     assigneeAgentId: "codex",
     requiredCapabilities: ["code"],
     proofSchemaId: "repo-diff",
-    workspacePath: ".auto-crop/workspaces/task_1",
+    workspacePath: ".cordantry/workspaces/task_1",
     status: "running",
     riskLevel: "medium",
     position: 0,
@@ -259,7 +259,7 @@ function seedRunningTask(client: ReturnType<typeof createDatabaseClient>): void 
     taskId: "task_1",
     agentId: "codex",
     status: "running",
-    logPath: ".auto-crop/companies/company_1/logs/task_1.log",
+    logPath: ".cordantry/companies/company_1/logs/task_1.log",
     startedAt: "2026-09-21T00:00:00.000Z",
     finishedAt: null,
     executionProfileName: "short",

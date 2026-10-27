@@ -1,9 +1,9 @@
-import { projectCeoOfficeItems } from "@auto-crop/core";
+import { projectCeoOfficeItems } from "@cordantry/core";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
@@ -85,11 +85,11 @@ describe("department subtask verification", () => {
     );
 
     const validatePrompt = harness.prompts.get("validate")!;
-    expect(validatePrompt).toContain(`.auto-crop-inputs/${execute.id}`);
+    expect(validatePrompt).toContain(`.cordantry-inputs/${execute.id}`);
     expect(validatePrompt).toContain("`home-page`");
     expect(validatePrompt).not.toContain(`Artifact Workspace: ${execute.artifactWorkspacePath}`);
 
-    const snapshotRoot = join(validate.workspacePath!, ".auto-crop-inputs", execute.id, "files");
+    const snapshotRoot = join(validate.workspacePath!, ".cordantry-inputs", execute.id, "files");
     expect(existsSync(join(snapshotRoot, "index.html"))).toBe(true);
     expect(existsSync(join(snapshotRoot, "node_modules"))).toBe(false);
     expect(existsSync(join(snapshotRoot, ".env"))).toBe(false);
@@ -343,9 +343,9 @@ describe("department subtask verification", () => {
     const harness = createHarness({
       validate: (workspacePath) => {
         // A forged manifest dropping the requirement this verifier cannot meet.
-        mkdirSync(join(workspacePath, ".auto-crop-inputs"), { recursive: true });
+        mkdirSync(join(workspacePath, ".cordantry-inputs"), { recursive: true });
         writeFileSync(
-          join(workspacePath, ".auto-crop-inputs", "manifest.json"),
+          join(workspacePath, ".cordantry-inputs", "manifest.json"),
           JSON.stringify({ requirements: [{ id: "home-page", description: "index.html" }] }),
         );
         return [{ requirement_id: "home-page", outcome: "passed", evidence: "index.html present." }];
@@ -505,7 +505,7 @@ describe("verification contract", () => {
           requirementsTaskId: "define",
           requirementsArtifactId: "requirements_1",
           requirements: [{ id: "r1", description: "works" }],
-          targets: [{ taskId: "execute", artifactId: "artifact_old", revision: "abc", path: ".auto-crop-inputs/execute" }],
+          targets: [{ taskId: "execute", artifactId: "artifact_old", revision: "abc", path: ".cordantry-inputs/execute" }],
         },
         currentArtifactIds: new Map([
           ["execute", "artifact_new"],
@@ -523,8 +523,8 @@ describe("verification contract", () => {
   it("sends a failed verification recovered from a workspace to rework, not CEO review", () => {
     const harness = createHarness({ validate: () => [] });
     const { repositories } = harness;
-    const producerWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-producer-"));
-    const verifierWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-verifier-"));
+    const producerWorkspace = mkdtempSync(join(tmpdir(), "cordantry-producer-"));
+    const verifierWorkspace = mkdtempSync(join(tmpdir(), "cordantry-verifier-"));
     createdDirs.push(producerWorkspace, verifierWorkspace);
     writeFileSync(join(producerWorkspace, "index.html"), "<h1>ok</h1>");
     const define = baseTask("define_1", "complete", "product-brief");
@@ -794,8 +794,8 @@ describe("verification contract", () => {
    */
   it("hands over the files of a producer the department never split", () => {
     const harness = createHarness({ validate: () => [] });
-    const producerWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-producer-"));
-    const verifierWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-verifier-"));
+    const producerWorkspace = mkdtempSync(join(tmpdir(), "cordantry-producer-"));
+    const verifierWorkspace = mkdtempSync(join(tmpdir(), "cordantry-verifier-"));
     createdDirs.push(producerWorkspace, verifierWorkspace);
     writeFileSync(join(producerWorkspace, "research-report.md"), "# Findings\n");
 
@@ -818,14 +818,14 @@ describe("verification contract", () => {
 
     expect(result.kind).toBe("ready");
     expect(repositories.getTask(producer.id)?.artifactWorkspacePath ?? null).toBeNull();
-    expect(readFileSync(join(verifierWorkspace, ".auto-crop-inputs", producer.id, "files", "research-report.md"), "utf8")).toBe("# Findings\n");
+    expect(readFileSync(join(verifierWorkspace, ".cordantry-inputs", producer.id, "files", "research-report.md"), "utf8")).toBe("# Findings\n");
   });
 
   it("hands over the workspace of the version being verified, not an earlier one", () => {
     const harness = createHarness({ validate: () => [] });
-    const firstWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-producer-v1-"));
-    const reworkWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-producer-v2-"));
-    const verifierWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-verifier-"));
+    const firstWorkspace = mkdtempSync(join(tmpdir(), "cordantry-producer-v1-"));
+    const reworkWorkspace = mkdtempSync(join(tmpdir(), "cordantry-producer-v2-"));
+    const verifierWorkspace = mkdtempSync(join(tmpdir(), "cordantry-verifier-"));
     createdDirs.push(firstWorkspace, reworkWorkspace, verifierWorkspace);
     writeFileSync(join(firstWorkspace, "report.md"), "first");
     writeFileSync(join(reworkWorkspace, "report.md"), "reworked");
@@ -846,13 +846,13 @@ describe("verification contract", () => {
     repositories.createTaskDependency({ taskId: verifier.id, dependsOnTaskId: producer.id, inputRole: "verification_target" });
 
     expect(prepareVerificationInputs({ repositories, task: verifier, workspacePath: verifierWorkspace }).kind).toBe("ready");
-    expect(readFileSync(join(verifierWorkspace, ".auto-crop-inputs", producer.id, "files", "report.md"), "utf8")).toBe("reworked");
+    expect(readFileSync(join(verifierWorkspace, ".cordantry-inputs", producer.id, "files", "report.md"), "utf8")).toBe("reworked");
   });
 
   it("snapshots runtime-packaged fileRefs instead of later live workspace mutations", () => {
     const harness = createHarness({ validate: () => [] });
-    const producerWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-producer-"));
-    const verifierWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-verifier-"));
+    const producerWorkspace = mkdtempSync(join(tmpdir(), "cordantry-producer-"));
+    const verifierWorkspace = mkdtempSync(join(tmpdir(), "cordantry-verifier-"));
     createdDirs.push(producerWorkspace, verifierWorkspace);
 
     const { repositories } = harness;
@@ -881,12 +881,12 @@ describe("verification contract", () => {
     const result = prepareVerificationInputs({ repositories, task: verifier, workspacePath: verifierWorkspace });
 
     expect(result.kind).toBe("ready");
-    expect(readFileSync(join(verifierWorkspace, ".auto-crop-inputs", producer.id, "files", "report.md"), "utf8")).toBe("settled\n");
+    expect(readFileSync(join(verifierWorkspace, ".cordantry-inputs", producer.id, "files", "report.md"), "utf8")).toBe("settled\n");
   });
 
   it("refuses to dispatch a verifier when the delivery records no workspace to hand over", () => {
     const harness = createHarness({ validate: () => [] });
-    const verifierWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-verifier-"));
+    const verifierWorkspace = mkdtempSync(join(tmpdir(), "cordantry-verifier-"));
     createdDirs.push(verifierWorkspace);
 
     const { repositories } = harness;
@@ -909,13 +909,13 @@ describe("verification contract", () => {
     // Named and stopped, rather than a snapshot of nothing the verifier would report on.
     expect(result).toMatchObject({ kind: "handoff_failed", producer: { id: producer.id } });
     expect(result.kind === "handoff_failed" && result.message).toContain("records no workspace to hand over");
-    expect(existsSync(join(verifierWorkspace, ".auto-crop-inputs", producer.id, "files"))).toBe(false);
+    expect(existsSync(join(verifierWorkspace, ".cordantry-inputs", producer.id, "files"))).toBe(false);
   });
 
   it("refuses to hand over a symbolic link out of the producer workspace", () => {
     const harness = createHarness({ validate: () => [] });
-    const producerWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-producer-"));
-    const verifierWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-verifier-"));
+    const producerWorkspace = mkdtempSync(join(tmpdir(), "cordantry-producer-"));
+    const verifierWorkspace = mkdtempSync(join(tmpdir(), "cordantry-verifier-"));
     createdDirs.push(producerWorkspace, verifierWorkspace);
     writeFileSync(join(producerWorkspace, "index.html"), "<h1>ok</h1>");
     symlinkSync("/etc/hosts", join(producerWorkspace, "hosts"));
@@ -941,7 +941,7 @@ describe("verification contract", () => {
 });
 
 function createHarness(behaviour: StageBehaviour) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-verification-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-verification-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
@@ -1072,8 +1072,8 @@ function sequentialIds(tag: string): (prefix: string) => string {
 }
 
 function snapshotFilesFor(workspacePath: string, prompt: string): string {
-  const snapshotPath = prompt.match(/`(\.auto-crop-inputs\/[^`]+)`/)?.[1];
-  return join(workspacePath, snapshotPath ?? ".auto-crop-inputs/missing", "files");
+  const snapshotPath = prompt.match(/`(\.cordantry-inputs\/[^`]+)`/)?.[1];
+  return join(workspacePath, snapshotPath ?? ".cordantry-inputs/missing", "files");
 }
 
 /** The Artifact Envelope a stage's agent submits. */
@@ -1163,7 +1163,7 @@ function departmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
 }
 

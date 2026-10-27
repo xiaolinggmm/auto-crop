@@ -7,7 +7,7 @@
  * every caller treats as "nothing new") and a write failure is swallowed.
  */
 
-const KEY_PREFIX = "auto-crop.ceoOutcomesLastSeen.";
+const KEY_PREFIX = "cordantry.ceoOutcomesLastSeen.";
 
 function outcomesLastSeenStorage(): Storage | null {
   try {

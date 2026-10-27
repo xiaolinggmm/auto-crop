@@ -5,7 +5,7 @@ import { AgentSessionManager } from "./agentSessions";
 const request: AgentRunRequest = {
   taskId: "task_1",
   prompt: "Plan the work.",
-  promptPath: ".auto-crop/prompt.md",
+  promptPath: ".cordantry/prompt.md",
   workspacePath: ".",
   metadata: {},
 };

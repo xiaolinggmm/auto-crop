@@ -1,6 +1,6 @@
 # Task Completion Events And CEO Attention Rollups
 
-Auto-Crop will move CEO Office away from a review-queue-centered operating model and toward a company-state model based on Task Completion Events, Next Step Routing, and CEO Attention Rollups. Every completed or blocked task should produce a durable business-state change that records department ownership, dependency impact, remaining Vision Gaps, and proposed Next Step Items, but only exceptions, decision points, Human Actions, cross-department impacts, goal-stage changes, and executive summaries should interrupt CEO Office.
+Cordantry will move CEO Office away from a review-queue-centered operating model and toward a company-state model based on Task Completion Events, Next Step Routing, and CEO Attention Rollups. Every completed or blocked task should produce a durable business-state change that records department ownership, dependency impact, remaining Vision Gaps, and proposed Next Step Items, but only exceptions, decision points, Human Actions, cross-department impacts, goal-stage changes, and executive summaries should interrupt CEO Office.
 
 ## Considered Options
 

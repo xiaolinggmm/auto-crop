@@ -4,7 +4,7 @@ import { englishTranslations } from "../language/translations";
 import type { TaskAffordanceKind } from "../../api/client";
 
 /**
- * The kinds the server can emit. Kept as a literal rather than imported from `@auto-crop/core` on
+ * The kinds the server can emit. Kept as a literal rather than imported from `@cordantry/core` on
  * purpose: this is the dashboard asserting it can render everything the API contract allows, so the
  * list has to be stated independently of the module that produces it. A kind added server-side
  * shows up here as a failure, which is the point.

@@ -141,7 +141,7 @@ Suggested frontend structure:
 Run:
 
 ```bash
-pnpm --filter @auto-crop/dashboard test
-pnpm --filter @auto-crop/dashboard typecheck
+pnpm --filter @cordantry/dashboard test
+pnpm --filter @cordantry/dashboard typecheck
 pnpm typecheck
 ```

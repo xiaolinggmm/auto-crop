@@ -48,8 +48,8 @@ import type {
   TaskProgressStep,
   TaskSource,
   TaskStatus,
-} from "@auto-crop/core";
-import { isLocale } from "@auto-crop/core";
+} from "@cordantry/core";
+import { isLocale } from "@cordantry/core";
 import type { DatabaseClient } from "./client";
 import type { RunActivity, RunInvocation } from "../runtime/executionObservation";
 import type { OutboxEvent } from "../runtime/executionEvents";
@@ -98,7 +98,7 @@ export function createRepositories(database: DatabaseClient) {
      * every idempotence guard then reads as "already done" (ADR 0026).
      */
     transaction<T>(work: () => T): T {
-      const name = `auto_crop_sp_${savepointDepth}`;
+      const name = `cordantry_sp_${savepointDepth}`;
       savepointDepth += 1;
       database.exec(`SAVEPOINT ${name}`);
       try {

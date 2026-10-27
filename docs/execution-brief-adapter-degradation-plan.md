@@ -314,13 +314,13 @@ A real Claude Code task run should be a separate manual validation because it ma
 Use a fresh company/workspace. Start backend with budget policy if the validation target is the new budget path:
 
 ```bash
-AUTO_CROP_PORT=8787 AUTO_CROP_EXECUTION_POLICY=budget-v1 pnpm --filter @auto-crop/cli start
+CORDANTRY_PORT=8787 CORDANTRY_EXECUTION_POLICY=budget-v1 pnpm --filter @cordantry/cli start
 ```
 
 Start dashboard:
 
 ```bash
-VITE_AUTO_CROP_API_URL=http://127.0.0.1:8787 pnpm --filter @auto-crop/dashboard dev
+VITE_CORDANTRY_API_URL=http://127.0.0.1:8787 pnpm --filter @cordantry/dashboard dev
 ```
 
 Create and activate a company with a vision that decomposes into the SEO flow. Confirm:

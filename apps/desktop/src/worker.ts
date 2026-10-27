@@ -1,11 +1,11 @@
-import { startAutoCrop } from "../../cli/src/commands/start";
+import { startCordantry } from "../../cli/src/commands/start";
 
 process.on("disconnect", () => process.exit(0));
 process.on("SIGTERM", () => process.exit(0));
 process.on("SIGINT", () => process.exit(0));
 
 if (!process.send || !process.connected) {
-  throw new Error("The desktop worker must be launched by the Auto Crop supervisor.");
+  throw new Error("The desktop worker must be launched by the Cordantry supervisor.");
 }
 
 const permitted = new Promise<string>((resolve) => {
@@ -20,11 +20,11 @@ const permitted = new Promise<string>((resolve) => {
 process.send("worker-ready");
 void (async () => {
   const workerId = await permitted;
-  await startAutoCrop({
+  await startCordantry({
     workerId,
-    projectRoot: process.env.AUTO_CROP_PROJECT_ROOT ?? process.cwd(),
-    dashboardRoot: process.env.AUTO_CROP_DASHBOARD_ROOT,
-    port: Number(process.env.AUTO_CROP_PORT ?? 0),
+    projectRoot: process.env.CORDANTRY_PROJECT_ROOT ?? process.cwd(),
+    dashboardRoot: process.env.CORDANTRY_DASHBOARD_ROOT,
+    port: Number(process.env.CORDANTRY_PORT ?? 0),
   });
 })().catch((error) => {
   console.error(error);

@@ -10,7 +10,7 @@ A CEO-planned task with `proofSchemaId: "screenshot"` looped for roughly 30 minu
 
 2. **Bounded recovery ceiling.** After 3 failed agent runs a task terminates as `blocked` / `retry_exhausted` and is routed to the CEO Blocked Queue. `refresh`, `recover`, and the `ignoreCascadeEligibility` re-queue path in `dependencyCascade` refuse it. Only a new accepted upstream Business Artifact or a CEO replan resets the count.
 
-3. **Environment-Blocked Blocker degradation.** An agent may submit a `blocker` of class `environment_blocked` carrying a `capability` and a runtime-checkable claim. For `capability: "browser_screenshot"` the runtime `fetch`es the declared URL (`target_url` -> `server_validation.url` -> a `local-url` proof); on a 2xx response the task degrades to a deliverable with a `validationLimits` caveat rather than failing. Business-artifact capture now runs whenever `.auto-crop/business-artifact.json` exists, not only when proof was collected.
+3. **Environment-Blocked Blocker degradation.** An agent may submit a `blocker` of class `environment_blocked` carrying a `capability` and a runtime-checkable claim. For `capability: "browser_screenshot"` the runtime `fetch`es the declared URL (`target_url` -> `server_validation.url` -> a `local-url` proof); on a 2xx response the task degrades to a deliverable with a `validationLimits` caveat rather than failing. Business-artifact capture now runs whenever `.cordantry/business-artifact.json` exists, not only when proof was collected.
 
 ## Consequences
 

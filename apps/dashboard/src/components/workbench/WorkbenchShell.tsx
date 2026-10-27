@@ -25,7 +25,7 @@ export type WorkbenchShellProps = {
   rail(variant: RailVariant): ReactNode;
 };
 
-const railExpandedKey = "auto-crop.workbenchRailExpanded";
+const railExpandedKey = "cordantry.workbenchRailExpanded";
 
 /**
  * The Workbench frame (dashboard ADR 0002) in the Ice Mist shell: a rail and a header with the current

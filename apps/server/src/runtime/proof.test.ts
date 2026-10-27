@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { ProofSchema, Task } from "@auto-crop/core";
+import type { ProofSchema, Task } from "@cordantry/core";
 import { captureProofs, createHandoffPackage, createProofCollector, getHandoffPackageManifestPath, isCollectableSchema } from "./proof";
 
 const createdDirs: string[] = [];
@@ -98,7 +98,7 @@ describe("captureProofs", () => {
         id: "proof_1",
         taskId: "task_1",
         type: "diff",
-        uri: join(workspacePath, ".auto-crop-proof", "task_1.diff"),
+        uri: join(workspacePath, ".cordantry-proof", "task_1.diff"),
         summary: "Diff proof recovered from prototype-audit-trail.patch.",
         verifiedAt: null,
       }),
@@ -108,7 +108,7 @@ describe("captureProofs", () => {
 
   it("merges multiple controlled diff proof files into one canonical proof", () => {
     const { task, workspacePath } = createFixture("repo-diff", ["diff"]);
-    const proofDir = join(workspacePath, ".auto-crop-proof");
+    const proofDir = join(workspacePath, ".cordantry-proof");
     mkdirSync(proofDir, { recursive: true });
     writeFileSync(join(proofDir, "first.diff"), "diff --git a/first b/first\n", "utf8");
     writeFileSync(join(workspacePath, "second.patch"), "diff --git a/second b/second\n", "utf8");
@@ -411,7 +411,7 @@ describe("createHandoffPackage", () => {
       logPath,
     });
 
-    expect(handoffPackage?.manifestPath).toBe(join(workspacePath, ".auto-crop-handoff", "package.json"));
+    expect(handoffPackage?.manifestPath).toBe(join(workspacePath, ".cordantry-handoff", "package.json"));
     expect(getHandoffPackageManifestPath({ ...task, workspacePath })).toBe(handoffPackage?.manifestPath);
     const manifest = JSON.parse(readFileSync(handoffPackage?.manifestPath ?? "", "utf8")) as {
       artifacts: Array<{ packagePath: string; proofId: string }>;
@@ -507,7 +507,7 @@ describe("createHandoffPackage", () => {
 
   it("records local proof outside the workspace without copying it into the package", () => {
     const { task, workspacePath } = createFixture("test-output", ["command_output"]);
-    const outsideDir = mkdtempSync(join(tmpdir(), "auto-crop-log-"));
+    const outsideDir = mkdtempSync(join(tmpdir(), "cordantry-log-"));
     createdDirs.push(outsideDir);
     const logPath = join(outsideDir, "agent.log");
     writeFileSync(logPath, "42 passed\n", "utf8");
@@ -545,7 +545,7 @@ describe("createHandoffPackage", () => {
 });
 
 function createFixture(proofSchemaId: string, acceptedTypes: ProofSchema["acceptedTypes"]) {
-  const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-proof-"));
+  const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-proof-"));
   createdDirs.push(workspacePath);
 
   return {

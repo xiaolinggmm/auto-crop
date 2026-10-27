@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { taskAffordanceKindSchema, type TaskAffordanceKind } from "@auto-crop/core";
+import { taskAffordanceKindSchema, type TaskAffordanceKind } from "@cordantry/core";
 import { createMockAgentAdapter } from "../adapters/mockAgent";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
@@ -89,7 +89,7 @@ describe("Resume Affordance coverage", () => {
 });
 
 async function startBareServer() {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-affordance-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-affordance-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   openClients.push(client);

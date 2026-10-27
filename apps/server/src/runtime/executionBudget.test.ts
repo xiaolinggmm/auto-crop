@@ -5,7 +5,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import type { Task, Proof } from "@auto-crop/core";
+import type { Task, Proof } from "@cordantry/core";
 import type { AgentAdapter, AgentRunResult } from "../adapters/types";
 import { createCliAgentAdapter } from "../adapters/cliAgent";
 import { createDatabaseClient } from "../db/client";
@@ -30,14 +30,14 @@ afterEach(() => { vi.unstubAllEnvs(); for (const close of cleanup.splice(0).reve
 const complete: AgentRunResult = { status: "complete", stdout: "done", stderr: "", exitCode: 0 };
 const brief = { ...complete, stdout: JSON.stringify({ purpose: "Check", approach: "Run", expectedOutcome: "Proof" }) };
 function fixture() {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "auto-crop-budget-")));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "cordantry-budget-")));
   cleanup.push(() => rmSync(root, { recursive: true, force: true }));
-  mkdirSync(join(root, ".auto-crop"));
+  mkdirSync(join(root, ".cordantry"));
   const state = openState(root);
   cleanup.push(() => { try { state.client.close(); } catch { /* A restart test already closed it. */ } });
   mkdirSync(state.repositories.getTask("task_1")!.workspacePath!, { recursive: true });
   stageValidDelivery(state.repositories.getTask("task_1")!);
-  vi.stubEnv("AUTO_CROP_FORCE_AGENT_TIMEOUT_MS", "60");
+  vi.stubEnv("CORDANTRY_FORCE_AGENT_TIMEOUT_MS", "60");
   const input = (adapter: AgentAdapter): RunSchedulerOnceInput => ({
     projectRoot: root, repositories: state.repositories, adapters: [adapter], workerId: "owner", maxTasks: 1,
     approvalRequired: () => false, emit: () => undefined, heartbeatIntervalMs: 20,
@@ -73,8 +73,8 @@ it.each(["silent", "repetitive"])("keeps one real %s invocation across the old b
     if (request.metadata.phase === "execution_brief") return brief;
     const [run] = f.repositories.listRunningAgentRuns("company_1");
     runId = run.id; epoch = run.ownerEpoch!;
-    vi.stubEnv("AUTO_CROP_FORCE_AGENT_TIMEOUT_MS", "1");
-    const other = createDatabaseClient(join(f.root, ".auto-crop", "state.sqlite"));
+    vi.stubEnv("CORDANTRY_FORCE_AGENT_TIMEOUT_MS", "1");
+    const other = createDatabaseClient(join(f.root, ".cordantry", "state.sqlite"));
     try {
       expect(reconcileStaleRunningTasks({ repositories: createRepositories(other), companyId: "company_1", now: () => new Date("2099-01-01") }).reconciledTaskIds).toEqual([]);
     } finally { other.close(); }
@@ -107,7 +107,7 @@ it("rolls a failed settlement back with its ledger, then conservatively settles 
   expect(f.repositories.executionBudget.getRun(run.id)).toMatchObject({ settled: 0 });
   expect(f.repositories.executionBudget.ledger(run.id).filter(r => r.kind === "settled")).toEqual([]);
   f.client.close();
-  const reopened = createDatabaseClient(join(f.root, ".auto-crop", "state.sqlite"));
+  const reopened = createDatabaseClient(join(f.root, ".cordantry", "state.sqlite"));
   cleanup.push(() => reopened.close());
   const repos = createRepositories(reopened);
   reopened.exec("DROP TRIGGER fail_settlement");
@@ -168,7 +168,7 @@ it("validates new-mode configuration without weakening legacy environment parsin
   const timeout = resolveEffectiveTimeout({ proofSchemaId: "repo-diff", requiredCapabilities: ["code"] }, {});
   expect(() => resolveBudgetSnapshot({ runHardMs: 1 }, timeout, {})).toThrow("soft checkpoint");
   expect(() => resolveBudgetSnapshot({ taskTotalMs: NaN }, timeout, {})).toThrow("taskTotalMs");
-  expect(() => resolveBudgetSnapshot({}, timeout, { AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: "bad" })).toThrow("AUTO_CROP_FORCE");
+  expect(() => resolveBudgetSnapshot({}, timeout, { CORDANTRY_FORCE_AGENT_TIMEOUT_MS: "bad" })).toThrow("CORDANTRY_FORCE");
 });
 
 it("accounts brief, execution and finalization on one monotonic timeline", async () => {
@@ -209,7 +209,7 @@ it("rejects a success that crosses its finalization cap before the transaction c
 
 it("does not duplicate reservations across connections or refund a settlement twice", async () => {
   const f = fixture();
-  const other = createDatabaseClient(join(f.root, ".auto-crop", "state.sqlite"));
+  const other = createDatabaseClient(join(f.root, ".cordantry", "state.sqlite"));
   cleanup.push(() => other.close());
   const repos = createRepositories(other);
   await runSchedulerOnce(f.input(adapter(async request => {
@@ -343,7 +343,7 @@ it("kills a real output flood after the durable stop claim and accounts for term
 
 it("lets only one of stop and success win across connections and rolls a stop event fault back", async () => {
   const f = fixture();
-  const other = createDatabaseClient(join(f.root, ".auto-crop/state.sqlite"));
+  const other = createDatabaseClient(join(f.root, ".cordantry/state.sqlite"));
   cleanup.push(() => other.close());
   const r = createRepositories(other);
   await runSchedulerOnce(f.input(adapter(async request => {
@@ -390,7 +390,7 @@ it("preserves exhausted authorization through reset/reopen and does not spawn be
   f.repositories.markTaskAttemptsReset("task_1", new Date().toISOString());
   applyTaskTransition({ repositories: f.repositories, task: "task_1", status: "queued", resolvesHoldKinds: ["execution_budget_exhausted"] });
   f.client.close();
-  const reopened = createDatabaseClient(join(f.root, ".auto-crop/state.sqlite"));
+  const reopened = createDatabaseClient(join(f.root, ".cordantry/state.sqlite"));
   cleanup.push(() => reopened.close());
   const r = createRepositories(reopened);
   const config = { ...f.input(adapter(async () => { throw new Error("exhausted task spawned"); })), repositories: r, workerId: "new-owner" };
@@ -426,7 +426,7 @@ it("authorizes once, preserves the old snapshot and rejects stale concurrent gra
   expect(f.repositories.executionBudget.authorization("grant-1")).toBeUndefined();
   expect(f.repositories.listOpenTaskHolds("task_1").map(h => h.kind)).toContain("execution_budget_exhausted");
   f.client.exec("DROP TRIGGER fail_authorize");
-  const other = createDatabaseClient(join(f.root, ".auto-crop/state.sqlite"));
+  const other = createDatabaseClient(join(f.root, ".cordantry/state.sqlite"));
   cleanup.push(() => other.close());
   const r = createRepositories(other);
   expect(authorizeExecutionBudget(input)).toMatchObject({ replayed: false, task: { status: "queued" } });
@@ -469,7 +469,7 @@ it("validates the authorization HTTP route and refuses unconfirmed termination",
 
 it("handles a stop that wins exactly between the success precheck and SQL claim", async () => {
   const f = fixture();
-  const other = createDatabaseClient(join(f.root, ".auto-crop/state.sqlite"));
+  const other = createDatabaseClient(join(f.root, ".cordantry/state.sqlite"));
   cleanup.push(() => other.close());
   const r = createRepositories(other);
   const original = f.repositories.updateAgentRunStatus;
@@ -511,7 +511,7 @@ it("does not replenish the entire reservation lost to a crashed owner", async ()
   config.executionBudget = { ...config.executionBudget, runHardMs: 200, taskTotalMs: 200 };
   await expect(runSchedulerOnce(config)).rejects.toThrow("crash");
   f.client.close();
-  const reopened = createDatabaseClient(join(f.root, ".auto-crop/state.sqlite"));
+  const reopened = createDatabaseClient(join(f.root, ".cordantry/state.sqlite"));
   cleanup.push(() => reopened.close());
   reopened.exec("DROP TRIGGER fail_settlement");
   const r = createRepositories(reopened);

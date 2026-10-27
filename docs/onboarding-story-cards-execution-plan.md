@@ -4,7 +4,7 @@
 
 ## 1. 产品目标与范围
 
-auto-crop 是为 MAH 引流的精致 demo。让用户理解 AI 公司如何工作、产生使用期待，并将真实规划与执行承接到 MAH。不要以完善独立公司运行平台为目标扩大范围。
+Cordantry 是为 MAH 引流的精致 demo。让用户理解 AI 公司如何工作、产生使用期待，并将真实规划与执行承接到 MAH。不要以完善独立公司运行平台为目标扩大范围。
 
 本次优先实现：首页四幕模拟动画引导、同一浮层中的名称与愿景表单、跳过与回看、现有公司进入路径。MAH 真实连接作为后续独立验证阶段；不能将前端展示完成声称为 MAH 集成完成。
 
@@ -137,7 +137,7 @@ CEO 让研究员核对重复需求，再安排开发增加批量检查，运营�
 - task show / context / replay：任务摘要、规范文档、运行视图回放；回放不是重新执行。
 - task input：运行中补充指导。
 - follow-up：活跃任务接收输入；终态任务经新 intake 形成关联后续任务，不应假定沿用同一执行身份。
-- project entry register / launch：支持 web、file、folder、cli 入口，可作为从 MAH 打开 auto-crop 的基础，尚未实际注册验证。
+- project entry register / launch：支持 web、file、folder、cli 入口，可作为从 MAH 打开 Cordantry 的基础，尚未实际注册验证。
 - project open：解析项目根目录，不能认为会唤起桌面对应任务。
 - CLI 列出 cursor、claude、codex、antigravity、copilot 适配器；列出不代表本机已可运行。
 - 内置协议有 direct/adaptive 任务拓扑，尚未验证员工间按指定职责自动交接。

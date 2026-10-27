@@ -4,7 +4,7 @@
 
 Make Agent Run launch isolation a project-level semantic contract, then let each CLI adapter translate that contract into the flags its CLI actually supports.
 
-This plan fixes the class of failures where Auto-Crop hardcodes a concrete CLI flag, such as Claude Code `--restricted`, and discovers only at task runtime that the installed CLI does not support it.
+This plan fixes the class of failures where Cordantry hardcodes a concrete CLI flag, such as Claude Code `--restricted`, and discovers only at task runtime that the installed CLI does not support it.
 
 ## Current Problem
 
@@ -12,7 +12,7 @@ ADR 0021 correctly says an Agent Run should execute under an explicit capability
 
 - Claude Code always includes `--restricted`.
 - Codex uses its own isolation flags such as `--ignore-user-config`, `--ignore-rules`, `--sandbox`, and `--ephemeral`.
-- Adapter detection mostly answers "does this command exist?", not "can this installed CLI enforce the launch semantics Auto-Crop needs?"
+- Adapter detection mostly answers "does this command exist?", not "can this installed CLI enforce the launch semantics Cordantry needs?"
 
 The result is brittle. A task can be scheduled to an adapter that exists but cannot run the requested launch shape. The failure then appears as an agent task failure instead of an adapter capability mismatch.
 
@@ -20,7 +20,7 @@ The result is brittle. A task can be scheduled to an adapter that exists but can
 
 Safety semantics are unified. CLI flags are adapter-specific.
 
-Auto-Crop should own the vocabulary for what an Agent Run requires:
+Cordantry should own the vocabulary for what an Agent Run requires:
 
 - config isolation
 - project-rule isolation
@@ -124,7 +124,7 @@ Treat `--permission-prompts none` as optional unless the installed CLI supports 
 
 ### Claude Compatibility Meaning
 
-Without `--restricted`, Claude Code can still get explicit tool grants and MCP isolation, but Auto-Crop should not claim full ADR 0021 isolation. The adapter should record that file/config isolation is compatible, not strong.
+Without `--restricted`, Claude Code can still get explicit tool grants and MCP isolation, but Cordantry should not claim full ADR 0021 isolation. The adapter should record that file/config isolation is compatible, not strong.
 
 ## Codex Translation
 
@@ -146,7 +146,7 @@ Probe `codex exec --help` or the most reliable available help command before tas
 
 Keep the external seam at the adapter interface:
 
-- `AgentAdapter.detect()` should mean the adapter is usable for Auto-Crop's launch semantics, not merely that the executable exists.
+- `AgentAdapter.detect()` should mean the adapter is usable for Cordantry's launch semantics, not merely that the executable exists.
 - `CliAgentAdapter.commandPreview()` should show the actual command for the probed support profile.
 - `AgentRunRequest.grant` remains the runtime capability input; it should not grow CLI-specific fields.
 
@@ -171,7 +171,7 @@ For `compatible` support, choose one of these explicit behaviors:
 1. Dispatch with a task warning event before the run.
 2. Dispatch only when a feature flag allows compatible isolation.
 
-Prefer option 1 for now because Auto-Crop is local-first and should stay usable while still surfacing the downgrade.
+Prefer option 1 for now because Cordantry is local-first and should stay usable while still surfacing the downgrade.
 
 The warning should be visible in task events and logs. It should not be buried only in server stdout.
 
@@ -220,8 +220,8 @@ Add tests for:
 8. Run:
 
 ```bash
-pnpm --filter @auto-crop/server test
-pnpm --filter @auto-crop/server typecheck
+pnpm --filter @cordantry/server test
+pnpm --filter @cordantry/server typecheck
 pnpm test
 pnpm typecheck
 ```
@@ -241,4 +241,4 @@ pnpm typecheck
 - A Claude Code install that supports `--restricted` still uses it.
 - Codex launches never receive Claude-only flags.
 - Adapter tests cover supported, compatible, and unavailable launch profiles.
-- Task failure logs no longer contain CLI unknown-option failures for flags Auto-Crop could have probed before dispatch.
+- Task failure logs no longer contain CLI unknown-option failures for flags Cordantry could have probed before dispatch.

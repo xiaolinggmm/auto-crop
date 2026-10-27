@@ -1,6 +1,6 @@
 # Department Task Assessment And Progress Flow
 
-Auto-Crop will route CEO-assigned department tasks through a department assessment step before execution. Departments may split large in-boundary work into department subtasks, while cross-boundary or unclear work returns to CEO Office as a reassignment request. The user-facing department page will show a compact vertical progress flow for each parent task instead of exposing a flat task-status table.
+Cordantry will route CEO-assigned department tasks through a department assessment step before execution. Departments may split large in-boundary work into department subtasks, while cross-boundary or unclear work returns to CEO Office as a reassignment request. The user-facing department page will show a compact vertical progress flow for each parent task instead of exposing a flat task-status table.
 
 ## Considered Options
 

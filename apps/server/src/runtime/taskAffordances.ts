@@ -4,7 +4,7 @@ import {
   type TaskAffordance,
   type TaskAffordanceKind,
   type TaskHold,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { reconcileTaskHoldsForTask } from "./taskHoldReconciliation";
 

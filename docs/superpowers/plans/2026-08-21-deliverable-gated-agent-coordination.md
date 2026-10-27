@@ -4,7 +4,7 @@
 
 **Goal:** Make dependent Agent tasks start only after upstream tasks have consumable Proof, and make timeout recovery bounded so oversized tasks become replanning work instead of infinite retries.
 
-**Architecture:** Auto-Crop keeps Proof as the completion gate. The scheduler resolves dependency readiness before dispatch, injects upstream handoffs into dependent prompts, and applies a bounded recovery policy: short -> medium -> long -> needs_replan. Dashboard views present waiting, retrying, missing deliverable, and replanning states as normal workflow states, not as generic failures.
+**Architecture:** Cordantry keeps Proof as the completion gate. The scheduler resolves dependency readiness before dispatch, injects upstream handoffs into dependent prompts, and applies a bounded recovery policy: short -> medium -> long -> needs_replan. Dashboard views present waiting, retrying, missing deliverable, and replanning states as normal workflow states, not as generic failures.
 
 **Tech Stack:** TypeScript, Node.js SQLite runtime, Vitest, React dashboard, existing retro UI primitives.
 
@@ -62,7 +62,7 @@ Add tests that parse the new task status, failure reason, and event type through
 
 - [ ] **Step 2: Run tests**
 
-Run: `pnpm --filter @auto-crop/core test`
+Run: `pnpm --filter @cordantry/core test`
 
 Expected: FAIL because the schemas/types do not yet accept the new values.
 
@@ -90,7 +90,7 @@ to task events.
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @auto-crop/core test`
+Run: `pnpm --filter @cordantry/core test`
 
 Expected: PASS.
 
@@ -112,7 +112,7 @@ Cover these scenarios:
 
 - [ ] **Step 2: Run tests**
 
-Run: `pnpm --filter @auto-crop/server test -- src/runtime/dependencyReadiness.test.ts`
+Run: `pnpm --filter @cordantry/server test -- src/runtime/dependencyReadiness.test.ts`
 
 Expected: FAIL because the resolver file does not exist.
 
@@ -140,7 +140,7 @@ export type DependencyReadiness =
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @auto-crop/server test -- src/runtime/dependencyReadiness.test.ts`
+Run: `pnpm --filter @cordantry/server test -- src/runtime/dependencyReadiness.test.ts`
 
 Expected: PASS.
 
@@ -161,7 +161,7 @@ Cover:
 
 - [ ] **Step 2: Run tests**
 
-Run: `pnpm --filter @auto-crop/server test -- src/runtime/scheduler.test.ts`
+Run: `pnpm --filter @cordantry/server test -- src/runtime/scheduler.test.ts`
 
 Expected: FAIL because current scheduler only waits by status and does not build handoff prompt context.
 
@@ -171,7 +171,7 @@ Replace the current dependency decision logic with the resolver from Task 2. `wa
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @auto-crop/server test -- src/runtime/scheduler.test.ts`
+Run: `pnpm --filter @cordantry/server test -- src/runtime/scheduler.test.ts`
 
 Expected: PASS.
 
@@ -192,7 +192,7 @@ Cover:
 
 - [ ] **Step 2: Run tests**
 
-Run: `pnpm --filter @auto-crop/server test -- src/runtime/scheduler.test.ts`
+Run: `pnpm --filter @cordantry/server test -- src/runtime/scheduler.test.ts`
 
 Expected: FAIL for medium -> long and long -> needs_replan.
 
@@ -210,7 +210,7 @@ Emit `task_needs_replan`.
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @auto-crop/server test -- src/runtime/scheduler.test.ts`
+Run: `pnpm --filter @cordantry/server test -- src/runtime/scheduler.test.ts`
 
 Expected: PASS.
 
@@ -233,7 +233,7 @@ Cover:
 
 - [ ] **Step 2: Run tests**
 
-Run: `pnpm --filter @auto-crop/dashboard test`
+Run: `pnpm --filter @cordantry/dashboard test`
 
 Expected: FAIL because formatting does not know the new states.
 
@@ -243,7 +243,7 @@ Reuse existing components. Add translation keys and format functions only; do no
 
 - [ ] **Step 4: Run tests**
 
-Run: `pnpm --filter @auto-crop/dashboard test`
+Run: `pnpm --filter @cordantry/dashboard test`
 
 Expected: PASS.
 
@@ -259,7 +259,7 @@ Use this decision:
 ```markdown
 # Deliverable-Gated Dependencies And Bounded Recovery
 
-Auto-Crop will start dependent tasks only after upstream tasks produce consumable Proof, and will treat timeout recovery as bounded profile escalation followed by `needs_replan` rather than unbounded retry. This keeps Proof as the completion gate, prevents downstream agents from running on missing inputs, and gives oversized tasks a clear replanning path instead of repeatedly burning time under unchanged conditions.
+Cordantry will start dependent tasks only after upstream tasks produce consumable Proof, and will treat timeout recovery as bounded profile escalation followed by `needs_replan` rather than unbounded retry. This keeps Proof as the completion gate, prevents downstream agents from running on missing inputs, and gives oversized tasks a clear replanning path instead of repeatedly burning time under unchanged conditions.
 ```
 
 - [ ] **Step 2: Verify docs are linked to domain terms**

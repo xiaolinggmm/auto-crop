@@ -1,4 +1,4 @@
-import type { TaskDecomposition, BlueprintTaskVerification, CompanyBlueprint, CompleteLocalizedText, ProofSchema } from "@auto-crop/core";
+import type { TaskDecomposition, BlueprintTaskVerification, CompanyBlueprint, CompleteLocalizedText, ProofSchema } from "@cordantry/core";
 
 export type DepartmentTemplate = {
   key: string;

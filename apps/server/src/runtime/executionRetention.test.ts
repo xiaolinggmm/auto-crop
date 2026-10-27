@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { Task } from "@auto-crop/core";
+import type { Task } from "@cordantry/core";
 import { openState } from "./fixtures/budgetState";
 import {
   DEFAULT_RETENTION_POLICY, retentionPolicyFromEnvironment, runDueRetentionSweep, sweepExecutionRetention,
@@ -26,9 +26,9 @@ const cleanup: Array<() => void> = [];
 afterEach(() => { vi.unstubAllEnvs(); for (const close of cleanup.splice(0).reverse()) close(); });
 
 function fixture() {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "auto-crop-retention-")));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "cordantry-retention-")));
   cleanup.push(() => rmSync(root, { recursive: true, force: true }));
-  mkdirSync(join(root, ".auto-crop"));
+  mkdirSync(join(root, ".cordantry"));
   const { client, repositories: r } = openState(root);
   cleanup.push(() => client.close());
   const exec = (sql: string, ...values: Array<string | number | null>) => client.prepare(sql).run(...values);
@@ -268,20 +268,20 @@ describe("execution retention", () => {
 
   it("is on by default, can be turned off, and refuses invalid configuration", () => {
     expect(retentionPolicyFromEnvironment({})).toEqual(DEFAULT_RETENTION_POLICY);
-    expect(retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION: "off" })).toBeNull();
-    expect(retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION_JSON: JSON.stringify({ activityMs: DAY }) }))
+    expect(retentionPolicyFromEnvironment({ CORDANTRY_RETENTION: "off" })).toBeNull();
+    expect(retentionPolicyFromEnvironment({ CORDANTRY_RETENTION_JSON: JSON.stringify({ activityMs: DAY }) }))
       .toMatchObject({ activityMs: DAY, invocationMs: DEFAULT_RETENTION_POLICY.invocationMs });
-    expect(() => retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION: "forever" })).toThrow(/off or retention-v1/);
-    expect(() => retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION_JSON: '{"keepMs":1}' })).toThrow(/Unknown retention/);
-    expect(() => retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION_JSON: '{"activityMs":0}' })).toThrow(/positive safe integer/);
-    expect(() => retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION_JSON: '{"activityMs":1.5}' })).toThrow(/positive safe integer/);
-    expect(() => retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION_JSON: '[]' })).toThrow(/JSON object/);
-    expect(() => retentionPolicyFromEnvironment({ AUTO_CROP_RETENTION_JSON: JSON.stringify({ invocationMs: DAY, activityMs: 2 * DAY }) }))
+    expect(() => retentionPolicyFromEnvironment({ CORDANTRY_RETENTION: "forever" })).toThrow(/off or retention-v1/);
+    expect(() => retentionPolicyFromEnvironment({ CORDANTRY_RETENTION_JSON: '{"keepMs":1}' })).toThrow(/Unknown retention/);
+    expect(() => retentionPolicyFromEnvironment({ CORDANTRY_RETENTION_JSON: '{"activityMs":0}' })).toThrow(/positive safe integer/);
+    expect(() => retentionPolicyFromEnvironment({ CORDANTRY_RETENTION_JSON: '{"activityMs":1.5}' })).toThrow(/positive safe integer/);
+    expect(() => retentionPolicyFromEnvironment({ CORDANTRY_RETENTION_JSON: '[]' })).toThrow(/JSON object/);
+    expect(() => retentionPolicyFromEnvironment({ CORDANTRY_RETENTION_JSON: JSON.stringify({ invocationMs: DAY, activityMs: 2 * DAY }) }))
       .toThrow(/invocationMs/);
   });
 
   it("adds the summary columns to a database created before retention", () => {
-    const root = realpathSync(mkdtempSync(join(tmpdir(), "auto-crop-retention-legacy-")));
+    const root = realpathSync(mkdtempSync(join(tmpdir(), "cordantry-retention-legacy-")));
     cleanup.push(() => rmSync(root, { recursive: true, force: true }));
     const client = createDatabaseClient(join(root, "state.sqlite"));
     cleanup.push(() => client.close());
@@ -302,7 +302,7 @@ describe("execution retention with a real failed run", () => {
   async function failedRun() {
     const f = fixture();
     mkdirSync(f.r.getTask("task_1")!.workspacePath!, { recursive: true });
-    vi.stubEnv("AUTO_CROP_FORCE_AGENT_TIMEOUT_MS", "60");
+    vi.stubEnv("CORDANTRY_FORCE_AGENT_TIMEOUT_MS", "60");
     const adapter: AgentAdapter = { id: "codex", name: "fixture", capabilities: ["code"], contractCapabilities: ["structured_execution_brief", "artifact_envelope"], detect: async () => true,
       run: async () => ({ status: "failed", stdout: "", stderr: "connection closed", exitCode: 1,
         failureReason: "agent_failed", terminationConfirmed: true }) };

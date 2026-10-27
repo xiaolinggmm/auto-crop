@@ -2,7 +2,7 @@
 
 ## Goal
 
-When the Interface Locale is English, all Auto-Crop-authored interface and business content renders in English. When the Interface Locale is Chinese, all Auto-Crop-authored interface and business content renders in Chinese.
+When the Interface Locale is English, all Cordantry-authored interface and business content renders in English. When the Interface Locale is Chinese, all Cordantry-authored interface and business content renders in Chinese.
 
 Raw source content remains raw: user-provided company names, Founder Vision text, CEO Intake text, URLs, file paths, command output, and agent brand names are not translated merely because the Interface Locale changes.
 
@@ -27,7 +27,7 @@ ADR-0013 defines Localized Business Content as department names, department resp
 
 ## Implementation Shape
 
-Introduce a shared `Locale` and `LocalizedText` concept in the core package. Use this for Auto-Crop-authored business content that must switch languages after data has been persisted.
+Introduce a shared `Locale` and `LocalizedText` concept in the core package. Use this for Cordantry-authored business content that must switch languages after data has been persisted.
 
 Keep existing string fields available during the transition where needed for compatibility, but add explicit locale-aware accessors at API or UI boundaries so callers do not display raw English accidentally.
 
@@ -36,7 +36,7 @@ For deterministic playbook content, prefer stable localization keys or embedded 
 ## Acceptance Criteria
 
 - Switching the dashboard to English renders static UI, departments, objectives, task titles, task descriptions, progress labels, and system-authored messages in English.
-- Switching the dashboard to Chinese renders those same Auto-Crop-authored fields in Chinese.
+- Switching the dashboard to Chinese renders those same Cordantry-authored fields in Chinese.
 - User-provided company names, Founder Vision, CEO Intake text, URLs, file paths, command output, and agent brand names remain unchanged.
 - Internal codes such as task status, artifact kind, review status, proof type, risk level, failure reason, and capability tags are never displayed raw in ordinary dashboard UI.
 - Tests cover at least one English and one Chinese company creation/dashboard path.

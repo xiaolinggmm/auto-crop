@@ -1,4 +1,4 @@
-import type { Locale } from "@auto-crop/core";
+import type { Locale } from "@cordantry/core";
 
 /**
  * The human-readable language name injected into founder-facing authoring prompts (task execution,
