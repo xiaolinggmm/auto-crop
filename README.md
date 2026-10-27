@@ -143,16 +143,16 @@ The CLI will:
 - Detect available Claude Code and Codex adapters.
 - Print the local dashboard/API URL.
 
-To delegate task execution to MAH, configure its managed project and slot class before starting:
+Choose an execution mode at the beginning of the company-creation form:
 
-```bash
-export AUTO_CROP_EXECUTION_BACKEND=mah
-export AUTO_CROP_MAH_CLI=/Applications/MAH.app/Contents/Resources/bin/mah
-export AUTO_CROP_MAH_PROJECT_ROOT=/absolute/path/to/managed/mah/project
-export AUTO_CROP_MAH_SLOT=background
-```
+- **Direct dispatch (default):** the CEO plans work and Auto-Crop dispatches department tasks to their assigned local Agents. MAH is not required.
+- **MAH coordination (advanced):** the CEO still plans work, but execution is delegated to MAH. Select an existing managed MAH project by its absolute path, and provide the MAH executable path if it is not on `PATH` (for example `/Applications/MAH.app/Contents/Resources/bin/mah`).
 
-The slot defaults to `background`. Accounts without background capacity may explicitly use `interactive`; startup checks availability and never switches slots silently.
+Both modes require an available CEO Agent. MAH creation checks project identity and slot availability before creating the company, preserving the form if checks fail. The slot defaults to `background`; advanced settings allow an explicit `interactive` choice. Slots never change automatically.
+
+Each company saves its own mode and MAH project binding. The mode cannot be changed after creation. Settings can repair the connection to the same MAH project after an installation or directory move, but cannot replace the project. Existing unresolved MAH executions retain their UUIDs and must be reconciled before a new execution.
+
+MAH outages do not prevent the app or Direct companies from running. The old global `AUTO_CROP_EXECUTION_BACKEND`, `AUTO_CROP_MAH_PROJECT_ROOT` and `AUTO_CROP_MAH_SLOT` settings no longer select company execution behavior. `AUTO_CROP_MAH_CLI` can still supply the default executable when a creation request omits it. Existing test companies are not migrated to infer their historical mode.
 
 During development, run the dashboard separately:
 

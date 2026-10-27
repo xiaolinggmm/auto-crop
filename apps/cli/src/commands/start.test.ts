@@ -22,7 +22,7 @@ afterEach(() => {
 });
 
 describe("startAutoCrop", () => {
-  it("fails MAH startup before serving when the selected slot is unavailable", async () => {
+  it("starts the API even if an obsolete global MAH configuration is unavailable", async () => {
     const projectRoot = createTempProjectRoot();
     const options = {
       projectRoot,
@@ -38,10 +38,11 @@ describe("startAutoCrop", () => {
       log: () => undefined,
     } as unknown as Parameters<typeof startAutoCrop>[0];
 
-    await expect(startAutoCrop(options)).rejects.toThrow(/AUTO_CROP_MAH_SLOT=interactive/);
+    const started = await startAutoCrop(options);
+    try { expect((await fetch(`${started.url}/api/companies`)).status).toBe(200); } finally { await started.close(); }
   });
 
-  it("preflights and starts with an explicitly selected interactive MAH slot", async () => {
+  it("does not use global MAH slot settings at startup", async () => {
     const projectRoot = createTempProjectRoot();
     const calls: string[][] = [];
     const options = {
@@ -64,7 +65,7 @@ describe("startAutoCrop", () => {
 
     const started = await startAutoCrop(options);
     try {
-      expect(calls).toContainEqual(["personal-os", "quota", "list", "--project-root", realpathSync(projectRoot), "--format", "json"]);
+      expect(calls).toEqual([]);
     } finally {
       await started.close();
     }

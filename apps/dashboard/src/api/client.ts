@@ -23,7 +23,17 @@ export type Locale = "en" | "zh";
 export type LocalizedText = Partial<Record<Locale, string>>;
 export type CompleteLocalizedText = Record<Locale, string>;
 
+export type MahConfig = { projectRoot: string; cliPath: string; slotClass: "background" | "interactive"; projectId?: string };
+export type CreateCompanyInput = {
+  companyName: string; founderVision: string; locale?: Locale; selectedCeoAgentId: string;
+  permissionMode: string; assets: string[]; creationIdempotencyKey?: string;
+  executionMode?: "direct" | "mah";
+  mahConfig?: { projectRoot: string; cliPath?: string; slotClass?: "background" | "interactive" };
+};
+
 export type CompanySummary = {
+  executionMode?: "direct" | "mah";
+  mahConfig?: MahConfig;
   id: string;
   name: string;
   nameText?: CompleteLocalizedText;
@@ -592,15 +602,8 @@ export type CompanyStateResponse = CreateCompanyResponse & {
 export type ApiClient = {
   listAgents(): Promise<{ agents: AgentSummary[] }>;
   listCompanies(): Promise<{ companies: CompanyListItem[] }>;
-  createCompany(input: {
-    companyName: string;
-    founderVision: string;
-    locale?: Locale;
-    selectedCeoAgentId: string;
-    permissionMode: string;
-    assets: string[];
-    creationIdempotencyKey?: string;
-  }): Promise<CreateCompanyResponse>;
+  createCompany(input: CreateCompanyInput): Promise<CreateCompanyResponse>;
+  repairMahConnection(companyId: string, input: { projectRoot: string; cliPath?: string }): Promise<{company: CompanySummary}>;
   retryCompanyCreation(companyId: string): Promise<CreateCompanyResponse>;
   getCompanyState(companyId: string): Promise<CompanyStateResponse>;
   createCeoIntake(companyId: string, input: { body: string }): Promise<{ intake: CeoIntakeSummary }>;
@@ -665,6 +668,9 @@ export function createApiClient(baseUrl = "", options: { requestTimeoutMs?: numb
     },
     async createCompany(input) {
       return postJson(`${baseUrl}/api/companies`, input, requestTimeoutMs, hasCompanyState);
+    },
+    async repairMahConnection(companyId, input) {
+      return postJson(`${baseUrl}/api/companies/${companyId}/mah-connection`, input, requestTimeoutMs, hasCompany);
     },
     async retryCompanyCreation(companyId) {
       return postJson(`${baseUrl}/api/companies/${companyId}/retry-creation`, {}, requestTimeoutMs, hasCompanyState);

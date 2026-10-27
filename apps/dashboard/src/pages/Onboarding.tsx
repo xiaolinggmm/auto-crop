@@ -14,9 +14,11 @@ import { StoryScene } from "../components/onboarding/StoryScene";
 import { storyCopy } from "../components/onboarding/storyCopy";
 import { useLanguage } from "../ui/language";
 import "./onboarding.css";
+import type { AgentSummary, CreateCompanyInput } from "../api/client";
 
 const draftKey = "auto-crop.onboardingDraft";
-function readDraft(): { name: string; vision: string; form: boolean } {
+const emptyDraft = { name: "", vision: "", form: false, executionMode: "direct" as "direct" | "mah", selectedCeoAgentId: "", projectRoot: "", cliPath: "", slotClass: "background" as "background" | "interactive" };
+function readDraft(): typeof emptyDraft {
   try {
     const value = JSON.parse(sessionStorage.getItem(draftKey) ?? "null");
     if (
@@ -24,19 +26,26 @@ function readDraft(): { name: string; vision: string; form: boolean } {
       typeof value.name === "string" &&
       typeof value.vision === "string"
     )
-      return { ...value, form: value.form === true };
+      return { ...emptyDraft, ...value, form: value.form === true };
   } catch {
     /* Storage can be unavailable; retain input in React for this visit. */
   }
-  return { name: "", vision: "", form: false };
+  return { ...emptyDraft };
 }
 
 export function Onboarding({
   onCancel,
   review = false,
+  agents = [], onCreate, isCreating = false, error, agentLoadState, onDetectAgents,
 }: {
   onCancel?(): void;
   review?: boolean;
+  agents?: AgentSummary[];
+  onCreate?(input: CreateCompanyInput): void;
+  isCreating?: boolean;
+  error?: string | null;
+  agentLoadState?: string;
+  onDetectAgents?(): void;
 }) {
   const { language, t } = useLanguage();
   const launcher = useRef(
@@ -55,6 +64,8 @@ export function Onboarding({
     () =>
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false,
   );
+  const zh = language === "zh";
+  const valid = !!draft.name.trim() && !!draft.vision.trim() && agents.some(a => a.id === draft.selectedCeoAgentId && a.detected) && (draft.executionMode === "direct" || (draft.projectRoot.trim().startsWith("/") || /^[a-z]:[\\/]/i.test(draft.projectRoot.trim()) || draft.projectRoot.trim().startsWith("\\\\")));
   const duration = scene === 2 ? 10 : 12;
   const finished = reduced || elapsed >= duration;
 
@@ -171,8 +182,18 @@ export function Onboarding({
                 </Dialog.Description>
                 <form
                   className="story-form"
-                  onSubmit={(event) => event.preventDefault()}
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    if (!valid || isCreating || !onCreate) return;
+                    onCreate({ companyName: draft.name.trim(), founderVision: draft.vision.trim(), selectedCeoAgentId: draft.selectedCeoAgentId, locale: language, permissionMode: "balanced", assets: [], executionMode: draft.executionMode, ...(draft.executionMode === "mah" ? {mahConfig: {projectRoot: draft.projectRoot.trim(), cliPath: draft.cliPath.trim() || "mah", slotClass: draft.slotClass}} : {}) });
+                  }}
                 >
+                  <fieldset disabled={isCreating} className="contents">
+                  <fieldset className="grid gap-2">
+                    <legend>{zh ? "执行模式" : "Execution mode"}</legend>
+                    <div className="flex gap-6">{(["direct", "mah"] as const).map(mode => <label key={mode} className="flex items-center gap-2"><input type="radio" name="execution-mode" checked={draft.executionMode === mode} onChange={() => setDraft({...draft, executionMode: mode})} />{mode === "direct" ? (zh ? "默认模式 · 直接派发" : "Direct dispatch (default)") : (zh ? "高级模式 · MAH 协调" : "MAH coordination (advanced)")}</label>)}</div>
+                    <p className="text-sm text-muted-foreground">{zh ? "CEO 负责规划与决策，部门负责各自任务，Agent 执行工作。默认模式由 auto-crop 直接派发；高级模式通过已有 MAH 项目协调。创建后不能切换模式。" : "The CEO plans and decides, departments own tasks, and agents execute them. Direct mode dispatches through auto-crop; advanced mode coordinates through an existing MAH project. The mode cannot change after creation."}</p>
+                  </fieldset>
                   <div>
                     <Label htmlFor="company-name">{c.name}</Label>
                     <Input
@@ -197,10 +218,22 @@ export function Onboarding({
                       }
                     />
                   </div>
-                  <div className="story-note" role="status">
-                    <strong>{c.unavailable}</strong>
-                    <p>{c.boundary}</p>
+                  <div>
+                    <Label htmlFor="ceo-agent">{zh ? "CEO Agent" : "CEO agent"}</Label>
+                    <select id="ceo-agent" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={draft.selectedCeoAgentId} onChange={event => setDraft({...draft, selectedCeoAgentId: event.target.value})}>
+                      <option value="">{zh ? "选择已检测到的 Agent" : "Choose a detected agent"}</option>
+                      {agents.filter(agent => agent.detected).map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+                    </select>
+                    {!agents.some(agent => agent.detected) && <p role="status">{zh ? "两种模式均需要本机可用的 Agent。安装并登录后重新检测。" : "Both modes require an available local agent. Install and sign in, then detect again."}</p>}
+                    {onDetectAgents && <Button type="button" variant="ghost" disabled={agentLoadState === "loading"} onClick={onDetectAgents}>{zh ? "重新检测 Agent" : "Detect agents again"}</Button>}
                   </div>
+                  {draft.executionMode === "mah" && <div className="grid gap-3">
+                    <div><Label htmlFor="mah-root">{zh ? "MAH 项目根目录" : "MAH project root"}</Label><Input id="mah-root" placeholder="/absolute/path/to/existing-project" value={draft.projectRoot} onChange={event => setDraft({...draft, projectRoot: event.target.value})} /></div>
+                    <div><Label htmlFor="mah-cli">{zh ? "MAH 可执行文件" : "MAH executable"}</Label><Input id="mah-cli" placeholder="mah" value={draft.cliPath} onChange={event => setDraft({...draft, cliPath: event.target.value})} /></div>
+                    <p className="text-sm text-muted-foreground">{zh ? "填写已有 MAH 项目的绝对路径。提交时先验证连接，验证通过才会创建公司。" : "Enter the absolute path to an existing MAH project. The connection is validated before the company is created."}</p>
+                    <details><summary>{zh ? "高级设置" : "Advanced"}</summary><Label htmlFor="mah-slot">{zh ? "执行槽位" : "Slot class"}</Label><select id="mah-slot" className="ml-3 rounded-md border border-input bg-background px-3 py-2 text-sm" value={draft.slotClass} onChange={event => setDraft({...draft, slotClass: event.target.value as "background" | "interactive"})}><option value="background">background</option><option value="interactive">interactive</option></select></details>
+                  </div>}
+                  {error && <div className="story-note" role="alert">{error}</div>}
                   <div className="story-form-actions">
                     <Button
                       type="button"
@@ -213,12 +246,13 @@ export function Onboarding({
                       <Play aria-hidden="true" />
                       {c.watch}
                     </Button>
-                    <Button type="submit" disabled>
-                      {c.generate}
+                    <Button type="submit" disabled={!valid || isCreating || !onCreate}>
+                      {isCreating ? (zh ? "验证并创建中…" : "Validating and creating…") : c.generate}
                       <ArrowRight aria-hidden="true" />
                     </Button>
                   </div>
                   <p className="story-fine">{c.draft}</p>
+                  </fieldset>
                 </form>
               </>
             ) : (

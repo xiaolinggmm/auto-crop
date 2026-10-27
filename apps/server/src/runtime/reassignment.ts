@@ -7,7 +7,7 @@ import type { ReassignmentDecision } from "../db/reassignments";
 import { resetTaskAttempts } from "./boundedRecovery";
 import { noToolGrant } from "../policies/capabilityGrant";
 import { defaultAgentSessionManager } from "./agentSessions";
-import { assertExecutionBackendAvailable, executorRefusalMarker } from "./executionBackend";
+import { executorRefusalMarker } from "./executionBackend";
 import { resolveReplanBasis, resolveStuckContext } from "./replanContext";
 import { applyTaskTransition } from "./taskTransition";
 import { createProjectRuntimeActionChannel } from "./runtimeActionChannel";
@@ -50,7 +50,6 @@ function assertSafe(repositories: Repositories, task: Task): void {
 
 /** The caller requests consideration, never a target. Only the configured CEO's parsed decision selects it. */
 export async function requestCeoReassignment(input: CeoReassignmentInput): Promise<ReassignmentDecision> {
-  assertExecutionBackendAvailable();
   if (!input.requestId.trim() || input.requestId.length > 160 || (input.note?.length ?? 0) > 4000) throw new Error("Invalid reassignment request");
   const { repositories } = input;
   const task = repositories.getTask(input.taskId);

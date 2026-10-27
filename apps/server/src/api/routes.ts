@@ -1,4 +1,5 @@
-import { cancelMahExecution, receiveMahExecution, reconcileMahExecution, type MahCommand } from "../adapters/mahCli";
+import { checkCompanyMahConfig, invalidateCompanyMahReadiness } from "../runtime/companyExecution";
+import { mahCommand, cancelMahExecution, receiveMahExecution, reconcileMahExecution, type MahCommand } from "../adapters/mahCli";
 import { requestCeoReassignment, withdrawCeoReassignment } from "../runtime/reassignment";
 import { executionOverview } from "../runtime/executionOverview";
 import { requestBudgetStop } from "../runtime/budgetStop";
@@ -166,6 +167,46 @@ async function routeRequest(
     return;
   }
 
+  if (method === "POST" && url.pathname === "/api/mah/preflight") {
+    try {
+      const mahConfig = await checkCompanyMahConfig(await readJson(request), options.mahCommand);
+      sendJson(response, 200, { mahConfig });
+    } catch (error) { sendJson(response, 400, { error: (error as Error).message }); }
+    return;
+  }
+
+  const connectionMatch = url.pathname.match(/^\/api\/companies\/([^/]+)\/mah-connection$/);
+  if (method === "POST" && connectionMatch) {
+    const company = options.repositories.getCompany(connectionMatch[1]);
+    if (!company) { sendJson(response, 404, { error: "Company not found." }); return; }
+    const edits = await readJson<Record<string, unknown>>(request);
+    if (company.executionMode !== "mah" || !company.mahConfig || Object.keys(edits).some(key => !["projectRoot", "cliPath"].includes(key))) {
+      sendJson(response, 409, { error: "Company execution mode, MAH project and slot cannot be changed after creation. Only connection paths can be repaired." }); return;
+    }
+    try {
+      const config = await checkCompanyMahConfig({ ...company.mahConfig, ...edits }, options.mahCommand);
+      if (config.projectId !== company.mahConfig.projectId) {
+        sendJson(response, 409, { error: "Choose the original MAH project. Replacing a company's project is not allowed." }); return;
+      }
+      options.repositories.transaction(() => {
+        if (options.repositories.listRunningAgentRuns(company.id).length || options.repositories.listTaskLocks().some(lock => options.repositories.getTask(lock.taskId)?.companyId === company.id)) {
+          throw new Error("Wait for active company runs to stop before repairing the connection.");
+        }
+        options.repositories.repairCompanyMahConnection(company.id, config);
+        // The original UUID remains authoritative after a project-directory move.
+        for (const task of options.repositories.listTasksForCompany(company.id)) {
+          for (const record of options.repositories.mahExecutions.list(task.id)) {
+            options.repositories.mahExecutions.save({ ...record, projectRoot: config.projectRoot });
+          }
+        }
+      });
+      invalidateCompanyMahReadiness(options.repositories, company.id);
+      options.requestSchedulerWake?.("company_resumed");
+      sendJson(response, 200, { company: summarizeCompany(options.repositories.getCompany(company.id)!) });
+    } catch (error) { sendJson(response, 400, { error: (error as Error).message }); }
+    return;
+  }
+
   if (method === "POST" && url.pathname === "/api/companies") {
     const body = await readJson<{
       companyName?: string;
@@ -175,6 +216,8 @@ async function routeRequest(
       permissionMode: PolicyMode;
       assets?: string[];
       creationIdempotencyKey?: string;
+      executionMode?: "direct" | "mah";
+      mahConfig?: { projectRoot: string; cliPath?: string; slotClass?: "background" | "interactive" };
     }>(request);
     const companyName = body.companyName?.trim() ?? "";
     const locale: Locale = isLocale(body.locale ?? "") ? (body.locale as Locale) : "en";
@@ -191,7 +234,13 @@ async function routeRequest(
       return;
     }
 
+    const executionMode = body.executionMode ?? "direct";
+    if (executionMode !== "direct" && executionMode !== "mah") {
+      sendJson(response, 400, { error: "Unknown company execution mode." }); return;
+    }
     const creationInput = {
+      executionMode,
+      mahConfig: executionMode === "mah" ? body.mahConfig : null,
       companyName,
       founderVision: body.founderVision,
       locale,
@@ -200,28 +249,32 @@ async function routeRequest(
       assets: body.assets ?? [],
     };
     const creationIdempotencyKey = body.creationIdempotencyKey?.trim() || createRouteId(options, "creation_key");
-    const existingCompany = options.repositories.getCompanyByCreationIdempotencyKey(creationIdempotencyKey);
-
-    if (existingCompany) {
+    const respondToExistingCreation = (): boolean => {
+      const existingCompany = options.repositories.getCompanyByCreationIdempotencyKey(creationIdempotencyKey);
+      if (!existingCompany) return false;
       if (JSON.stringify(existingCompany.creationInput ?? null) !== JSON.stringify(creationInput)) {
         sendJson(response, 409, { error: "Creation Idempotency Key already belongs to different creation input." });
-        return;
+      } else {
+        sendJson(response, existingCompany.status === "creating" ? 202 : 200,
+          buildCompanyState(existingCompany, options.repositories, { now: options.now, createId: options.createId, requestSchedulerWake: options.requestSchedulerWake }));
       }
+      return true;
+    };
+    if (respondToExistingCreation()) return;
 
-      sendJson(
-        response,
-        existingCompany.status === "creating" ? 202 : 200,
-        buildCompanyState(existingCompany, options.repositories, {
-          now: options.now,
-          createId: options.createId,
-          requestSchedulerWake: options.requestSchedulerWake,
-        }),
-      );
-      return;
-    }
+    let mahConfig: Company["mahConfig"] = null;
+    try {
+      if (!await selectedCeoAgent.detect()) throw new Error("The selected CEO Agent is not available. Configure it before creating a company.");
+      if (executionMode === "mah") mahConfig = await checkCompanyMahConfig(body.mahConfig, options.mahCommand);
+    } catch (error) { sendJson(response, 400, { error: (error as Error).message }); return; }
+
+    // Readiness awaits allow a concurrent request with the same key to finish first.
+    if (respondToExistingCreation()) return;
 
     const timestamp = (options.now ?? (() => new Date()))().toISOString();
     const company: Company = {
+      executionMode,
+      mahConfig,
       id: createRouteId(options, "company"),
       name: companyName,
       founderVision: body.founderVision,
@@ -324,7 +377,12 @@ async function routeRequest(
       locale?: string;
       selectedCeoAgentId?: string;
       permissionMode?: PolicyMode;
+      executionMode?: unknown;
+      mahConfig?: unknown;
     }>(request);
+    if (edits.executionMode !== undefined || edits.mahConfig !== undefined) {
+      sendJson(response, 409, { error: "Company execution mode and MAH binding cannot be changed after creation." }); return;
+    }
     const creationInput = {
       ...storedInput,
       ...(edits.companyName !== undefined ? { companyName: edits.companyName.trim() } : {}),
@@ -968,7 +1026,8 @@ async function routeRequest(
     const record = mahMatch[2] ? options.repositories.mahExecutions.get(decodeURIComponent(mahMatch[2])) : null;
     if (method !== "POST" || !record || record.taskId !== task.id) { sendJson(response, 404, { error: "MAH execution not found" }); return; }
     try {
-      const integration = { repositories: options.repositories, projectRoot: options.projectRoot, command: options.mahCommand };
+      const owner = options.repositories.getCompany(record.companyId);
+      const integration = { repositories: options.repositories, projectRoot: options.projectRoot, command: options.mahCommand ?? mahCommand(owner?.mahConfig?.cliPath) };
       const execution = mahMatch[3] === "cancel" ? await cancelMahExecution(integration, record.runId) : mahMatch[3] === "receive" ? await receiveMahExecution(integration, record.runId) : await reconcileMahExecution(integration, record.runId);
       sendJson(response, 200, { execution });
     } catch (error) { sendJson(response, 409, { error: String(error) }); }
@@ -2665,6 +2724,8 @@ function summarizeCompany(company: Company) {
     locale: company.locale,
     selectedCeoAgentId: company.selectedCeoAgentId,
     permissionMode: company.permissionMode ?? null,
+    executionMode: company.executionMode ?? "direct",
+    mahConfig: company.mahConfig ?? null,
   };
 }
 

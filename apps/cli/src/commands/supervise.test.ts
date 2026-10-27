@@ -37,7 +37,7 @@ describe("superviseAutoCrop", () => {
     throw new Error("Timed out waiting for the supervised system to settle.");
   };
 
-  it("preflights MAH capacity before spawning a worker", async () => {
+  it("starts its worker even when global MAH capacity is unavailable", async () => {
     const projectRoot = createTempProjectRoot();
     let launches = 0;
     const options = {
@@ -57,8 +57,8 @@ describe("superviseAutoCrop", () => {
       },
     } as unknown as Parameters<typeof superviseAutoCrop>[0];
 
-    await expect(superviseAutoCrop(options)).rejects.toThrow(/AUTO_CROP_MAH_SLOT=interactive/);
-    expect(launches).toBe(0);
+    const supervisor = await superviseAutoCrop(options);
+    try { expect(launches).toBe(1); } finally { await supervisor.close(); }
   });
 
   it.skipIf(process.platform === "win32")("detects a frozen live Worker independently and isolates its surviving writer before replacement", async () => {
