@@ -17,7 +17,7 @@ Introduce shared domain types and boundary helpers for Localized Business Conten
 
 ## Acceptance Criteria
 
-- Core types can represent English and Chinese text for Auto-Crop-authored business content.
+- Core types can represent English and Chinese text for Cordantry-authored business content.
 - UI-facing summaries have a clear way to get the display value for the active Interface Locale.
 - Fallbacks are intentional and test-covered.
 - Existing data can still load during the transition.
@@ -40,8 +40,8 @@ Prefer a small, boring model. This ticket is about the contract, not converting 
 
 ## Verification
 
-- `pnpm --filter @auto-crop/core test`
-- `pnpm --filter @auto-crop/core typecheck`
-- `pnpm --filter @auto-crop/server test`
-- `pnpm --filter @auto-crop/server typecheck`
-- `pnpm --filter @auto-crop/dashboard typecheck`
+- `pnpm --filter @cordantry/core test`
+- `pnpm --filter @cordantry/core typecheck`
+- `pnpm --filter @cordantry/server test`
+- `pnpm --filter @cordantry/server typecheck`
+- `pnpm --filter @cordantry/dashboard typecheck`

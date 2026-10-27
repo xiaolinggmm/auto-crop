@@ -7,7 +7,7 @@ import {
   type TaskHoldKind,
   type VerificationRework,
   type VerificationReworkDecision,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { applyTaskTransition } from "./taskTransition";
 import { dependenciesWithRole } from "./verificationContract";

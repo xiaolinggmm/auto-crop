@@ -6,7 +6,7 @@ import {
   type TaskAcceptanceProvenance,
   type TaskEvent,
   type TaskEventType,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { propagateDependencyCascade, type DependencyCascadeResult } from "./dependencyCascade";
 import { applyTaskTransition } from "./taskTransition";

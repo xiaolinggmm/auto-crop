@@ -1,4 +1,4 @@
-import { isVerificationSatisfied, type BusinessArtifact, type Proof, type Task } from "@auto-crop/core";
+import { isVerificationSatisfied, type BusinessArtifact, type Proof, type Task } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { collectFounderDecisions } from "./ceoAttention";
 import { getHandoffPackageManifestPath } from "./proof";

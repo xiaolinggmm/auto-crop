@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { BusinessArtifact, Company, Department, KeyResult, Objective, Proof, Task } from "@auto-crop/core";
+import type { BusinessArtifact, Company, Department, KeyResult, Objective, Proof, Task } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -363,7 +363,7 @@ describe("resolveDependencyReadiness", () => {
 });
 
 function createFixture(tasks: Task[]) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-readiness-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-readiness-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
@@ -470,7 +470,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
 }
 

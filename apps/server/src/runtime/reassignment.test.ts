@@ -13,7 +13,7 @@ const cleanups: Array<() => void> = [];
 afterEach(() => { for (const cleanup of cleanups.splice(0)) cleanup(); });
 function fixture() {
   const projectRoot = mkdtempSync(join(tmpdir(), "reassignment-"));
-  mkdirSync(join(projectRoot, ".auto-crop"));
+  mkdirSync(join(projectRoot, ".cordantry"));
   const { repositories, client } = openState(projectRoot);
   cleanups.push(() => { client.close(); rmSync(projectRoot, { recursive: true, force: true }); });
   const fail = () => applyTaskTransition({ repositories, task: "task_1", status: "failed", executionSummary: { latestFailureReason: "agent_failed", latestFailureMessage: "Executor failed" } });

@@ -33,7 +33,7 @@ export type RuntimeActionChannel = {
 };
 const NOTHING: RunSubmission = { envelope: null, rejection: null };
 export type RuntimeActionChannelOptions = { candidateDir?: string };
-export function runtimeActionCandidateDir(projectRoot: string): string { return join(projectRoot, ".auto-crop", "runtime-actions"); }
+export function runtimeActionCandidateDir(projectRoot: string): string { return join(projectRoot, ".cordantry", "runtime-actions"); }
 export function createProjectRuntimeActionChannel(projectRoot: string): RuntimeActionChannel {
   return createRuntimeActionChannel({ candidateDir: runtimeActionCandidateDir(projectRoot) });
 }

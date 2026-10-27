@@ -29,13 +29,13 @@ export function resolveBudgetSnapshot(policy: Partial<BudgetPolicy>, timeout: Ef
     finalizeMs: 60_000, checkpointMs: 60_000, persistMs: 5_000, clockToleranceMs: 5_000,
     suspectAfterMs: 45_000, lostAfterMs: 90_000, quietAfterMs: 60_000, resumeGraceMs: 30_000,
     ...policy, version: BUDGET_POLICY_VERSION, softMs: timeout.effectiveTimeoutMs,
-    environment: { agentTimeoutMs: env.AUTO_CROP_AGENT_TIMEOUT_MS ?? null, forceAgentTimeoutMs: env.AUTO_CROP_FORCE_AGENT_TIMEOUT_MS ?? null },
+    environment: { agentTimeoutMs: env.CORDANTRY_AGENT_TIMEOUT_MS ?? null, forceAgentTimeoutMs: env.CORDANTRY_FORCE_AGENT_TIMEOUT_MS ?? null },
   };
   for (const key of ["runHardMs", "taskTotalMs", "briefMs", "repairMs", "finalizeMs", "checkpointMs", "persistMs", "clockToleranceMs", "softMs", "suspectAfterMs", "lostAfterMs", "quietAfterMs", "resumeGraceMs"] as const) {
     const value = result[key];
     if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`Invalid execution budget ${key}: expected a positive safe integer`);
   }
-  for (const key of ["AUTO_CROP_AGENT_TIMEOUT_MS", "AUTO_CROP_FORCE_AGENT_TIMEOUT_MS"] as const) {
+  for (const key of ["CORDANTRY_AGENT_TIMEOUT_MS", "CORDANTRY_FORCE_AGENT_TIMEOUT_MS"] as const) {
     const value = env[key];
     if (value !== undefined && value.trim() !== "" && (!Number.isSafeInteger(Number(value)) || Number(value) <= 0)) throw new Error(`Invalid execution budget ${key}`);
   }
@@ -57,10 +57,10 @@ export function isBudgetExhaustion(reason: string | null | undefined): reason is
 
 /** Explicit opt-in; malformed configuration never silently falls back to observe. */
 export function executionBudgetFromEnvironment(env = process.env): Partial<BudgetPolicy> | undefined {
-  const mode = env.AUTO_CROP_EXECUTION_POLICY ?? "observe";
+  const mode = env.CORDANTRY_EXECUTION_POLICY ?? "observe";
   if (mode === "observe") return undefined;
-  if (mode !== BUDGET_POLICY_VERSION) throw new Error("AUTO_CROP_EXECUTION_POLICY must be observe or budget-v1");
-  const configured: unknown = JSON.parse(env.AUTO_CROP_EXECUTION_BUDGET_JSON ?? "{}");
+  if (mode !== BUDGET_POLICY_VERSION) throw new Error("CORDANTRY_EXECUTION_POLICY must be observe or budget-v1");
+  const configured: unknown = JSON.parse(env.CORDANTRY_EXECUTION_BUDGET_JSON ?? "{}");
   if (!configured || typeof configured !== "object" || Array.isArray(configured)) throw new Error("Execution budget must be a JSON object");
   const allowed = new Set(["runHardMs", "taskTotalMs", "briefMs", "repairMs", "finalizeMs", "checkpointMs", "persistMs", "clockToleranceMs", "suspectAfterMs", "lostAfterMs", "quietAfterMs", "resumeGraceMs"]);
   if (Object.keys(configured).some(key => !allowed.has(key))) throw new Error("Unknown execution budget configuration field");

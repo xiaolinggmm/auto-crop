@@ -8,9 +8,9 @@ import type {
   NextStepItem,
   VisionGap,
   WaitState,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 
-export type { FinalFounderReportClassification } from "@auto-crop/core";
+export type { FinalFounderReportClassification } from "@cordantry/core";
 
 export type AgentSummary = {
   id: string;

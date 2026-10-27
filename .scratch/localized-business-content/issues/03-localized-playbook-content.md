@@ -40,8 +40,8 @@ This ticket may need to separate department identity from department display nam
 
 ## Verification
 
-- `pnpm --filter @auto-crop/core test`
-- `pnpm --filter @auto-crop/core typecheck`
-- `pnpm --filter @auto-crop/server test`
-- `pnpm --filter @auto-crop/server typecheck`
-- `pnpm --filter @auto-crop/dashboard typecheck`
+- `pnpm --filter @cordantry/core test`
+- `pnpm --filter @cordantry/core typecheck`
+- `pnpm --filter @cordantry/server test`
+- `pnpm --filter @cordantry/server typecheck`
+- `pnpm --filter @cordantry/dashboard typecheck`

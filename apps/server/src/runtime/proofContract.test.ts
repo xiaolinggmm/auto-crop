@@ -4,7 +4,7 @@ import { buildProofContractInstructions } from "./proofContract";
 describe("buildProofContractInstructions", () => {
   it("names the runtime-collected diff locations for repo-diff tasks", () => {
     const text = buildProofContractInstructions({ id: "task_1", proofSchemaId: "repo-diff" }).join("\n");
-    expect(text).toContain(".auto-crop-proof/task_1.diff");
+    expect(text).toContain(".cordantry-proof/task_1.diff");
   });
 
   it("teaches the environment-blocked escape hatch for screenshot tasks", () => {

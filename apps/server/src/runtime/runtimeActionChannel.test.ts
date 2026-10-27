@@ -13,7 +13,7 @@ afterEach(() => {
 });
 
 function tempCandidateDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), "auto-crop-runtime-actions-"));
+  const dir = mkdtempSync(join(tmpdir(), "cordantry-runtime-actions-"));
   createdDirs.push(dir);
   return dir;
 }
@@ -150,7 +150,7 @@ describe("RuntimeActionChannel", () => {
   });
 
   it("shares candidates through a file-backed store for an external MCP server process", () => {
-    const candidateDir = mkdtempSync(join(tmpdir(), "auto-crop-runtime-actions-"));
+    const candidateDir = mkdtempSync(join(tmpdir(), "cordantry-runtime-actions-"));
     try {
       const serverSide = createRuntimeActionChannel({ candidateDir });
       const schedulerSide = createRuntimeActionChannel({ candidateDir });

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
-import type { Approval, Company, Department, PermissionMode, Task } from "@auto-crop/core";
+import type { Approval, Company, Department, PermissionMode, Task } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -245,7 +245,7 @@ function createFixture(options: { permissionMode?: PermissionMode }): {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
   const task: Task = {
     id: "task_1",

@@ -11,7 +11,7 @@ const args = process.argv.slice(2);
 function submitArtifactEnvelope(envelope) {
   const server = {};
   args.forEach((arg, index) => {
-    const match = args[index - 1] === "-c" && /^mcp_servers\.auto-crop-runtime-actions\.(command|args|env)=(.*)$/s.exec(arg);
+    const match = args[index - 1] === "-c" && /^mcp_servers\.cordantry-runtime-actions\.(command|args|env)=(.*)$/s.exec(arg);
     if (!match) return;
     const [, key, value] = match;
     server[key] = key === "env"
@@ -34,13 +34,13 @@ if (args.includes("--help")) {
     console.log(JSON.stringify({ classification: "stalled", sections: { vision: "Fixture", actualResult: "Interrupted", departmentContributions: ["Engineering interrupted"], goalFit: "Pending", remainingGaps: "Unfinished", recommendedNextStep: "Confirm termination" } }));
   } else {
     if (path.basename(process.cwd()) !== "task_1") throw new Error("Unexpected smoke invocation");
-    const root = process.env.AUTO_CROP_SMOKE_ROOT;
+    const root = process.env.CORDANTRY_SMOKE_ROOT;
     if (!root) throw new Error("This fixture requires an isolated smoke root");
     const writer = path.join(process.cwd(), "still-writing.txt");
     const receipt = path.join(root, "writer.json");
     fs.writeFileSync(`${receipt}.tmp`, JSON.stringify({ pid: process.pid, workspace: process.cwd(), writer }));
     fs.renameSync(`${receipt}.tmp`, receipt);
-    if (process.env.AUTO_CROP_SMOKE_SCENARIO === "budget-success") {
+    if (process.env.CORDANTRY_SMOKE_SCENARIO === "budget-success") {
       setTimeout(() => {
         submitArtifactEnvelope({
           artifact_kind: "deliverable", artifact_role: "implementation", artifact_subtype: "prototype_implementation", task_type: "engineering.prototype_implementation",

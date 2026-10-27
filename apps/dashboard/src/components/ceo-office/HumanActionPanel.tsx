@@ -6,7 +6,7 @@ import { useLanguage } from "../../ui/language";
 
 type HumanActionItem = Extract<CeoOfficeItemSummary, { type: "human_action" }>;
 
-/** Send back what an action outside Auto-Crop produced, one field per thing the task asked for. */
+/** Send back what an action outside Cordantry produced, one field per thing the task asked for. */
 export function HumanActionPanel({
   item,
   onConfirm,

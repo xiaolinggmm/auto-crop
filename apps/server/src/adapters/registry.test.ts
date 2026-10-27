@@ -106,8 +106,8 @@ function codexWith(help: string) {
 const createdDirs: string[] = [];
 
 afterEach(() => {
-  delete process.env.AUTO_CROP_AGENT_TIMEOUT_MS;
-  delete process.env.AUTO_CROP_CODEX_MODEL;
+  delete process.env.CORDANTRY_AGENT_TIMEOUT_MS;
+  delete process.env.CORDANTRY_CODEX_MODEL;
   for (const dir of createdDirs.splice(0)) {
     rmSync(dir, { recursive: true, force: true });
   }
@@ -496,7 +496,7 @@ describe("CLI command template adapter", () => {
     runtimeActions: {
       submitArtifactEnvelope: () => ({ ok: true }),
       mcp: {
-        candidateDir: "/tmp/auto-crop-runtime-actions",
+        candidateDir: "/tmp/cordantry-runtime-actions",
         companyId: "company_1",
         taskId: "task_1",
         runId: "run_1",
@@ -532,13 +532,13 @@ describe("CLI command template adapter", () => {
 
     expect(configDuringRun).toMatchObject({
       mcpServers: {
-        "auto-crop-runtime-actions": {
+        "cordantry-runtime-actions": {
           command: process.execPath,
           env: {
-            AUTO_CROP_RUNTIME_ACTION_DIR: "/tmp/auto-crop-runtime-actions",
-            AUTO_CROP_RUNTIME_ACTION_COMPANY_ID: "company_1",
-            AUTO_CROP_RUNTIME_ACTION_TASK_ID: "task_1",
-            AUTO_CROP_RUNTIME_ACTION_RUN_ID: "run_1",
+            CORDANTRY_RUNTIME_ACTION_DIR: "/tmp/cordantry-runtime-actions",
+            CORDANTRY_RUNTIME_ACTION_COMPANY_ID: "company_1",
+            CORDANTRY_RUNTIME_ACTION_TASK_ID: "task_1",
+            CORDANTRY_RUNTIME_ACTION_RUN_ID: "run_1",
           },
         },
       },
@@ -563,17 +563,17 @@ describe("CLI command template adapter", () => {
   });
 
   it("launches the packaged action server without a TypeScript loader", () => {
-    const previous = process.env.AUTO_CROP_RUNTIME_ACTION_SERVER;
-    process.env.AUTO_CROP_RUNTIME_ACTION_SERVER = "/Applications/Auto Crop/resources/runtime-action.cjs";
+    const previous = process.env.CORDANTRY_RUNTIME_ACTION_SERVER;
+    process.env.CORDANTRY_RUNTIME_ACTION_SERVER = "/Applications/Cordantry/resources/runtime-action.cjs";
     try {
       const server = runtimeActionMcpServer(actionRequest.runtimeActions!.mcp!);
 
       expect(server.command).toBe(process.execPath);
-      expect(server.args).toEqual(["/Applications/Auto Crop/resources/runtime-action.cjs"]);
+      expect(server.args).toEqual(["/Applications/Cordantry/resources/runtime-action.cjs"]);
       expect(server.env.ELECTRON_RUN_AS_NODE).toBe("1");
     } finally {
-      if (previous === undefined) delete process.env.AUTO_CROP_RUNTIME_ACTION_SERVER;
-      else process.env.AUTO_CROP_RUNTIME_ACTION_SERVER = previous;
+      if (previous === undefined) delete process.env.CORDANTRY_RUNTIME_ACTION_SERVER;
+      else process.env.CORDANTRY_RUNTIME_ACTION_SERVER = previous;
     }
   });
 
@@ -586,7 +586,7 @@ describe("CLI command template adapter", () => {
 
     expect(args[args.indexOf("--mcp-config") + 1]).toBe("/tmp/mcp.json");
     expect(args[args.indexOf("--allowedTools") + 1]).toBe(
-      "Read,Glob,Grep,Write,Edit,mcp__auto-crop-runtime-actions__submit_artifact_envelope",
+      "Read,Glob,Grep,Write,Edit,mcp__cordantry-runtime-actions__submit_artifact_envelope",
     );
     // Built-ins and MCP tools are separate lists: the delivery tool is allowed, not made a built-in.
     expect(args[args.indexOf("--tools") + 1]).toBe("Read,Glob,Grep,Write,Edit");
@@ -606,10 +606,10 @@ describe("CLI command template adapter", () => {
     const overrides = args.filter((_, index) => args[index - 1] === "-c");
 
     expect(overrides).toEqual(expect.arrayContaining([
-      `mcp_servers.auto-crop-runtime-actions.command=${JSON.stringify(process.execPath)}`,
-      `mcp_servers.auto-crop-runtime-actions.args=[${server.args.map((arg) => JSON.stringify(arg)).join(",")}]`,
-      'mcp_servers.auto-crop-runtime-actions.env={AUTO_CROP_RUNTIME_ACTION_DIR="/tmp/auto-crop-runtime-actions",AUTO_CROP_RUNTIME_ACTION_COMPANY_ID="company_1",AUTO_CROP_RUNTIME_ACTION_TASK_ID="task_1",AUTO_CROP_RUNTIME_ACTION_RUN_ID="run_1",AUTO_CROP_RUNTIME_ACTION_LOCALE="en",AUTO_CROP_RUNTIME_ACTION_REQUIRE_EXECUTION_DETAILS="true",AUTO_CROP_RUNTIME_ACTION_PROOF_SCHEMA_ID="product-brief",AUTO_CROP_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES="file"}',
-      'mcp_servers.auto-crop-runtime-actions.default_tools_approval_mode="approve"',
+      `mcp_servers.cordantry-runtime-actions.command=${JSON.stringify(process.execPath)}`,
+      `mcp_servers.cordantry-runtime-actions.args=[${server.args.map((arg) => JSON.stringify(arg)).join(",")}]`,
+      'mcp_servers.cordantry-runtime-actions.env={CORDANTRY_RUNTIME_ACTION_DIR="/tmp/cordantry-runtime-actions",CORDANTRY_RUNTIME_ACTION_COMPANY_ID="company_1",CORDANTRY_RUNTIME_ACTION_TASK_ID="task_1",CORDANTRY_RUNTIME_ACTION_RUN_ID="run_1",CORDANTRY_RUNTIME_ACTION_LOCALE="en",CORDANTRY_RUNTIME_ACTION_REQUIRE_EXECUTION_DETAILS="true",CORDANTRY_RUNTIME_ACTION_PROOF_SCHEMA_ID="product-brief",CORDANTRY_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES="file"}',
+      'mcp_servers.cordantry-runtime-actions.default_tools_approval_mode="approve"',
     ]));
     expect(args.at(-1)).toBe("p");
   });
@@ -657,8 +657,8 @@ describe("CLI command template adapter", () => {
     expect(result.failureReason).toBe("timeout");
   });
 
-  it("ignores AUTO_CROP_AGENT_TIMEOUT_MS because runtime resolves effective timeout", async () => {
-    process.env.AUTO_CROP_AGENT_TIMEOUT_MS = "1000";
+  it("ignores CORDANTRY_AGENT_TIMEOUT_MS because runtime resolves effective timeout", async () => {
+    process.env.CORDANTRY_AGENT_TIMEOUT_MS = "1000";
     const workspacePath = createWorkspaceWithScript("setTimeout(() => process.exit(0), 20);");
     const adapter = createCliAgentAdapter({
       id: "custom",
@@ -760,7 +760,7 @@ describe("CLI command template adapter", () => {
     it("takes the processes the agent started down with it", async () => {
       // An agent CLI spawns compilers, servers and test runners. Signalling only the process we hold
       // leaves those behind, still writing to the workspace this task is about to be retried in.
-      const pidPath = join(mkdtempSync(join(tmpdir(), "auto-crop-grandchild-")), "grandchild.pid");
+      const pidPath = join(mkdtempSync(join(tmpdir(), "cordantry-grandchild-")), "grandchild.pid");
       createdDirs.push(dirname(pidPath));
       const workspacePath = createWorkspaceWithScript(`
         import { spawn } from "node:child_process";
@@ -807,7 +807,7 @@ function isAlive(pid: number): boolean {
 }
 
 function createWorkspaceWithScript(script: string): string {
-  const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-cli-agent-"));
+  const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-cli-agent-"));
   createdDirs.push(workspacePath);
   writeFileSync(join(workspacePath, "agent-script.mjs"), script, "utf8");
   return workspacePath;

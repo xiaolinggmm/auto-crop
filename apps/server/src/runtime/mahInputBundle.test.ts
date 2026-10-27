@@ -8,9 +8,9 @@ afterEach(() => roots.splice(0).forEach(p => rmSync(p, {recursive:true,force:tru
 it("transports only explicit handoff/verification directories with stable relative paths", () => {
   const root = mkdtempSync(join(tmpdir(), "mah-input-")); roots.push(root);
   mkdirSync(join(root,"files")); writeFileSync(join(root,"files","report.md"), "approved evidence");
-  const bundle = buildMahInputBundle([{ path: root, mountPath: ".auto-crop-inputs/task-1" }]);
+  const bundle = buildMahInputBundle([{ path: root, mountPath: ".cordantry-inputs/task-1" }]);
   expect(bundle.files).toHaveLength(1);
-  expect(bundle.files[0]?.path).toBe(".auto-crop-inputs/task-1/files/report.md");
+  expect(bundle.files[0]?.path).toBe(".cordantry-inputs/task-1/files/report.md");
   expect(Buffer.from(bundle.files[0]!.data,"base64").toString()).toBe("approved evidence");
   expect(bundle.files[0]?.sha256).toMatch(/^[a-f0-9]{64}$/);
   symlinkSync("/etc/passwd", join(root,"leak"));

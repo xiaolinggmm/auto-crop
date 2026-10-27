@@ -29,7 +29,7 @@ import {
   type TaskEvent,
   type TaskProgressEvent,
   type TaskStatus,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import {
   MAX_TASK_ATTEMPTS,
   retryExhaustedFailureMessage,
@@ -156,8 +156,8 @@ export type RunSchedulerOnceResult = {
 };
 
 export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<RunSchedulerOnceResult> {
-  const backend = input.executionBackend ?? process.env.AUTO_CROP_EXECUTION_BACKEND ?? "direct";
-  assertExecutionBackendAvailable(backend, Boolean(input.mahAdapter || process.env.AUTO_CROP_MAH_PROJECT_ROOT));
+  const backend = input.executionBackend ?? process.env.CORDANTRY_EXECUTION_BACKEND ?? "direct";
+  assertExecutionBackendAvailable(backend, Boolean(input.mahAdapter || process.env.CORDANTRY_MAH_PROJECT_ROOT));
   const mahAdapter = backend === "mah" ? input.mahAdapter ?? createMahCliAdapter(input) : null;
   const now = input.now ?? (() => new Date());
   const createId = input.createId ?? defaultCreateId;
@@ -399,7 +399,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
             createId,
           });
           if (!budgetSnapshot) { markRunning(); result.started.push(task.id); }
-          // Compatible launch isolation still dispatches (Auto-Crop is local-first), but the downgrade is
+          // Compatible launch isolation still dispatches (Cordantry is local-first), but the downgrade is
           // recorded on the task, not only in server stdout.
           for (const warning of [...launchWarnings, ...initialTimeoutResolution.warnings]) {
             appendAndEmitTaskEvent(input, {
@@ -606,7 +606,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
               workspacePath: runWorkspacePath,
               metadata: { departmentId: task.departmentId, proofSchemaId: task.proofSchemaId },
               ...(backend === "mah" ? { inputDirectories: [
-                ...handoffs.filter(h => h.handoffPackagePath).map(h => ({ path: dirname(h.handoffPackagePath!), mountPath: `.auto-crop-inputs/${h.upstreamTaskId}` })),
+                ...handoffs.filter(h => h.handoffPackagePath).map(h => ({ path: dirname(h.handoffPackagePath!), mountPath: `.cordantry-inputs/${h.upstreamTaskId}` })),
                 ...(verificationPromptContext.inputs?.targets ?? []).map(target => ({ path: join(runWorkspacePath, target.path), mountPath: target.path })),
               ] } : {}),
               timeoutMs: timeoutResolution.effectiveTimeoutMs,
@@ -679,7 +679,7 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
                   settledFacts,
                   companyContextNotes: listCompanyContextNotes(input.repositories, company.id),
                 }) +
-                  (backend === "mah" ? "\nAccepted upstream handoff packages are attached under: " + handoffs.filter(h => h.handoffPackagePath).map(h => `${h.upstreamTaskId}: .auto-crop-inputs/${h.upstreamTaskId}`).join(", ") : "") +
+                  (backend === "mah" ? "\nAccepted upstream handoff packages are attached under: " + handoffs.filter(h => h.handoffPackagePath).map(h => `${h.upstreamTaskId}: .cordantry-inputs/${h.upstreamTaskId}`).join(", ") : "") +
                   executionBriefPrompt(preparation),
               });
             } else {
@@ -2434,7 +2434,7 @@ function appendLaunchUnavailableWarningOnce(
 }
 
 function createLogPath(projectRoot: string, task: Task): string {
-  const logsDir = join(projectRoot, ".auto-crop", "companies", task.companyId, "logs");
+  const logsDir = join(projectRoot, ".cordantry", "companies", task.companyId, "logs");
   mkdirSync(logsDir, { recursive: true });
   return join(logsDir, `${task.id}.log`);
 }
@@ -2497,7 +2497,7 @@ function failureMessage(
 
   if (failureReason === "no_proof") {
     if (task.proofSchemaId === "repo-diff") {
-      return `Task failed: ${task.title} / no_proof / repo-diff proof missing: expected .auto-crop-proof/*.diff or a top-level workspace *.diff/*.patch file; an Artifact Envelope is not diff proof.`;
+      return `Task failed: ${task.title} / no_proof / repo-diff proof missing: expected .cordantry-proof/*.diff or a top-level workspace *.diff/*.patch file; an Artifact Envelope is not diff proof.`;
     }
     return `Task failed: ${task.title} / no_proof.`;
   }

@@ -32,7 +32,7 @@ export type CleanupGeneratedWorkspaceInput = {
 export function createCompanyWorkspace(projectRoot: string, companyId: string): CompanyWorkspace {
   assertWorkspaceId(companyId);
 
-  const companyRoot = resolveWorkspacePath(projectRoot, `.auto-crop/companies/${companyId}`);
+  const companyRoot = resolveWorkspacePath(projectRoot, `.cordantry/companies/${companyId}`);
   mkdirSync(companyRoot, { recursive: true });
 
   return { companyRoot };
@@ -48,7 +48,7 @@ export function createDepartmentWorkspace(
 
   const root = resolveWorkspacePath(
     projectRoot,
-    `.auto-crop/companies/${companyId}/departments/${departmentId}`,
+    `.cordantry/companies/${companyId}/departments/${departmentId}`,
   );
   const workspace = {
     root,
@@ -76,7 +76,7 @@ export function createDepartmentWorkspace(
 export function createTaskWorkspace(projectRoot: string, taskId: string): TaskWorkspace {
   assertWorkspaceId(taskId);
 
-  const root = resolveWorkspacePath(projectRoot, `.auto-crop/workspaces/${taskId}`);
+  const root = resolveWorkspacePath(projectRoot, `.cordantry/workspaces/${taskId}`);
   mkdirSync(root, { recursive: true });
 
   return { root };
@@ -119,7 +119,7 @@ function assertWorkspaceId(id: string): void {
 }
 
 function assertTaskWorkspacePath(projectRoot: string, workspacePath: string): void {
-  const workspacesRoot = resolveWorkspacePath(projectRoot, ".auto-crop/workspaces");
+  const workspacesRoot = resolveWorkspacePath(projectRoot, ".cordantry/workspaces");
   const relativePath = relative(workspacesRoot, workspacePath);
 
   if (relativePath && !relativePath.startsWith("..") && !isAbsolute(relativePath)) {

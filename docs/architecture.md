@@ -1,6 +1,6 @@
 # Architecture
 
-auto-crop is a local-first TypeScript system that coordinates local AI agents as a small operating company.
+Cordantry is a local-first TypeScript system that coordinates local AI agents as a small operating company.
 
 ## Runtime Loop
 
@@ -20,10 +20,10 @@ The user starts with an intent and assets. The CEO Office converts that input in
 
 ## Packages
 
-- `@auto-crop/core`: shared TypeScript types and Zod schemas.
-- `@auto-crop/server`: SQLite persistence, workspace creation, adapters, policies, playbooks, runtime orchestration, REST, and SSE.
-- `@auto-crop/cli`: local entrypoint for starting the runtime.
-- `@auto-crop/dashboard`: React dashboard for onboarding, activation, monitoring, proof, review, and kill switch controls.
+- `@cordantry/core`: shared TypeScript types and Zod schemas.
+- `@cordantry/server`: SQLite persistence, workspace creation, adapters, policies, playbooks, runtime orchestration, REST, and SSE.
+- `@cordantry/cli`: local entrypoint for starting the runtime.
+- `@cordantry/dashboard`: React dashboard for onboarding, activation, monitoring, proof, review, and kill switch controls.
 
 ## Dashboard Interface
 
@@ -37,7 +37,7 @@ The dashboard uses a reusable flat CRT / Classic Macintosh interface layer rathe
 
 The application menu is inside the CRT screen face at the top of the dashboard. `DashboardMenuBar` maps runtime state to reusable menu groups:
 
-- `Auto-Crop`: product-level commands.
+- `Cordantry`: product-level commands.
 - `Company`: create company, and pause or resume operating.
 - `Agents`: detected CEO agents, current-agent checked state, and disabled unavailable agents.
 - `Work`: task and department navigation.
@@ -52,13 +52,13 @@ The menu model is shared across onboarding and dashboard pages. Desktop shows th
 Structured state is stored in SQLite:
 
 ```text
-.auto-crop/state.sqlite
+.cordantry/state.sqlite
 ```
 
 File-based memory and artifacts are stored under the operated project:
 
 ```text
-.auto-crop/
+.cordantry/
   companies/<companyId>/
     departments/<departmentId>/Memory.md
     tasks/

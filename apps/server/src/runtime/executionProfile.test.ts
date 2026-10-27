@@ -74,24 +74,24 @@ describe("formatExecutionBudget", () => {
 });
 
 describe("resolveEffectiveTimeout", () => {
-  it("lets AUTO_CROP_AGENT_TIMEOUT_MS raise but not lower a task profile budget", () => {
+  it("lets CORDANTRY_AGENT_TIMEOUT_MS raise but not lower a task profile budget", () => {
     expect(
       resolveEffectiveTimeout(
         { proofSchemaId: "landing-page-file", requiredCapabilities: ["frontend"] },
-        { AUTO_CROP_AGENT_TIMEOUT_MS: "120000" },
+        { CORDANTRY_AGENT_TIMEOUT_MS: "120000" },
       ),
     ).toMatchObject({
       requestedTimeoutMs: 600_000,
       effectiveTimeoutMs: 600_000,
       warnings: [
-        "Ignored AUTO_CROP_AGENT_TIMEOUT_MS=120000 because it is lower than the long profile budget 600000.",
+        "Ignored CORDANTRY_AGENT_TIMEOUT_MS=120000 because it is lower than the long profile budget 600000.",
       ],
     });
 
     expect(
       resolveEffectiveTimeout(
         { proofSchemaId: "product-brief", requiredCapabilities: ["writing"] },
-        { AUTO_CROP_AGENT_TIMEOUT_MS: "180000" },
+        { CORDANTRY_AGENT_TIMEOUT_MS: "180000" },
       ),
     ).toMatchObject({
       requestedTimeoutMs: 120_000,
@@ -100,11 +100,11 @@ describe("resolveEffectiveTimeout", () => {
     });
   });
 
-  it("lets AUTO_CROP_FORCE_AGENT_TIMEOUT_MS override the profile exactly", () => {
+  it("lets CORDANTRY_FORCE_AGENT_TIMEOUT_MS override the profile exactly", () => {
     expect(
       resolveEffectiveTimeout(
         { proofSchemaId: "landing-page-file", requiredCapabilities: ["frontend"] },
-        { AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: "1000" },
+        { CORDANTRY_FORCE_AGENT_TIMEOUT_MS: "1000" },
       ),
     ).toMatchObject({
       requestedTimeoutMs: 600_000,
@@ -118,13 +118,13 @@ describe("resolveEffectiveTimeout", () => {
       resolveEffectiveTimeout(
         { proofSchemaId: "test-output", requiredCapabilities: ["test"] },
         {
-          AUTO_CROP_AGENT_TIMEOUT_MS: "soon",
-          AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: "0",
+          CORDANTRY_AGENT_TIMEOUT_MS: "soon",
+          CORDANTRY_FORCE_AGENT_TIMEOUT_MS: "0",
         },
       ),
     ).toMatchObject({
       effectiveTimeoutMs: 600_000,
-      warnings: ["Ignored invalid AUTO_CROP_AGENT_TIMEOUT_MS: soon.", "Ignored invalid AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: 0."],
+      warnings: ["Ignored invalid CORDANTRY_AGENT_TIMEOUT_MS: soon.", "Ignored invalid CORDANTRY_FORCE_AGENT_TIMEOUT_MS: 0."],
     });
   });
 });

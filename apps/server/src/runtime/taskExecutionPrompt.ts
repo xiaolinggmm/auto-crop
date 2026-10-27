@@ -1,4 +1,4 @@
-import { actionIntentCategories, type Company, type Locale, type ProofType, type Task, type VerificationInputs } from "@auto-crop/core";
+import { actionIntentCategories, type Company, type Locale, type ProofType, type Task, type VerificationInputs } from "@cordantry/core";
 import { describeRuntimeCapability, type AgentCapabilityGrant } from "../policies/capabilityGrant";
 import type { TaskHandoff } from "./dependencyReadiness";
 import { LOCALE_LANGUAGE_NAME } from "./localePromptText";
@@ -125,7 +125,7 @@ function buildCapabilityGrantInstructions(
   return [
     "## Granted Capabilities",
     "",
-    delegated ? "Auto-Crop authorizes the following task activities. MAH owns provider permission enforcement; these are task constraints, not a claim of CLI tool isolation:" : "This run holds exactly these capabilities, and nothing else:",
+    delegated ? "Cordantry authorizes the following task activities. MAH owns provider permission enforcement; these are task constraints, not a claim of CLI tool isolation:" : "This run holds exactly these capabilities, and nothing else:",
     ...grant.granted.map((capability) => `- ${describeRuntimeCapability(capability)}`),
     ...(grant.withheld.length > 0
       ? [

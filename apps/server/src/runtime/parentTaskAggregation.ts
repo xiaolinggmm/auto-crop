@@ -4,7 +4,7 @@ import {
   type TaskEvent,
   type TaskProgressEvent,
   type TaskStatus,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { applyTaskTransition } from "./taskTransition";
 import { resolveDependencyReadiness, type DependencyReadiness } from "./dependencyReadiness";

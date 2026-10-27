@@ -12,7 +12,7 @@ Make CEO agent blueprints and runtime-authored activity/progress content produce
 - Update the CEO prompt output contract so departments, objectives, key results, task titles, task descriptions, and handoff contracts can carry English and Chinese values.
 - Update parsing and fallback behavior for older agent outputs that only contain strings.
 - Convert runtime-authored progress labels, task event messages, recovery messages, refresh messages, dependency messages, review decision messages, and scheduler messages to localization keys or localized values.
-- Add localized dashboard summaries for agent-produced proof summaries, failure messages, and review notes where Auto-Crop presents them as product UI.
+- Add localized dashboard summaries for agent-produced proof summaries, failure messages, and review notes where Cordantry presents them as product UI.
 - Preserve original agent output as raw evidence/diagnostic content.
 
 ## Acceptance Criteria
@@ -37,13 +37,13 @@ This is the highest-risk ticket because it touches agent contracts. Keep parser 
 - Updated the CEO prompt contract and JSON example to request `*Text` Localized Business Content for departments, objectives, key results, tasks, proof schemas, and handoff contracts.
 - Added parser normalization so legacy single-string CEO outputs remain valid and receive explicit `{ en: value, zh: value }` fallback localized fields.
 - Added persisted localized fields for CEO review notes, task event messages, task progress labels/details, and proof summaries.
-- Added runtime localized text helpers for common Auto-Crop-authored progress/event/proof messages while preserving raw legacy strings.
+- Added runtime localized text helpers for common Cordantry-authored progress/event/proof messages while preserving raw legacy strings.
 - Updated API summaries to prefer persisted localized runtime content and fallback to legacy strings for old records.
 
 ## Verification
 
-- `pnpm --filter @auto-crop/core test`
-- `pnpm --filter @auto-crop/core typecheck`
-- `pnpm --filter @auto-crop/server test`
-- `pnpm --filter @auto-crop/server typecheck`
-- `pnpm --filter @auto-crop/dashboard typecheck`
+- `pnpm --filter @cordantry/core test`
+- `pnpm --filter @cordantry/core typecheck`
+- `pnpm --filter @cordantry/server test`
+- `pnpm --filter @cordantry/server typecheck`
+- `pnpm --filter @cordantry/dashboard typecheck`

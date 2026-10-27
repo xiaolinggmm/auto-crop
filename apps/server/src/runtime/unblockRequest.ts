@@ -1,4 +1,4 @@
-import type { BusinessArtifact, NextStepItem, Task, TaskCompletionEvent, TaskEvent, TaskProgressEvent } from "@auto-crop/core";
+import type { BusinessArtifact, NextStepItem, Task, TaskCompletionEvent, TaskEvent, TaskProgressEvent } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { humanActionIdFor } from "./ceoAttention";
 import { createDefaultId } from "./ids";

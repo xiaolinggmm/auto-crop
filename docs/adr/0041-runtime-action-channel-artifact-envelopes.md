@@ -4,15 +4,15 @@ Status: accepted for direct adapters. [ADR 0050](0050-mah-cli-delegation-and-fil
 
 Amendment: [ADR 0049](0049-mah-direct-tasks-bind-executor-and-runtime-action.md) supersedes the candidate deletion and consumption rules below. New dispatch invalidates prior-run eligibility without deleting audit evidence; candidates remain replayable through committed settlement and receipt acknowledgement.
 
-Auto-Crop will introduce a **Runtime Action Channel** for task delivery: an Agent Run submits an **Artifact Envelope** through a controlled runtime action, and the runtime validates and settles it into Proof, Business Artifacts, task outcome, Holds, and completion events. The channel is scoped to task-delivery facts in this decision; a future daemon or paired computer may use the same idea as a broader agent action surface, but daemon, pairing, wake streams, online/offline projection, and same-turn steering are not part of this slice.
+Cordantry will introduce a **Runtime Action Channel** for task delivery: an Agent Run submits an **Artifact Envelope** through a controlled runtime action, and the runtime validates and settles it into Proof, Business Artifacts, task outcome, Holds, and completion events. The channel is scoped to task-delivery facts in this decision; a future daemon or paired computer may use the same idea as a broader agent action surface, but daemon, pairing, wake streams, online/offline projection, and same-turn steering are not part of this slice.
 
 This ADR supersedes the file-as-formal-interface part of ADR 0028 and the future-direction note in ADR 0040. ADR 0028 still describes the compatibility repair behavior for a deprecated file shim while that shim exists.
 
 ## Context
 
-Today the task deliverable path is file-first. The task prompt tells the agent to write `.auto-crop/business-artifact.json`, proof capture looks at workspace files, and settlement later tries to turn those side effects into runtime facts. That made sense while the runtime had no agent action surface, but it keeps the formal delivery hidden inside a file convention. The runtime must distinguish no delivery, malformed delivery, a blocker, a decision request, a deliverable, and proof pointers after the process exits.
+Today the task deliverable path is file-first. The task prompt tells the agent to write `.cordantry/business-artifact.json`, proof capture looks at workspace files, and settlement later tries to turn those side effects into runtime facts. That made sense while the runtime had no agent action surface, but it keeps the formal delivery hidden inside a file convention. The runtime must distinguish no delivery, malformed delivery, a blocker, a decision request, a deliverable, and proof pointers after the process exits.
 
-Cumora points at a better seam: the model's prose and stdout are observability, while actions that affect shared state go through a runtime-owned action surface. Auto-Crop should borrow that seam without borrowing Cumora's full daemon product shape.
+Cumora points at a better seam: the model's prose and stdout are observability, while actions that affect shared state go through a runtime-owned action surface. Cordantry should borrow that seam without borrowing Cumora's full daemon product shape.
 
 ## Decision
 
@@ -27,7 +27,7 @@ The envelope must not be the authority for identity. It does not carry trusted `
 
 Calling the action records a run-local candidate. The official Business Artifact, Proof, task transition, Holds, completion event, dependency effects, and handoff snapshot are written only during settlement, under the existing one-writer settlement transaction. If a run submits multiple valid envelopes, the last valid candidate is the one settlement uses. Invalid action calls return structured errors so the agent can correct them in the same run; if the run ends without a valid envelope, settlement fails as an invalid or missing delivery rather than turning the syntax problem into a blocker.
 
-The `.auto-crop/business-artifact.json` file protocol is removed, and ADR 0028's Artifact Syntax Repair with it: the envelope is the only delivery. An adapter without the `artifact_envelope` adapter contract capability is not dispatched task runs, because it could do the work but never deliver it. Both production adapters declare it: Claude Code when its CLI has `--mcp-config`, Codex always.
+The `.cordantry/business-artifact.json` file protocol is removed, and ADR 0028's Artifact Syntax Repair with it: the envelope is the only delivery. An adapter without the `artifact_envelope` adapter contract capability is not dispatched task runs, because it could do the work but never deliver it. Both production adapters declare it: Claude Code when its CLI has `--mcp-config`, Codex always.
 
 ## Consequences
 

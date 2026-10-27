@@ -22,8 +22,8 @@ describe("runtime action MCP server", () => {
    * how a delivery tool that could not start shipped.
    */
   it("starts from a foreign workspace with the launch the adapter hands the CLI and records a candidate", () => {
-    const workspace = mkdtempSync(join(tmpdir(), "auto-crop-foreign-workspace-"));
-    const candidateDir = mkdtempSync(join(tmpdir(), "auto-crop-runtime-action-launch-"));
+    const workspace = mkdtempSync(join(tmpdir(), "cordantry-foreign-workspace-"));
+    const candidateDir = mkdtempSync(join(tmpdir(), "cordantry-runtime-action-launch-"));
     createdDirs.push(workspace, candidateDir);
     const server = runtimeActionMcpServer({
       candidateDir, companyId: "company_1", taskId: "task_1", runId: "run_1", locale: "en", requireExecutionDetails: false,
@@ -51,13 +51,13 @@ describe("runtime action MCP server", () => {
   it("advertises only the proof_refs types the run's Proof Schema accepts", () => {
     const toolSchema = (overrides: Record<string, string | undefined>) => (handleRuntimeActionMcpMessage(
       { jsonrpc: "2.0", id: 1, method: "tools/list" },
-      env({ AUTO_CROP_RUNTIME_ACTION_LOCALE: "en", AUTO_CROP_RUNTIME_ACTION_PROOF_SCHEMA_ID: "product-brief", ...overrides }),
+      env({ CORDANTRY_RUNTIME_ACTION_LOCALE: "en", CORDANTRY_RUNTIME_ACTION_PROOF_SCHEMA_ID: "product-brief", ...overrides }),
     ) as { result: { tools: Array<{ inputSchema: { properties: Record<string, unknown> } }> } }).result.tools[0]!.inputSchema.properties.proof_refs;
 
-    expect(toolSchema({ AUTO_CROP_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES: "file" })).toMatchObject({
+    expect(toolSchema({ CORDANTRY_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES: "file" })).toMatchObject({
       items: { properties: { type: { enum: ["file"] } } },
     });
-    expect(toolSchema({ AUTO_CROP_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES: "" })).toMatchObject({ maxItems: 0 });
+    expect(toolSchema({ CORDANTRY_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES: "" })).toMatchObject({ maxItems: 0 });
   });
 
   it("lists only the submit_artifact_envelope tool", () => {
@@ -81,9 +81,9 @@ describe("runtime action MCP server", () => {
   });
 
   it("uses explicit submission IDs across MCP requests and rejects revoked calls", () => {
-    const candidateDir = mkdtempSync(join(tmpdir(), "auto-crop-mcp-idempotency-"));
+    const candidateDir = mkdtempSync(join(tmpdir(), "cordantry-mcp-idempotency-"));
     createdDirs.push(candidateDir);
-    const context = env({ AUTO_CROP_RUNTIME_ACTION_DIR: candidateDir });
+    const context = env({ CORDANTRY_RUNTIME_ACTION_DIR: candidateDir });
     const call = (id: number, submission_id: string, subtype: string) => handleRuntimeActionMcpMessage({
       jsonrpc: "2.0", id, method: "tools/call", params: { name: "submit_artifact_envelope", arguments: { ...validEnvelope(subtype), submission_id } },
     }, context);
@@ -98,13 +98,13 @@ describe("runtime action MCP server", () => {
   });
 
   it("submits an envelope into the file-backed runtime action channel", () => {
-    const candidateDir = mkdtempSync(join(tmpdir(), "auto-crop-runtime-actions-"));
+    const candidateDir = mkdtempSync(join(tmpdir(), "cordantry-runtime-actions-"));
     createdDirs.push(candidateDir);
     const context = {
-      AUTO_CROP_RUNTIME_ACTION_DIR: candidateDir,
-      AUTO_CROP_RUNTIME_ACTION_COMPANY_ID: "company_1",
-      AUTO_CROP_RUNTIME_ACTION_TASK_ID: "task_1",
-      AUTO_CROP_RUNTIME_ACTION_RUN_ID: "run_1",
+      CORDANTRY_RUNTIME_ACTION_DIR: candidateDir,
+      CORDANTRY_RUNTIME_ACTION_COMPANY_ID: "company_1",
+      CORDANTRY_RUNTIME_ACTION_TASK_ID: "task_1",
+      CORDANTRY_RUNTIME_ACTION_RUN_ID: "run_1",
     };
 
     const response = handleRuntimeActionMcpMessage({
@@ -135,10 +135,10 @@ describe("runtime action MCP server", () => {
 
 function env(overrides: Record<string, string> = {}) {
   return {
-    AUTO_CROP_RUNTIME_ACTION_DIR: "/tmp/auto-crop-runtime-actions",
-    AUTO_CROP_RUNTIME_ACTION_COMPANY_ID: "company_1",
-    AUTO_CROP_RUNTIME_ACTION_TASK_ID: "task_1",
-    AUTO_CROP_RUNTIME_ACTION_RUN_ID: "run_1",
+    CORDANTRY_RUNTIME_ACTION_DIR: "/tmp/cordantry-runtime-actions",
+    CORDANTRY_RUNTIME_ACTION_COMPANY_ID: "company_1",
+    CORDANTRY_RUNTIME_ACTION_TASK_ID: "task_1",
+    CORDANTRY_RUNTIME_ACTION_RUN_ID: "run_1",
     ...overrides,
   };
 }

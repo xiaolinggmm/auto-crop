@@ -20,7 +20,7 @@ describe("desktop runtime", () => {
   });
 
   it("persists the selected project and tolerates missing or invalid settings", () => {
-    const root = mkdtempSync(join(tmpdir(), "auto-crop-desktop-settings-"));
+    const root = mkdtempSync(join(tmpdir(), "cordantry-desktop-settings-"));
     const path = join(root, "settings.json");
 
     expect(loadDesktopSettings(path)).toEqual({});
@@ -32,7 +32,7 @@ describe("desktop runtime", () => {
   });
 
   it("uses an explicit project root only when it is an existing directory", () => {
-    const root = mkdtempSync(join(tmpdir(), "auto-crop-desktop-project-"));
+    const root = mkdtempSync(join(tmpdir(), "cordantry-desktop-project-"));
 
     expect(configuredProjectRoot(root, "/saved/project")).toBe(root);
     expect(configuredProjectRoot(join(root, "missing"), "/saved/project")).toBe("/saved/project");

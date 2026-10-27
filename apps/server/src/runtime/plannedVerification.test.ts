@@ -2,7 +2,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "no
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { BlueprintTask, Locale, TaskDecomposition } from "@auto-crop/core";
+import type { BlueprintTask, Locale, TaskDecomposition } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { createMockAgentAdapter } from "../adapters/mockAgent";
 import { createDatabaseClient } from "../db/client";
@@ -330,7 +330,7 @@ describe("verification planned by the CEO blueprint", () => {
     const define = { ...producer, id: "extra_requirements_source", title: "Extra requirements", position: 99 };
     repositories.createTask(define);
     repositories.createTaskDependency({ taskId: verifier.id, dependsOnTaskId: define.id, inputRole: "verification_requirements" });
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-planned-ws-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-planned-ws-"));
     createdDirs.push(workspacePath);
     expect(prepareVerificationInputs({ repositories, task: repositories.getTask(verifier.id)!, workspacePath })).toMatchObject({
       kind: "handoff_failed",
@@ -340,7 +340,7 @@ describe("verification planned by the CEO blueprint", () => {
 
   it("refuses a plan whose verifier targets a later task, before creating any company", async () => {
     const business = BUSINESSES[0]!;
-    const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-planned-"));
+    const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-planned-"));
     createdDirs.push(projectRoot);
     const client = createDatabaseClient(":memory:");
     migrate(client);
@@ -369,7 +369,7 @@ function client(repositories: ReturnType<typeof createRepositories>) {
 }
 
 async function createOnly(business: Business) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-planned-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-planned-"));
   createdDirs.push(projectRoot);
   const database = createDatabaseClient(":memory:");
   migrate(database);
@@ -392,7 +392,7 @@ async function createOnly(business: Business) {
 }
 
 async function runBusiness(business: Business, defective: boolean | "until_rework") {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-planned-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-planned-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
@@ -430,7 +430,7 @@ async function runBusiness(business: Business, defective: boolean | "until_rewor
       // The worker acts on the contract sections the runtime put in its prompt, not on which task it is:
       // the planned verifier and a department's Validate stage are both verifiers.
       if (request.prompt.includes("## Verification Contract")) {
-        const snapshotPath = request.prompt.match(/`(\.auto-crop-inputs\/[^`]+)`/)?.[1];
+        const snapshotPath = request.prompt.match(/`(\.cordantry-inputs\/[^`]+)`/)?.[1];
         const results = snapshotPath ? business.check(join(request.workspacePath, snapshotPath)) : {};
         request.runtimeActions!.submitArtifactEnvelope(deliveryEnvelope("validation", {
           verification: {

@@ -46,7 +46,7 @@
 ## Task 1: Persist Replan Proposals
 
 - [x] Write failing repository tests for create/list/update replan proposals and dependency rewiring.
-- [x] Run: `pnpm --filter @auto-crop/server test -- src/db/repositories.test.ts`
+- [x] Run: `pnpm --filter @cordantry/server test -- src/db/repositories.test.ts`
 - [x] Add core proposal types.
 - [x] Add SQLite table and migration.
 - [x] Add repository methods.
@@ -59,21 +59,21 @@
   - refusing proposal generation for non-`needs_replan`;
   - confirming creates sequential replacement tasks;
   - confirming rewires downstream dependencies to the final replacement task.
-- [x] Run: `pnpm --filter @auto-crop/server test -- src/runtime/replan.test.ts`
+- [x] Run: `pnpm --filter @cordantry/server test -- src/runtime/replan.test.ts`
 - [x] Implement deterministic proposal builder and confirmation flow.
 - [x] Run the replan tests again.
 
 ## Task 3: API Integration
 
 - [x] Write failing route tests for proposal generation, company-state proposal listing, and proposal confirmation.
-- [x] Run: `pnpm --filter @auto-crop/server test -- src/api/routes.test.ts`
+- [x] Run: `pnpm --filter @cordantry/server test -- src/api/routes.test.ts`
 - [x] Add routes and summary serialization.
 - [x] Run route tests again.
 
 ## Task 4: Dashboard Integration
 
 - [x] Write failing dashboard tests for proposal display and confirm action.
-- [x] Run: `pnpm --filter @auto-crop/dashboard test`
+- [x] Run: `pnpm --filter @cordantry/dashboard test`
 - [x] Add API client methods, state wiring, and Company Operations proposal panel.
 - [x] Run dashboard tests again.
 

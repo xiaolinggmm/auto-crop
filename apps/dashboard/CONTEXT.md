@@ -66,7 +66,7 @@ Each task on a department page is an Execution Trace built from the runtime's pr
 
 ## Modern UI Direction
 
-New dashboard UI uses a modern workbench direction: clean surfaces, low visual noise, soft borders, restrained shadows, and product-specific affordances. Tailwind is the default styling path for new components. shadcn/Radix-derived components are acceptable for basic accessible interactions, but the product-defining surfaces stay owned by Auto-Crop components. See `docs/adr/0001-modern-dashboard-ui-foundation.md`.
+New dashboard UI uses a modern workbench direction: clean surfaces, low visual noise, soft borders, restrained shadows, and product-specific affordances. Tailwind is the default styling path for new components. shadcn/Radix-derived components are acceptable for basic accessible interactions, but the product-defining surfaces stay owned by Cordantry components. See `docs/adr/0001-modern-dashboard-ui-foundation.md`.
 
 Cumora is the primary reference for overall page language. DeepWiki is a focused reference for the Composer Input, not a page-wide glass effect. The first migration slice is Company Picker, Onboarding, and Creation Loading. shadcn configuration and generated UI components belong inside `apps/dashboard` until another frontend exists.
 
@@ -88,4 +88,4 @@ Assemble the foundation manually rather than relying on shadcn CLI defaults. Sta
 - **Modern Dashboard UI**: The target dashboard visual system: Tailwind-first, modern workbench surfaces with low visual noise and no CRT treatment. It replaces Retro UI as the direction for new dashboard work. _Avoid_: CRT redesign, retro skin.
 - **Composer Input**: The product-specific natural-language input surface for founder prompts and CEO Office direction. It may use translucent or backdrop-blur styling, but it is not a generic textarea. _Avoid_: Textarea, chat box.
 - **Primitive UI Component**: A low-level reusable control under `src/components/ui`, typically shadcn/Radix-derived, that provides accessible interaction or basic visual structure. _Avoid_: product component, page section.
-- **Product Component**: A dashboard-specific component named after Auto-Crop workflow language, such as workbench, composer, company flow, task flow, or CEO Office. Product Components compose Primitive UI Components but own product meaning. _Avoid_: primitive, shadcn component.
+- **Product Component**: A dashboard-specific component named after Cordantry workflow language, such as workbench, composer, company flow, task flow, or CEO Office. Product Components compose Primitive UI Components but own product meaning. _Avoid_: primitive, shadcn component.

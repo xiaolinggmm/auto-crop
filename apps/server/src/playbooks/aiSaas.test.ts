@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { companyBlueprintSchema } from "@auto-crop/core";
+import { companyBlueprintSchema } from "@cordantry/core";
 import { aiSaasPlaybook } from "./aiSaas";
 import { selectPlaybook } from "./selectPlaybook";
 

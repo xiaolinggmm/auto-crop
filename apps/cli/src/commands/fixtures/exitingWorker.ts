@@ -3,10 +3,10 @@
 import { spawn } from "node:child_process";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
-import { createDatabaseClient, createRepositories, migrate, runSchedulerOnce } from "@auto-crop/server";
+import { createDatabaseClient, createRepositories, migrate, runSchedulerOnce } from "@cordantry/server";
 
 const [projectRoot, ownerId, budgetMode] = process.argv.slice(2);
-const database = createDatabaseClient(join(projectRoot, ".auto-crop", "state.sqlite"));
+const database = createDatabaseClient(join(projectRoot, ".cordantry", "state.sqlite"));
 migrate(database);
 process.on("message", (message) => { if (message === "crash") process.exit(1); });
 await runSchedulerOnce({

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { projectCeoOfficeItems, type CeoIntake, type Company, type Task } from "@auto-crop/core";
+import { projectCeoOfficeItems, type CeoIntake, type Company, type Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest, AgentRunResult } from "../adapters/types";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
@@ -358,7 +358,7 @@ function createFixture(extraTasks: Task[] = []) {
   const client = createDatabaseClient(":memory:");
   migrate(client);
   const repositories = createRepositories(client);
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-intake-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-intake-"));
   createdDirs.push(projectRoot);
   const company: Company = {
     id: "company_1",
@@ -379,7 +379,7 @@ function createFixture(extraTasks: Task[] = []) {
     name: "Research",
     responsibility: "Find what buyers pay for.",
     leadAgentId: "claude-code",
-    memoryPath: ".auto-crop/companies/company_1/departments/research/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/research/Memory.md",
   });
   repositories.createObjective({ id: "objective_1", companyId: company.id, title: "Validate the first offer", status: "active", priority: 1 });
   repositories.createKeyResult({
@@ -392,7 +392,7 @@ function createFixture(extraTasks: Task[] = []) {
     name: "Growth",
     responsibility: "Bring the first buyers.",
     leadAgentId: "claude-code",
-    memoryPath: ".auto-crop/companies/company_1/departments/growth/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/growth/Memory.md",
   });
   repositories.createTask(taskRecord("task_research", "running", 0));
   extraTasks.forEach((task) => repositories.createTask(task));

@@ -21,7 +21,7 @@ for (const language of ["en", "zh"] as const) {
   for (const viewport of viewports) {
     test(`captures CEO Office on ${viewport.name} in ${language}`, async ({ page }, testInfo) => {
       await page.setViewportSize({ height: viewport.height, width: viewport.width });
-      await page.addInitScript((companyId) => window.localStorage.setItem("auto-crop.currentCompanyId", companyId), ceoOfficeCompany.id);
+      await page.addInitScript((companyId) => window.localStorage.setItem("cordantry.currentCompanyId", companyId), ceoOfficeCompany.id);
       await mockCeoOfficeApi(page);
       await page.goto("/");
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();

@@ -1,7 +1,7 @@
 {
-  "name": "@auto-crop/desktop",
+  "name": "@cordantry/desktop",
   "version": "0.1.0",
-  "description": "Local desktop runtime for running an agent company with Auto Crop.",
+  "description": "Local desktop runtime for running an agent company with Cordantry.",
   "author": "MAH",
   "private": true,
   "type": "module",
@@ -20,9 +20,9 @@
     "typescript": "^5.9.2"
   },
   "build": {
-    "appId": "bot.mah.auto-crop",
-    "productName": "Auto Crop",
-    "executableName": "auto-crop",
+    "appId": "bot.mah.cordantry",
+    "productName": "Cordantry",
+    "executableName": "cordantry",
     "asar": true,
     "npmRebuild": false,
     "directories": {

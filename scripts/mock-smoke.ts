@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import type { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Proof } from "@auto-crop/core";
+import type { Proof } from "@cordantry/core";
 import {
   aiSaasPlaybook,
   createApiServer,
@@ -12,9 +12,9 @@ import {
   migrate,
   runCompanyReview,
   runSchedulerOnce,
-} from "@auto-crop/server";
+} from "@cordantry/server";
 
-const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-mock-smoke-"));
+const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-mock-smoke-"));
 const database = createDatabaseClient(":memory:");
 let server: ReturnType<typeof createApiServer> | undefined;
 let events: Awaited<ReturnType<typeof connectEvents>> | undefined;

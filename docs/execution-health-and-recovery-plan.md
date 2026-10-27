@@ -204,7 +204,7 @@ evaluateExecution(snapshot, policy, time): HealthDecision;
 
 以下是候选配置，供测试和 opt-in 灰度使用，不是由现有冒烟样本证明的生产阈值：heartbeat 20s、scan 5s、lease 90s、活动持久化最长 15s、SIGTERM 宽限 10s、SIGKILL 后确认窗口 5s。所有时间注入配置并在 run 中保存 policyVersion。
 
-启动时验证配置：数值有限且非负、scan/heartbeat 显著短于 lease、硬预算不小于预期软检查点、各阶段取剩余额度后仍可启动。无剩余额度时不 spawn；非法配置拒绝启动并指出字段。兼容现有 AUTO_CROP_AGENT_TIMEOUT_MS / AUTO_CROP_FORCE_AGENT_TIMEOUT_MS：legacy 模式保留旧语义，新模式明确映射到哪一种预算并记录最终配置；不允许 force 值意外关闭累计硬上限。
+启动时验证配置：数值有限且非负、scan/heartbeat 显著短于 lease、硬预算不小于预期软检查点、各阶段取剩余额度后仍可启动。无剩余额度时不 spawn；非法配置拒绝启动并指出字段。兼容现有 CORDANTRY_AGENT_TIMEOUT_MS / CORDANTRY_FORCE_AGENT_TIMEOUT_MS：legacy 模式保留旧语义，新模式明确映射到哪一种预算并记录最终配置；不允许 force 值意外关闭累计硬上限。
 
 预算候选：保留现有 2/5/10 分钟为软检查点；本次 run 生命周期硬上限 20 分钟；一个 Task 自动执行累计 45 分钟；brief 60s、repair 120s、finalizing 60s，均再受剩余总预算约束。以上只是显式启用新策略时的初值，允许依据实测收紧/放宽。636s 样本仅说明一次 600s 上限不够，不能据此承诺任务耗时分布。
 
@@ -385,8 +385,8 @@ P0 额外确认、需在后续阶段处理的事实：取消全链路是空实�
 
 决策记录见 [ADR 0037](adr/0037-supervision-from-outside-the-worker.md)（含架构选型理由，按方案要求在实现前写定）。原 P3 提交的验证为 59 文件 / 827 项；K1–K4 收口后为 60 文件 / 852 项，typecheck、lint 通过。真实默认入口的跨进程验收见 K4；下表明确未做的边界仍保留。
 
-- [x] **进程外 Supervisor**：`auto-crop supervise` 以 Worker 为子进程。选型理由已记录——相比"独立 `watch` + 系统进程管理器"，父进程**直接看到子进程退出并触发扫描**，不需要用户先安装配置任何东西。K3 已把退出身份接到对应 run 的结算与隔离。`start` 已由 K1 接入监督。
-- [x] **启动前先对账**：`superviseAutoCrop` 在 spawn Worker 之前尝试一次 `scanOnce`；已有测试证明预置过期孤儿先得到处理。K3 已改为扫描失败时阻止启动。
+- [x] **进程外 Supervisor**：`cordantry supervise` 以 Worker 为子进程。选型理由已记录——相比"独立 `watch` + 系统进程管理器"，父进程**直接看到子进程退出并触发扫描**，不需要用户先安装配置任何东西。K3 已把退出身份接到对应 run 的结算与隔离。`start` 已由 K1 接入监督。
+- [x] **启动前先对账**：`superviseCordantry` 在 spawn Worker 之前尝试一次 `scanOnce`；已有测试证明预置过期孤儿先得到处理。K3 已改为扫描失败时阻止启动。
 - [x] **结算 outbox**：原 P3 仅 scheduler 路径满足同事务保证；K2 已将对账与 Emergency Stop 接入共同结算事务，移除 Supervisor 返回后补写事件的缺口，见下方实现记录。
 - [x] **Dispatcher**：持久 claim + **过期**。中途死掉的 dispatcher 不会把事件一起带走，下一个接手。失败指数退避，超限进**死信**而非丢弃，操作员修好消费者后可重放。
 - [x] **至少一次投递 + 幂等消费者**：`recovery_decisions.source_event_id` 唯一约束。这是机制本身不是细节——它防的正是崩溃，所以必须在数据库里而不是代码判断里。
@@ -451,7 +451,7 @@ K3 实现记录：Supervisor 在 spawn 前持久化每次启动的唯一 owner�
 
 #### K4：用一条真实入口集成冒烟收口
 
-- [x] 将 K1–K3 串成可重复运行的专用冒烟：实际 CLI 入口 + 临时 SQLite + 本地受控子进程 + 决策查询；使用生产 adapter 与本地 mock CLI，不调用付费模型，不触碰用户 `.auto-crop`。
+- [x] 将 K1–K3 串成可重复运行的专用冒烟：实际 CLI 入口 + 临时 SQLite + 本地受控子进程 + 决策查询；使用生产 adapter 与本地 mock CLI，不调用付费模型，不触碰用户 `.cordantry`。
 - [x] 补齐“对账崩溃后重启”“未确认终止不重入”“重复消费不重复决策”的跨模块断言；报告测试覆盖的场景，而非仅列通过数量。
 - [x] 更新 P0 的 F5/F6 当前状态、P3 完成记录和相关过时注释，历史基线保留原始发现并附修复链接；ADR/CONTEXT 仅在实际语义改变时同步。
 - [x] 运行受影响测试及仓库要求的全量 test、typecheck、lint。记录 `smoke:mock` 的实测结果：若失败与本轮链路相关必须修复；已证明无关的旧故障列账，由专用冒烟提供本轮验收。偶发失败保留证据，有稳定复现再另行处理。
@@ -525,7 +525,7 @@ P4.2 交付时仅开放内部 scheduler 参数，Dashboard 与公开 opt-in 在�
 - Supervisor 启动、时钟偏移或长扫描停顿后先探测并留宽限，新的数据库心跳才是恢复执行依据，IPC 响应本身不增加预算。失联时先撤销继续权限，CLI 只停止身份匹配的自有 Worker；确认 Worker 退出后沿 K3 隔离可能仍存活的 Agent，再启动替代 Worker。未实现跨主机或任意 Agent 进程树终止。
 - `GET /api/tasks/:id/execution` 和 Task summary 只读返回阶段、健康依据/采样时间、已耗/预留/剩余/可分配额度、停止原因和终止证据。Dashboard 有中英文执行面板、理由与额度明确的授权表单、独立取消确认。授权网络重试复用 ID；其他 Hold 未解除时不提供授权动作。自动终止证据与人工确认分开保存。
 - 取消在事务内重检合法性并写持久取消意图，再触发取消链。取消后出现未确认终止或 Worker 退出，人工确认只解除隔离，最终仍为 cancelled，不能因确认终止获得续做入口。
-- 公共配置入口为 `AUTO_CROP_EXECUTION_POLICY=budget-v1` 和可选 `AUTO_CROP_EXECUTION_BUDGET_JSON`，非法配置拒绝启动。默认 observe；运行中的配置不变，追加额度不改旧 run 快照。迁移、隔离试运行和回退步骤见 [execution-budget-opt-in.md](execution-budget-opt-in.md)。
+- 公共配置入口为 `CORDANTRY_EXECUTION_POLICY=budget-v1` 和可选 `CORDANTRY_EXECUTION_BUDGET_JSON`，非法配置拒绝启动。默认 observe；运行中的配置不变，追加额度不改旧 run 快照。迁移、隔离试运行和回退步骤见 [execution-budget-opt-in.md](execution-budget-opt-in.md)。
 
 验收证据：受控单调时钟/UTC 覆盖前跳、倒退、长休眠与恢复宽限；同一健康快照下改变配置不影响已有 run。无页面扫描可生成并投递 suspect/responsive/lost 对应事件，重复消费不增加决策。0/25 次 GET 均不写健康状态且取消结果一致。真实 Worker 被 SIGSTOP 冻结后，外层仍完成检测、停止、隔离和替代启动，脱离 Worker 的写入进程仍存活时工作区不可重入。专用冒烟经实际 start 入口覆盖同 run 跨旧上限成功、硬停止后重新启动仍无余额。前端交互测试覆盖显式授权、失败提示与幂等重试、取消确认。
 
@@ -550,7 +550,7 @@ P4.2 交付时仅开放内部 scheduler 参数，Dashboard 与公开 opt-in 在�
 
 #### 持续运行门槛：保留期与容量上限 —— 已完成（2026-10-08）
 
-决策记录见 [ADR 0039](adr/0039-retention-thins-history-it-never-decides.md)。默认启用（`AUTO_CROP_RETENTION=off` 可关闭），配置与回退见[操作说明](execution-budget-opt-in.md)。
+决策记录见 [ADR 0039](adr/0039-retention-thins-history-it-never-decides.md)。默认启用（`CORDANTRY_RETENTION=off` 可关闭），配置与回退见[操作说明](execution-budget-opt-in.md)。
 
 - [x] **分批、可观测**：Supervisor 每小时至多一次清理，每批一个先取 SQLite 写锁的短事务；达到批次上限即报告 truncated，下次继续。结果写入 `runtime_state`，经 `GET /api/execution-retention` 只读查询，有删除、截断、超容量或失败时写日志。清理失败只记录不抛出，不阻止 Worker 启动。
 - [x] **保留期**：活动窗口 14 天后压缩为每个 invocation 的统计（首次活动延迟、最长静默、末尾静默、各通道字节、窗口数）再删除；已结算 run 的中间 `consumed` 计量 14 天；已投递且已有恢复决策的事件 30 天；invocation 行 180 天且须活动已压缩。
@@ -624,7 +624,7 @@ P4.2 交付时仅开放内部 scheduler 参数，Dashboard 与公开 opt-in 在�
 
 先用注入时钟、deferred Promise、fake adapter 建立逻辑测试；进程测试使用本地小脚本模拟 exit、沉默、TERM 忽略、孙进程和 Worker 崩溃，绝不对真实用户任务做破坏性测试。多连接 SQLite 测试验证竞争，不能只用单连接内存 mock 证明原子性。
 
-按当前 package.json 执行受影响测试、类型检查及必要的全量回归（当前 root 有 test、typecheck、lint、smoke:mock）。真实 smoke 使用独立数据库、工作区和端口，保留用户现有 `.auto-crop`。
+按当前 package.json 执行受影响测试、类型检查及必要的全量回归（当前 root 有 test、typecheck、lint、smoke:mock）。真实 smoke 使用独立数据库、工作区和端口，保留用户现有 `.cordantry`。
 
 2026-09-21 在 `a3893bd` 核对时执行 `pnpm exec vitest run apps/server/src/runtime/scheduler.test.ts apps/server/src/runtime/taskRecovery.test.ts apps/server/src/api/routes.test.ts`，3 个文件、136 项测试全部通过。这仅是当前回归基线，不证明新监控策略、候选阈值或本节完整验收矩阵已通过；本次未运行真实 Agent 或新增故障注入测试。
 

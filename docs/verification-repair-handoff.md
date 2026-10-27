@@ -105,10 +105,10 @@ apps/server/src/runtime/
 
 ## 6. 后续工作（已与用户确认的方向）
 
-前提：**用户会删除 `.auto-crop` 状态重新创建公司**，因此不需要为旧公司做恢复。
+前提：**用户会删除 `.cordantry` 状态重新创建公司**，因此不需要为旧公司做恢复。
 
 ### 1) 取消原计划的 ⑥「旧公司恢复 dry-run」——已完成
-计划文档的 ⑥ 已改为「删除 `.auto-crop` 状态重建」，第 2、10、11 节与 ADR 0024 中的恢复表述已同步删除。
+计划文档的 ⑥ 已改为「删除 `.cordantry` 状态重建」，第 2、10、11 节与 ADR 0024 中的恢复表述已同步删除。
 
 ### 2) 真实 agent 冒烟（建议最先做，成本低、信息量大）
 新契约目前只被 mock agent 验证过。要确认：
@@ -196,6 +196,6 @@ pnpm vitest run apps/server/src/runtime/departmentVerification.test.ts   # 单�
 pnpm smoke:mock                                # 注意：基线上即失败（SSE），与本次改动无关
 ```
 
-- 数据库在 `.auto-crop/state.sqlite`（WAL）。排查时**读日志和数据库，不要从截图推测**：日志在 `.auto-crop/companies/<companyId>/logs/`。
+- 数据库在 `.cordantry/state.sqlite`（WAL）。排查时**读日志和数据库，不要从截图推测**：日志在 `.cordantry/companies/<companyId>/logs/`。
 - 用户的工作方式：先讨论方案再实施；改动要做到根因层面并配回归测试；每片完成后会让 Codex 独立复审，复审意见通常值得当真（本次由它发现了 `final_report` 绕过、manifest 可被 agent 改写、旧版本失败退回新版本、返工非原子四个真实缺陷）。
 - 提交信息写清楚「为什么」，并附 `Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>`。

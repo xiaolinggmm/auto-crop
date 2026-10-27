@@ -21,7 +21,7 @@ import {
   type TaskDependency,
   type VisionGap,
   type WaitState,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { AgentAdapter } from "../adapters/types";
 import type { createRepositories } from "../db/repositories";
 import { planningCapabilityNeeds, resolveAgentCapabilityGrant } from "../policies/capabilityGrant";

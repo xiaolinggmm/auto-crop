@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 
-import { startAutoCrop } from "./commands/start";
-import { superviseAutoCrop } from "./commands/supervise";
+import { startCordantry } from "./commands/start";
+import { superviseCordantry } from "./commands/supervise";
 import { resolveProjectRoot } from "./projectRoot";
 
 const [, , command] = process.argv;
 
 if (command === "start" || command === "supervise") {
   let stopping = false;
-  let running: Awaited<ReturnType<typeof superviseAutoCrop>> | undefined;
+  let running: Awaited<ReturnType<typeof superviseCordantry>> | undefined;
   const stop = () => {
     stopping = true;
     if (running) void running.close().catch((error) => {
@@ -19,7 +19,7 @@ if (command === "start" || command === "supervise") {
   process.on("SIGINT", stop);
   process.on("SIGTERM", stop);
   try {
-    running = await superviseAutoCrop({ projectRoot: resolveProjectRoot() });
+    running = await superviseCordantry({ projectRoot: resolveProjectRoot() });
     if (stopping) await running.close();
   } catch (error) {
     console.error((error as Error).message);
@@ -45,14 +45,14 @@ if (command === "start" || command === "supervise") {
       process.send?.({ type: "worker-responsive", ownerId: workerId });
     }
   });
-  await startAutoCrop({
+  await startCordantry({
     workerId,
     projectRoot: resolveProjectRoot(),
-    port: Number(process.env.AUTO_CROP_PORT ?? 0),
+    port: Number(process.env.CORDANTRY_PORT ?? 0),
   });
 } else {
-  console.log("Usage: auto-crop start | auto-crop supervise");
+  console.log("Usage: cordantry start | cordantry supervise");
   process.exitCode = 1;
 }
 
-export { startAutoCrop, superviseAutoCrop };
+export { startCordantry, superviseCordantry };

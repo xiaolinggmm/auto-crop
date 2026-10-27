@@ -1,15 +1,15 @@
-# Auto-Crop Execution Governance
+# Cordantry Execution Governance
 
-This context defines how Auto-Crop assigns work, delegates execution and receives governed runtime outcomes. MAH delegation follows ADR 0050; executor-binding terms below describe the historical ADR 0049 proposal.
+This context defines how Cordantry assigns work, delegates execution and receives governed runtime outcomes. MAH delegation follows ADR 0050; executor-binding terms below describe the historical ADR 0049 proposal.
 
 ## Language
 
 **MAH Delegation**:
-One Auto-Crop execution attempt entrusted to one MAH Task, with MAH responsible for its internal executor choices.
+One Cordantry execution attempt entrusted to one MAH Task, with MAH responsible for its internal executor choices.
 _Avoid_: Fixed executor binding, provider invocation
 
 **File Delivery**:
-A Task-scoped envelope and its referenced files offered for Auto-Crop validation. File publication alone is not business completion.
+A Task-scoped envelope and its referenced files offered for Cordantry validation. File publication alone is not business completion.
 _Avoid_: Accepted Business Artifact, final response
 
 **Delivery Snapshot**:
@@ -29,7 +29,7 @@ An immutable association between one Agent Run and the required external executo
 _Avoid_: Agent preference, routing hint
 
 **Executor Mapping**:
-A versioned translation from an Auto-Crop Task Assignee identity to an execution-plane executor identity.
+A versioned translation from a Cordantry Task Assignee identity to an execution-plane executor identity.
 _Avoid_: Shared Agent ID, inferred mapping
 
 **Executor Substitution**:
@@ -49,7 +49,7 @@ The bounded number of Reassignment Decisions permitted for one Task independentl
 _Avoid_: Execution retry budget
 
 **Execution Requirements**:
-The constraints Auto-Crop submits for an Agent Run before the execution plane admits and freezes it.
+The constraints Cordantry submits for an Agent Run before the execution plane admits and freezes it.
 _Avoid_: Frozen Task, execution configuration
 
 **Execution Request**:
@@ -65,7 +65,7 @@ The authority boundary that prevents a superseded Agent Run from producing an el
 _Avoid_: Process termination, cancellation request
 
 **Runtime Action Channel**:
-The governed path through which an Agent Run submits business artifacts or requests human action to Auto-Crop.
+The governed path through which an Agent Run submits business artifacts or requests human action to Cordantry.
 _Avoid_: Agent output, final response
 
 **Runtime Action Binding**:

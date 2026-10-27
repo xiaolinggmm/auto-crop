@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { MAX_VERIFICATION_ROUNDS, type BusinessArtifact, type Task } from "@auto-crop/core";
+import { MAX_VERIFICATION_ROUNDS, type BusinessArtifact, type Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { createMockAgentAdapter } from "../adapters/mockAgent";
 import { createDatabaseClient } from "../db/client";
@@ -225,7 +225,7 @@ describe("a Revision's capabilities", () => {
 });
 
 async function createKeywordCompany() {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-revision-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-revision-"));
   createdDirs.push(projectRoot);
   const database = createDatabaseClient(":memory:");
   migrate(database);

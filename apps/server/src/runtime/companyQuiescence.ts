@@ -5,7 +5,7 @@ import type {
   KeyResult,
   Task,
   WaitState,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 
 /**
  * The near horizon for "a Wait State that still counts as scheduled work". A tuned constant — start

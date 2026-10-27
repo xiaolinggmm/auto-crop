@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ExecutionRegistry } from "./executionControl";
-import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import { createMockAgentAdapter } from "../adapters/mockAgent";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
@@ -81,7 +81,7 @@ describe("company operation", () => {
   it("pausing one company leaves another company dispatching", async () => {
     const { client, repositories } = createCompanyOperationFixture();
     repositories.createCompany({ ...companyRecord(), id: "company_2", name: "Other Studio" });
-    repositories.createTask({ ...taskRecord(), id: "task_2", companyId: "company_2", workspacePath: ".auto-crop/workspaces/task_2" });
+    repositories.createTask({ ...taskRecord(), id: "task_2", companyId: "company_2", workspacePath: ".cordantry/workspaces/task_2" });
 
     pauseCompany({ companyId: "company_1", repositories, executionRegistry: new ExecutionRegistry() });
     const result = await runSchedulerOnce({
@@ -150,7 +150,7 @@ function createCompanyOperationFixture() {
     name: "Engineering",
     responsibility: "Build and validate.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
   const objective: Objective = {
     id: "objective_1",
@@ -204,7 +204,7 @@ function taskRecord(): Task {
     assigneeAgentId: "codex",
     requiredCapabilities: ["code"],
     proofSchemaId: "test-output",
-    workspacePath: ".auto-crop/workspaces/task_1",
+    workspacePath: ".cordantry/workspaces/task_1",
     status: "queued",
     riskLevel: "low",
     position: 0,

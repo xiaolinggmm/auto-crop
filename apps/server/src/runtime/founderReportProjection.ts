@@ -7,7 +7,7 @@ import type {
   TaskDependency,
   VisionGap,
   WaitState,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 
 /**
  * The subset of a Business Artifact the founder-report projection reads. Both a raw

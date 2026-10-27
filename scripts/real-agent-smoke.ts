@@ -1,7 +1,7 @@
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { ProofSchema, Task } from "@auto-crop/core";
+import type { ProofSchema, Task } from "@cordantry/core";
 import {
   balancedPolicy,
   captureProofs,
@@ -9,16 +9,16 @@ import {
   createCodexAdapter,
   resolveAgentCapabilityGrant,
   resolveTaskCapabilityNeeds,
-} from "@auto-crop/server";
+} from "@cordantry/server";
 
-const requestedAgentId = process.env.AUTO_CROP_REAL_AGENT ?? "claude-code";
+const requestedAgentId = process.env.CORDANTRY_REAL_AGENT ?? "claude-code";
 const adapter = requestedAgentId === "codex" ? createCodexAdapter() : createClaudeCodeAdapter();
-const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-real-agent-smoke-"));
+const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-real-agent-smoke-"));
 const logPath = join(workspacePath, "agent.log");
 const prompt = [
   "Create a file named smoke.txt in the current workspace.",
   "The file must contain exactly this single line:",
-  "auto-crop real agent smoke ok",
+  "cordantry real agent smoke ok",
   "Do not edit any other file.",
 ].join("\n");
 
@@ -50,7 +50,7 @@ try {
   const smokeFile = join(workspacePath, "smoke.txt");
   assert(existsSync(smokeFile), "Real agent should create smoke.txt.");
   assert(
-    readFileSync(smokeFile, "utf8").trim() === "auto-crop real agent smoke ok",
+    readFileSync(smokeFile, "utf8").trim() === "cordantry real agent smoke ok",
     "smoke.txt should contain the expected proof text.",
   );
 

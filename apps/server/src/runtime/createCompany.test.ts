@@ -58,11 +58,11 @@ describe("createCompany", () => {
     });
 
     expect(result.blueprint.company.playbookId).toBe("ai-saas");
-    expect(result.promptPath).toBe(join(projectRoot, ".auto-crop", "companies", "company_1", "ceo-prompt.md"));
+    expect(result.promptPath).toBe(join(projectRoot, ".cordantry", "companies", "company_1", "ceo-prompt.md"));
     expect(request).toMatchObject({
       taskId: "company_1_ceo_blueprint",
       timeoutMs: 600_000,
-      workspacePath: join(projectRoot, ".auto-crop", "companies", "company_1"),
+      workspacePath: join(projectRoot, ".cordantry", "companies", "company_1"),
       metadata: {
         playbookId: "ai-saas",
         permissionMode: "balanced",
@@ -517,7 +517,7 @@ describe("createCompany", () => {
       permissionMode: "balanced",
       assets: [],
       repositories,
-      agentSessionEnv: { AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS: "1" },
+      agentSessionEnv: { CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS: "1" },
       now: () => new Date("2026-08-17T00:00:00.000Z"),
       createId: createSequentialIdFactory(),
     });
@@ -536,7 +536,7 @@ describe("createCompany", () => {
 });
 
 function createTempProjectRoot(): string {
-  const dir = mkdtempSync(join(tmpdir(), "auto-crop-company-"));
+  const dir = mkdtempSync(join(tmpdir(), "cordantry-company-"));
   createdDirs.push(dir);
   return dir;
 }

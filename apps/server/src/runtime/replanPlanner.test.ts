@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Company, Task } from "@auto-crop/core";
+import type { Company, Task } from "@cordantry/core";
 import { aiSaasPlaybook } from "../playbooks/aiSaas";
 import { buildReplanPlannerPrompt, parseReplanPlannerOutput } from "./replanPlanner";
 

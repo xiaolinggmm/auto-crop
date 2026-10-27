@@ -34,4 +34,4 @@ This ticket should not introduce a third-party i18n library. It should make the 
 
 - Implemented dashboard display formatters for task status, failure reasons, company status, proof types, artifact kind/role/status values, replan proposal status, and capability tags.
 - Replaced raw display of CEO review metadata, dashboard artifact metadata, company status, proposal status, and capability tags with locale-aware formatting.
-- Verified with `pnpm --filter @auto-crop/dashboard test` and `pnpm --filter @auto-crop/dashboard typecheck`.
+- Verified with `pnpm --filter @cordantry/dashboard test` and `pnpm --filter @cordantry/dashboard typecheck`.

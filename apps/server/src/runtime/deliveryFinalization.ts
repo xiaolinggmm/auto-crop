@@ -8,7 +8,7 @@ import {
   type TaskHoldKind,
   type TaskProgressEvent,
   type TaskStatus,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { evaluateAutomaticAcceptance } from "./automaticAcceptance";
 import { acceptDeliverableAutomatically } from "./businessAcceptance";

@@ -14,14 +14,14 @@
 
 ## 验证
 
-- `pnpm --filter @auto-crop/dashboard test`：15 个文件、148 项通过。
+- `pnpm --filter @cordantry/dashboard test`：15 个文件、148 项通过。
 - `pnpm typecheck`：core、server、cli、dashboard 全部通过。
 - `git diff --check`：通过。
-- `pnpm --filter @auto-crop/dashboard exec vite build`：通过；构建器提示主 bundle 超过 500 kB，未在本次扩展代码拆分。
+- `pnpm --filter @cordantry/dashboard exec vite build`：通过；构建器提示主 bundle 超过 500 kB，未在本次扩展代码拆分。
 - 独立代码审查发现并修复：后台操作快捷键穿透、关闭焦点恢复、静态研究摘要遗漏，以及固定高度内容裁切风险。
 - 使用应用内浏览器检查桌面及 390px、320px 手机布局、中英文内容、演示结果和表单。场景区域使用安全居中及可滚动溢出，窄屏浮层内部滚动。
 - 新增 Playwright 场景：三种视口、中英文四幕初始/结束状态、输入保留、焦点限制、减少动态效果、不提交写请求。旧工作台 E2E 改为预置 mock 公司，旧三步引导截图测试由新场景替代。
-- **Playwright 自动化未通过执行环境启动阶段**：指定版本 Chromium 未安装；使用本机 Chrome 时进程以 SIGABRT 退出，伴随权限错误。未把这些 E2E 记为通过；需在可启动浏览器的环境中运行 `pnpm --filter @auto-crop/dashboard e2e`。
+- **Playwright 自动化未通过执行环境启动阶段**：指定版本 Chromium 未安装；使用本机 Chrome 时进程以 SIGABRT 退出，伴随权限错误。未把这些 E2E 记为通过；需在可启动浏览器的环境中运行 `pnpm --filter @cordantry/dashboard e2e`。
 
 ## 预览与边界
 

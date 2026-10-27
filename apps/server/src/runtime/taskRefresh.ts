@@ -7,8 +7,8 @@ import type {
   TaskEvent,
   TaskProgressEvent,
   TaskStatus,
-} from "@auto-crop/core";
-import { isAffordanceApplicable } from "@auto-crop/core";
+} from "@cordantry/core";
+import { isAffordanceApplicable } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { isRetryExhausted, retryExhaustedRefusalMessage, terminateAsRetryExhausted } from "./boundedRecovery";
 import { parkOnUnblockRequest, unblockRequestOf } from "./unblockRequest";
@@ -455,7 +455,7 @@ function isProofRecoveryEligible(task: Task): boolean {
   );
 }
 
-/** One declaration, shared with the offer: `isAffordanceApplicable` in `@auto-crop/core`. */
+/** One declaration, shared with the offer: `isAffordanceApplicable` in `@cordantry/core`. */
 function isRefreshableStatus(status: TaskStatus): boolean {
   return isAffordanceApplicable("refresh_task", status);
 }
@@ -467,7 +467,7 @@ function stillUnreviewableMessage(validationErrors: unknown[]): string {
 
 function proofRecoveryNotFoundMessage(task: Task): string {
   if (task.proofSchemaId === "repo-diff") {
-    return "No registerable repo-diff proof was found / repo-diff proof missing: expected .auto-crop-proof/*.diff or a top-level workspace *.diff/*.patch file; an Artifact Envelope is not diff proof.";
+    return "No registerable repo-diff proof was found / repo-diff proof missing: expected .cordantry-proof/*.diff or a top-level workspace *.diff/*.patch file; an Artifact Envelope is not diff proof.";
   }
   return "No registerable proof was found.";
 }

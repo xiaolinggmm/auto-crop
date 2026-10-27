@@ -10,7 +10,7 @@
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createClaudeCodeAdapter, createCodexAdapter, generateCompanyBlueprint, type AgentAdapter } from "@auto-crop/server";
+import { createClaudeCodeAdapter, createCodexAdapter, generateCompanyBlueprint, type AgentAdapter } from "@cordantry/server";
 
 type Case = { id: string; agent: "codex" | "claude-code"; companyName: string; founderVision: string };
 
@@ -24,7 +24,7 @@ const defaultCases: Case[] = [
   { id: "codex-en-data", agent: "codex", companyName: "Ledger Tidy", founderVision: dataVision },
 ];
 
-const outDir = process.env.SMOKE_OUT_DIR ?? mkdtempSync(join(tmpdir(), "auto-crop-real-planning-smoke-"));
+const outDir = process.env.SMOKE_OUT_DIR ?? mkdtempSync(join(tmpdir(), "cordantry-real-planning-smoke-"));
 const cases: Case[] = process.env.SMOKE_CASES ? JSON.parse(process.env.SMOKE_CASES) : defaultCases;
 mkdirSync(outDir, { recursive: true });
 

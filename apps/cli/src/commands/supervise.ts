@@ -3,8 +3,8 @@ import { mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { acquireSupervisorOwnership } from "./supervisorOwnership";
-import { createId } from "@auto-crop/core";
-import { createDatabaseClient, createRepositories, migrate, Supervisor, executionBudgetFromEnvironment, recoveryModeFromEnvironment, retentionPolicyFromEnvironment } from "@auto-crop/server";
+import { createId } from "@cordantry/core";
+import { createDatabaseClient, createRepositories, migrate, Supervisor, executionBudgetFromEnvironment, recoveryModeFromEnvironment, retentionPolicyFromEnvironment } from "@cordantry/server";
 
 /**
  * How often the supervisor sweeps for work the worker cannot report itself.
@@ -29,7 +29,7 @@ export type SuperviseOptions = {
   log?: (line: string) => void;
 };
 
-export type SupervisedAutoCrop = {
+export type SupervisedCordantry = {
   /** Resolves after the worker exits and the local launch claim is released. */
   close(): Promise<void>;
 };
@@ -45,12 +45,12 @@ export type SupervisedAutoCrop = {
  * nothing is watching. That needs a system process manager, and the supervisor is a module precisely
  * so it can be driven by one later.
  */
-export async function superviseAutoCrop(options: SuperviseOptions): Promise<SupervisedAutoCrop> {
+export async function superviseCordantry(options: SuperviseOptions): Promise<SupervisedCordantry> {
   executionBudgetFromEnvironment(); // Fail before starting any Worker if opt-in configuration is invalid.
   const recoveryMode = recoveryModeFromEnvironment();
   const retention = retentionPolicyFromEnvironment();
   const log = options.log ?? console.log;
-  const stateDir = join(options.projectRoot, ".auto-crop");
+  const stateDir = join(options.projectRoot, ".cordantry");
   mkdirSync(stateDir, { recursive: true });
 
   const projectRoot = realpathSync(options.projectRoot);

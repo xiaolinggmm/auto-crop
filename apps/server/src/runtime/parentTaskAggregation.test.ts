@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Company, Department, KeyResult, Objective, Proof, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Proof, Task } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -226,7 +226,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build prototypes.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/memory.md",
   };
 }
 

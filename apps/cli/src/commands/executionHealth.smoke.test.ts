@@ -10,10 +10,10 @@ import { openState } from "./fixtures/state";
 // Full production entry/IPC/adapter/SQLite/dispatcher chain, with only the model executable mocked.
 // Faults are injected into the disposable database; no production testing switches are needed.
 it.skipIf(process.platform === "win32")("start survives reconciliation and delivery crashes without re-entering an unconfirmed workspace", async () => {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "auto-crop-execution-health-")));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "cordantry-execution-health-")));
   const bin = join(root, "bin");
   mkdirSync(bin);
-  mkdirSync(join(root, ".auto-crop"));
+  mkdirSync(join(root, ".cordantry"));
   writeFileSync(join(bin, "codex"), `#!${process.execPath}\n${readFileSync(new URL("./fixtures/mockCodex.cjs", import.meta.url), "utf8")}`, { mode: 0o755 });
   writeFileSync(join(bin, "claude"), `#!${process.execPath}\nprocess.exit(1);\n`, { mode: 0o755 });
   const { client, repositories } = openState(root);
@@ -22,7 +22,7 @@ it.skipIf(process.platform === "win32")("start survives reconciliation and deliv
   const launch = () => {
     const child = spawn(process.execPath, ["--import", "tsx", fileURLToPath(new URL("../index.ts", import.meta.url)), "start"], {
       cwd: fileURLToPath(new URL("../../../../", import.meta.url)),
-      env: { ...process.env, PATH: `${bin}:/usr/bin:/bin`, INIT_CWD: root, AUTO_CROP_SMOKE_ROOT: root, AUTO_CROP_PORT: "0", AUTO_CROP_SCHEDULER_INTERVAL_MS: "50" },
+      env: { ...process.env, PATH: `${bin}:/usr/bin:/bin`, INIT_CWD: root, CORDANTRY_SMOKE_ROOT: root, CORDANTRY_PORT: "0", CORDANTRY_SCHEDULER_INTERVAL_MS: "50" },
       stdio: ["ignore", "pipe", "pipe"],
     });
     let output = "";
@@ -123,8 +123,8 @@ async function stop(child: ChildProcess, signal: NodeJS.Signals = "SIGTERM") {
 
 
 it.skipIf(process.platform === "win32").each(["budget-success", "budget-stop"])("public opt-in %s keeps authorization across the production entry and restart", async scenario => {
-  const root = realpathSync(mkdtempSync(join(tmpdir(), "auto-crop-budget-smoke-")));
-  const bin = join(root, "bin"); mkdirSync(bin); mkdirSync(join(root, ".auto-crop"));
+  const root = realpathSync(mkdtempSync(join(tmpdir(), "cordantry-budget-smoke-")));
+  const bin = join(root, "bin"); mkdirSync(bin); mkdirSync(join(root, ".cordantry"));
   writeFileSync(join(bin, "codex"), `#!${process.execPath}\n${readFileSync(new URL("./fixtures/mockCodex.cjs", import.meta.url), "utf8")}`, { mode: 0o755 });
   writeFileSync(join(bin, "claude"), `#!${process.execPath}\nprocess.exit(1);\n`, { mode: 0o755 });
   const { client, repositories } = openState(root);
@@ -135,10 +135,10 @@ it.skipIf(process.platform === "win32").each(["budget-success", "budget-stop"])(
   const launch = () => {
     const child = spawn(process.execPath, ["--import", "tsx", fileURLToPath(new URL("../index.ts", import.meta.url)), "start"], {
       cwd: fileURLToPath(new URL("../../../../", import.meta.url)),
-      env: { ...process.env, PATH: `${bin}:/usr/bin:/bin`, INIT_CWD: root, AUTO_CROP_SMOKE_ROOT: root,
-        AUTO_CROP_SMOKE_SCENARIO: scenario, AUTO_CROP_PORT: "0", AUTO_CROP_SCHEDULER_INTERVAL_MS: "50",
-        AUTO_CROP_EXECUTION_POLICY: "budget-v1", AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: "60",
-        AUTO_CROP_EXECUTION_BUDGET_JSON: JSON.stringify({ runHardMs: 2000, taskTotalMs: scenario === "budget-stop" ? 800 : 3000, persistMs: 20, checkpointMs: 100 }) },
+      env: { ...process.env, PATH: `${bin}:/usr/bin:/bin`, INIT_CWD: root, CORDANTRY_SMOKE_ROOT: root,
+        CORDANTRY_SMOKE_SCENARIO: scenario, CORDANTRY_PORT: "0", CORDANTRY_SCHEDULER_INTERVAL_MS: "50",
+        CORDANTRY_EXECUTION_POLICY: "budget-v1", CORDANTRY_FORCE_AGENT_TIMEOUT_MS: "60",
+        CORDANTRY_EXECUTION_BUDGET_JSON: JSON.stringify({ runHardMs: 2000, taskTotalMs: scenario === "budget-stop" ? 800 : 3000, persistMs: 20, checkpointMs: 100 }) },
       stdio: ["ignore", "pipe", "pipe"],
     });
     children.push(child); child.stdout!.on("data", chunk => { output += chunk; }); child.stderr!.on("data", chunk => { output += chunk; });

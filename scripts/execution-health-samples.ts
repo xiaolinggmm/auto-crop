@@ -1,11 +1,11 @@
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { createCodexAdapter, noToolGrant } from "@auto-crop/server";
+import { createCodexAdapter, noToolGrant } from "@cordantry/server";
 
 // Explicit invocation is required; no paid calls are made by the test suite.
-if (process.env.AUTO_CROP_ALLOW_REAL_SAMPLES !== "codex") throw new Error("Set AUTO_CROP_ALLOW_REAL_SAMPLES=codex after authorizing up to 10 CLI invocations");
-const root = mkdtempSync(join(tmpdir(), "auto-crop-p5-codex-"));
+if (process.env.CORDANTRY_ALLOW_REAL_SAMPLES !== "codex") throw new Error("Set CORDANTRY_ALLOW_REAL_SAMPLES=codex after authorizing up to 10 CLI invocations");
+const root = mkdtempSync(join(tmpdir(), "cordantry-p5-codex-"));
 chmodSync(root, 0o700);
 const adapter = createCodexAdapter();
 const support = await adapter.launchPlan!();
@@ -47,7 +47,7 @@ for (const [index, phase] of cases.entries()) {
       completedBeyondScaledOldBudget: result.status === "complete" && elapsedMs > 1000 };
     summaries.push(summary);
     console.log(JSON.stringify(summary));
-    writeFileSync(join(root, "summary.json"), JSON.stringify({ adapter: "codex", model: process.env.AUTO_CROP_CODEX_MODEL ?? "gpt-5.5", scaledOldBudgetMs: 1000, summaries }, null, 2), { mode: 0o600 });
+    writeFileSync(join(root, "summary.json"), JSON.stringify({ adapter: "codex", model: process.env.CORDANTRY_CODEX_MODEL ?? "gpt-5.5", scaledOldBudgetMs: 1000, summaries }, null, 2), { mode: 0o600 });
     // An unavailable account/model is not improved by spending the remaining allowance on repeats.
     if (result.status === "failed" && phase !== "cancel") break;
   } finally { if (timer) clearTimeout(timer); }

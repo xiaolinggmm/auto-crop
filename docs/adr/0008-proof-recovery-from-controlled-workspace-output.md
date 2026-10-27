@@ -1,12 +1,12 @@
 # Proof Recovery From Controlled Workspace Output
 
-Auto-Crop will allow Proof Recovery from controlled task workspace files when an agent run finished without recorded Proof but left behind output that satisfies the task's proof schema.
+Cordantry will allow Proof Recovery from controlled task workspace files when an agent run finished without recorded Proof but left behind output that satisfies the task's proof schema.
 
 ## Context
 
-Auto-Crop treats Proof as the completion gate. Agent Output can be useful, but a task is not complete unless the runtime records Proof matching the task's proof schema.
+Cordantry treats Proof as the completion gate. Agent Output can be useful, but a task is not complete unless the runtime records Proof matching the task's proof schema.
 
-The current `repo-diff` path only records Proof when the proof collector receives `diffText`. Real agent runs may instead leave a `.diff` or `.patch` file in the task workspace, including `.auto-crop-proof/*.diff` or a top-level audit patch. In that case the task can fail with `NO_PROOF` even though the department produced a checkable diff.
+The current `repo-diff` path only records Proof when the proof collector receives `diffText`. Real agent runs may instead leave a `.diff` or `.patch` file in the task workspace, including `.cordantry-proof/*.diff` or a top-level audit patch. In that case the task can fail with `NO_PROOF` even though the department produced a checkable diff.
 
 This creates a bad user experience: the department appears stuck, downstream tasks remain blocked, and CEO Office cannot review the work. At the same time, the system must not weaken Proof by treating arbitrary workspace files as completion.
 
@@ -20,16 +20,16 @@ This creates a bad user experience: the department appears stuck, downstream tas
 
 ## Decision
 
-Auto-Crop will support controlled Proof Recovery.
+Cordantry will support controlled Proof Recovery.
 
 For `repo-diff` tasks, the runtime may record recovered diff Proof from:
 
 - `diffText`, when present
-- `.auto-crop-proof/*.diff`
+- `.cordantry-proof/*.diff`
 - top-level workspace `*.diff`
 - top-level workspace `*.patch`
 
-Recovery must ignore empty files and must not recursively scan the entire workspace. When multiple diff or patch files are found, the runtime should merge them into one canonical `.auto-crop-proof/<taskId>.diff` Proof and include source filenames in the summary.
+Recovery must ignore empty files and must not recursively scan the entire workspace. When multiple diff or patch files are found, the runtime should merge them into one canonical `.cordantry-proof/<taskId>.diff` Proof and include source filenames in the summary.
 
 The recovery trigger for checking existing output remains the task refresh path where it already exists. Task Recovery Requests use a separate `POST /api/tasks/:id/recover` endpoint, and should try controlled Proof Recovery before rerunning or creating follow-up work. If Proof Recovery succeeds for an ordinary parent task, the task moves to `review`, recovered Proof is persisted, and the department flow records that checkable Proof was found and submitted to CEO Office.
 

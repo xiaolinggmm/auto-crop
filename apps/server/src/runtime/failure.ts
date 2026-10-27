@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import type { Task } from "@auto-crop/core";
+import type { Task } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { applyTaskTransition, type TaskHoldDeclaration } from "./taskTransition";
 
