@@ -5,7 +5,7 @@ import type {
   KeyResult,
   Objective,
   Task,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import {
   buildDeterministicFinalFounderReportSections,
   buildFinalFounderReportPrompt,
@@ -106,7 +106,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/memory.md",
   };
 }
 

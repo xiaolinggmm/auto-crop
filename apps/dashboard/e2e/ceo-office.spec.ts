@@ -9,7 +9,7 @@ test("CEO Office keeps a fixed viewport, follows new cards, and preserves histor
     data: { conclusion: { en: `Result ${index}: the tested option satisfies the stated requirements.` }, workSummary: { en: "Compared candidates and checked the results." }, evidence: { en: "Recorded observations support the recommendation." }, visionImpact: null, remainingGap: null, recommendation: null, summaryFallback: null, businessArtifactId: null, remainingGaps: [], recommendedNextSteps: [], outcome: "accepted" },
   });
   await page.addInitScript(() => {
-    localStorage.setItem("auto-crop.currentCompanyId", "c");
+    localStorage.setItem("cordantry.currentCompanyId", "c");
     class MockEvents extends EventTarget {
       constructor() {
         super();
@@ -68,7 +68,7 @@ test("CEO Office keeps a fixed viewport, follows new cards, and preserves histor
 });
 
 test("the Plan tab scrolls inside its own area on a short phone screen, so the composer never covers the plan", async ({ page }) => {
-  await page.addInitScript((id) => localStorage.setItem("auto-crop.currentCompanyId", id), ceoOfficeCompany.id);
+  await page.addInitScript((id) => localStorage.setItem("cordantry.currentCompanyId", id), ceoOfficeCompany.id);
   await mockCeoOfficeApi(page);
   await page.setViewportSize({ width: 390, height: 667 });
   await page.goto("/");
@@ -84,7 +84,7 @@ test("the Plan tab scrolls inside its own area on a short phone screen, so the c
 });
 
 test("an element without its own focus style shows the Ice Mist focus ring", async ({ page }) => {
-  await page.addInitScript((id) => localStorage.setItem("auto-crop.currentCompanyId", id), ceoOfficeCompany.id);
+  await page.addInitScript((id) => localStorage.setItem("cordantry.currentCompanyId", id), ceoOfficeCompany.id);
   await mockCeoOfficeApi(page);
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto("/");

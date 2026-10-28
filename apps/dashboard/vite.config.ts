@@ -4,7 +4,7 @@ import { fileURLToPath, URL } from "node:url";
 
 // Opt-in proxy for running the dev server against a separate API process, as the e2e suite does.
 // The live event stream needs a real same-origin path, which a test-side request route cannot stream.
-const apiProxyTarget = process.env.AUTO_CROP_API_PROXY;
+const apiProxyTarget = process.env.CORDANTRY_API_PROXY;
 
 export default defineConfig({
   server: apiProxyTarget ? { proxy: { "/api": { target: apiProxyTarget } } } : undefined,

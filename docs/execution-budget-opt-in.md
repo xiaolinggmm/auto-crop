@@ -10,12 +10,12 @@ P4 允许显式启用 `budget-v1`；默认仍为 `observe`。P5 已交付可选�
 4. 在选定的隔离项目根目录，通过本仓库的 CLI 启用策略：
 
 ```bash
-AUTO_CROP_EXECUTION_POLICY=budget-v1 pnpm --filter @auto-crop/cli start
+CORDANTRY_EXECUTION_POLICY=budget-v1 pnpm --filter @cordantry/cli start
 ```
 
-CLI 使用原有 `INIT_CWD` / 当前工作目录解析项目根目录；从其他目录调用时先确认目标路径。`start` 与 `supervise` 都有独立 Supervisor；直接调用程序内部 `startAutoCrop` 不会替调用者创建外层监督。
+CLI 使用原有 `INIT_CWD` / 当前工作目录解析项目根目录；从其他目录调用时先确认目标路径。`start` 与 `supervise` 都有独立 Supervisor；直接调用程序内部 `startCordantry` 不会替调用者创建外层监督。
 
-可选的 `AUTO_CROP_EXECUTION_BUDGET_JSON` 接受下表字段，单位均为毫秒。未知字段、非正安全整数、阶段关系无效或未知策略名会报错，不会静默回退。每个 run 认领时钉选快照，运行期间修改环境不会改变已有 run 或自动增加 Task 授权。
+可选的 `CORDANTRY_EXECUTION_BUDGET_JSON` 接受下表字段，单位均为毫秒。未知字段、非正安全整数、阶段关系无效或未知策略名会报错，不会静默回退。每个 run 认领时钉选快照，运行期间修改环境不会改变已有 run 或自动增加 Task 授权。
 
 | 字段 | 默认值 | 含义 |
 | --- | ---: | --- |
@@ -28,7 +28,7 @@ CLI 使用原有 `INIT_CWD` / 当前工作目录解析项目根目录；从其�
 | quietAfterMs | 60000 | 输出转为未知进展的窗口，不是终止依据 |
 | resumeGraceMs | 30000 | Supervisor 启动、跳时或长停顿后的探测宽限 |
 
-`persistMs < suspectAfterMs < lostAfterMs`，且 `persistMs < runHardMs`。原有 `AUTO_CROP_AGENT_TIMEOUT_MS` / `AUTO_CROP_FORCE_AGENT_TIMEOUT_MS` 在新策略下影响软检查点，不能扩大硬预算；run 硬预算不得小于实际软检查点。Supervisor 默认每 5 秒扫描；短于扫描周期的测试阈值不会获得更高检测频率。
+`persistMs < suspectAfterMs < lostAfterMs`，且 `persistMs < runHardMs`。原有 `CORDANTRY_AGENT_TIMEOUT_MS` / `CORDANTRY_FORCE_AGENT_TIMEOUT_MS` 在新策略下影响软检查点，不能扩大硬预算；run 硬预算不得小于实际软检查点。Supervisor 默认每 5 秒扫描；短于扫描周期的测试阈值不会获得更高检测频率。
 
 ## 如何读取和操作
 
@@ -48,15 +48,15 @@ CLI 使用原有 `INIT_CWD` / 当前工作目录解析项目根目录；从其�
 
 1. 暂停新派发，等待预算 run 结束；必要时取消，并完成终止确认或保留隔离。关闭 Supervisor，确认相关进程情况。
 2. 保留完整数据库，不删除 `task_budgets`、`run_budgets`、`budget_ledger` 或授权记录。
-3. 设置 `AUTO_CROP_EXECUTION_POLICY=observe` 后重新启动。已有预算授权的 Task 在 observe 下保持禁止派发，不会获得新的旧策略额度；无预算记录的 Task 才走原策略。需要继续预算 Task 时重新显式启用预算策略并按合法 Hold 操作。
+3. 设置 `CORDANTRY_EXECUTION_POLICY=observe` 后重新启动。已有预算授权的 Task 在 observe 下保持禁止派发，不会获得新的旧策略额度；无预算记录的 Task 才走原策略。需要继续预算 Task 时重新显式启用预算策略并按合法 Hold 操作。
 4. 若必须回退代码版本，先处理全部预算 run，并使用兼容该数据库的版本；旧版程序不认识预算约束，不能直接对同一个预算库继续调度。
 
 ## 执行历史保留
 
 观测与事件历史的保留期和容量上限**默认启用**，与上面的预算策略无关，observe 模式下同样生效。Supervisor 每小时至多清理一次，只删除已结束、已释放、已结算且无人再读取的历史，详见 [ADR 0039](adr/0039-retention-thins-history-it-never-decides.md)。
 
-- 关闭：`AUTO_CROP_RETENTION=off`，历史无限保留。
-- 调整：`AUTO_CROP_RETENTION_JSON`，单位为毫秒或行数，均为正安全整数；未知字段或非法值拒绝启动。`invocationMs` 不得短于 `activityMs`。
+- 关闭：`CORDANTRY_RETENTION=off`，历史无限保留。
+- 调整：`CORDANTRY_RETENTION_JSON`，单位为毫秒或行数，均为正安全整数；未知字段或非法值拒绝启动。`invocationMs` 不得短于 `activityMs`。
 
 | 字段 | 默认值 | 含义 |
 | --- | ---: | --- |

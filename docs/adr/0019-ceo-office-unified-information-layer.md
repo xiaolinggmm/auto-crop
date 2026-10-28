@@ -2,7 +2,7 @@
 
 Status: accepted
 
-Auto-Crop will introduce a unified CEO Office Item layer so CEO Office reads as a chronological business control surface rather than a set of disconnected queues and raw department reports. The first implementation should project CEO Office Items from existing company facts instead of adding a `ceo_office_items` table, and it must stay test-case neutral: SEO keyword research, pricing, MVP definition, launch planning, and other task types all flow through the same item model.
+Cordantry will introduce a unified CEO Office Item layer so CEO Office reads as a chronological business control surface rather than a set of disconnected queues and raw department reports. The first implementation should project CEO Office Items from existing company facts instead of adding a `ceo_office_items` table, and it must stay test-case neutral: SEO keyword research, pricing, MVP definition, launch planning, and other task types all flow through the same item model.
 
 ## Decision
 

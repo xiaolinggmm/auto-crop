@@ -1,8 +1,8 @@
-# auto-crop
+# Cordantry
 
-auto-crop is an open-source local agent-company runtime.
+Cordantry is an open-source local agent-company runtime.
 
-It helps a founder run a "zero-person company" from their own computer: create a company, select a local agent such as Claude Code or Codex as the CEO, write a founder vision, and let auto-crop turn that vision into objectives, departments, tasks, proof, reviews, and follow-up work.
+It helps a founder run a "zero-person company" from their own computer: create a company, select a local agent such as Claude Code or Codex as the CEO, write a founder vision, and let Cordantry turn that vision into objectives, departments, tasks, proof, reviews, and follow-up work.
 
 The project currently includes a local CLI runtime, a React dashboard, a SQLite-backed server, built-in Claude Code and Codex adapters, and a scheduler that coordinates agent work with proof collection, review, recovery, and a kill switch.
 
@@ -10,16 +10,16 @@ The project currently includes a local CLI runtime, a React dashboard, a SQLite-
 
 For normal use, download the installer for your operating system from GitHub Releases. The desktop app
 contains its own runtime and Dashboard, so Node.js, pnpm, terminal commands, and a source checkout are
-not required. On first launch, choose the local project Auto Crop may operate on.
+not required. On first launch, choose the local project Cordantry may operate on.
 
-Claude Code or Codex must still be installed and signed in locally. Auto Crop detects them after the
+Claude Code or Codex must still be installed and signed in locally. Cordantry detects them after the
 project opens. See the [desktop installation and release guide](docs/desktop-distribution.md).
 
 ## What It Looks Like
 
-auto-crop gives you a local control panel for running an agent company. Departments, tasks, proof, reviews, and recovery stay visible in one dashboard.
+Cordantry gives you a local control panel for running an agent company. Departments, tasks, proof, reviews, and recovery stay visible in one dashboard.
 
-![auto-crop control panel](docs/assets/control-panel.png)
+![Cordantry control panel](docs/assets/control-panel.png)
 
 The output can be a real working artifact. In this example, a founder vision was turned into a runnable AI cover letter generator website.
 
@@ -30,8 +30,8 @@ The output can be a real working artifact. In this example, a founder vision was
 1. Clone the repository:
 
 ```bash
-git clone <repo-url>
-cd auto-crop
+git clone <repo-url> cordantry
+cd cordantry
 ```
 
 2. Install dependencies:
@@ -47,10 +47,10 @@ pnpm test
 pnpm typecheck
 ```
 
-4. Start the local auto-crop runtime:
+4. Start the local Cordantry runtime:
 
 ```bash
-AUTO_CROP_PORT=8787 pnpm --filter @auto-crop/cli start
+CORDANTRY_PORT=8787 pnpm --filter @cordantry/cli start
 ```
 
 `start` launches a Supervisor and its Worker. The Supervisor consumes execution events even when
@@ -59,11 +59,11 @@ stops the Supervisor and waits for the Worker to exit. The existing port, schedu
 project-root environment settings are inherited by the Worker.
 
 Only one Supervisor may run against a project's state directory. A second launch exits with an error
-before starting a Worker. Startup records live in `.auto-crop/supervisor.sqlite`; after a crash, they
+before starting a Worker. Startup records live in `.cordantry/supervisor.sqlite`; after a crash, they
 are reclaimed only when both recorded local processes are confirmed absent. A surviving Worker,
 reused PID, unavailable process check or another hostname causes a conservative refusal. Stop and
 verify the recorded processes before retrying; do not delete the ownership file while they run.
-This guards local CLI startup, not remote hosts or direct programmatic `startAutoCrop` callers.
+This guards local CLI startup, not remote hosts or direct programmatic `startCordantry` callers.
 When a Worker exits, the Supervisor reconciles its startup identity before launching a replacement.
 Active run workspaces enter termination-confirmation isolation because detached Agents may still run.
 Verify those processes have stopped before using the task's **Confirm termination** action. Isolation
@@ -72,19 +72,19 @@ survive Supervisor restarts. Supervisor/host failure still needs a system proces
 
 
 Execution scheduling defaults to `observe`. The new lifecycle budget and independent health policy
-can be explicitly enabled with `AUTO_CROP_EXECUTION_POLICY=budget-v1`. See the
+can be explicitly enabled with `CORDANTRY_EXECUTION_POLICY=budget-v1`. See the
 [isolated trial, controls and rollback guide](docs/execution-budget-opt-in.md) before enabling it.
 The Task execution panel exposes budget balances, stop evidence and explicit continuation authorization;
 automatic recovery remains report-only by default. P5 adds opt-in `brief-only-v1` recovery and initial
 Codex samples; see the [scope, evidence and remaining threshold gates](docs/execution-health-p5-report.md).
 Execution history retention is on by default: the Supervisor compacts old activity windows and removes
-delivered events and intermediate metering once nothing reads them. Set `AUTO_CROP_RETENTION=off` to keep
+delivered events and intermediate metering once nothing reads them. Set `CORDANTRY_RETENTION=off` to keep
 everything; periods and ceilings are in the [guide](docs/execution-budget-opt-in.md#执行历史保留).
 
 5. In another terminal, start the dashboard:
 
 ```bash
-VITE_AUTO_CROP_API_URL=http://127.0.0.1:8787 pnpm --filter @auto-crop/dashboard dev
+VITE_CORDANTRY_API_URL=http://127.0.0.1:8787 pnpm --filter @cordantry/dashboard dev
 ```
 
 6. Open the dashboard URL printed by Vite, usually:
@@ -129,35 +129,35 @@ Main dependency versions currently used by the project include:
 
 ## Usage
 
-Start auto-crop from the repository you want it to operate on:
+Start Cordantry from the repository you want it to operate on:
 
 ```bash
-AUTO_CROP_PORT=8787 pnpm --filter @auto-crop/cli start
+CORDANTRY_PORT=8787 pnpm --filter @cordantry/cli start
 ```
 
 The CLI will:
 
-- Create local runtime state under `.auto-crop/`.
-- Create `.auto-crop/state.sqlite`.
+- Create local runtime state under `.cordantry/`.
+- Create `.cordantry/state.sqlite`.
 - Start the local API server.
 - Detect available Claude Code and Codex adapters.
 - Print the local dashboard/API URL.
 
 Choose an execution mode at the beginning of the company-creation form:
 
-- **Direct dispatch (default):** the CEO plans work and Auto-Crop dispatches department tasks to their assigned local Agents. MAH is not required.
+- **Direct dispatch (default):** the CEO plans work and Cordantry dispatches department tasks to their assigned local Agents. MAH is not required.
 - **MAH coordination (advanced):** the CEO still plans work, but execution is delegated to MAH. Select an existing managed MAH project by its absolute path, and provide the MAH executable path if it is not on `PATH` (for example `/Applications/MAH.app/Contents/Resources/bin/mah`).
 
 Both modes require an available CEO Agent. MAH creation checks project identity and slot availability before creating the company, preserving the form if checks fail. The slot defaults to `background`; advanced settings allow an explicit `interactive` choice. Slots never change automatically.
 
 Each company saves its own mode and MAH project binding. The mode cannot be changed after creation. Settings can repair the connection to the same MAH project after an installation or directory move, but cannot replace the project. Existing unresolved MAH executions retain their UUIDs and must be reconciled before a new execution.
 
-MAH outages do not prevent the app or Direct companies from running. The old global `AUTO_CROP_EXECUTION_BACKEND`, `AUTO_CROP_MAH_PROJECT_ROOT` and `AUTO_CROP_MAH_SLOT` settings no longer select company execution behavior. `AUTO_CROP_MAH_CLI` can still supply the default executable when a creation request omits it. Existing test companies are not migrated to infer their historical mode.
+MAH outages do not prevent the app or Direct companies from running. The old global `CORDANTRY_EXECUTION_BACKEND`, `CORDANTRY_MAH_PROJECT_ROOT` and `CORDANTRY_MAH_SLOT` settings no longer select company execution behavior. `CORDANTRY_MAH_CLI` can still supply the default executable when a creation request omits it. Existing test companies are not migrated to infer their historical mode.
 
 During development, run the dashboard separately:
 
 ```bash
-VITE_AUTO_CROP_API_URL=http://127.0.0.1:8787 pnpm --filter @auto-crop/dashboard dev
+VITE_CORDANTRY_API_URL=http://127.0.0.1:8787 pnpm --filter @cordantry/dashboard dev
 ```
 
 In the dashboard:
@@ -206,29 +206,29 @@ pnpm smoke:real-agent
 Use Codex for the real-agent smoke test:
 
 ```bash
-AUTO_CROP_REAL_AGENT=codex pnpm smoke:real-agent
+CORDANTRY_REAL_AGENT=codex pnpm smoke:real-agent
 ```
 
 Run dashboard tests:
 
 ```bash
-pnpm --filter @auto-crop/dashboard test
-pnpm --filter @auto-crop/dashboard typecheck
+pnpm --filter @cordantry/dashboard test
+pnpm --filter @cordantry/dashboard typecheck
 ```
 
 Install Playwright Chromium and run E2E tests:
 
 ```bash
-pnpm --filter @auto-crop/dashboard exec playwright install chromium
-pnpm --filter @auto-crop/dashboard e2e
+pnpm --filter @cordantry/dashboard exec playwright install chromium
+pnpm --filter @cordantry/dashboard e2e
 ```
 
 ## Local Runtime Files
 
-auto-crop stores local state inside the workspace it operates on:
+Cordantry stores local state inside the workspace it operates on:
 
 ```text
-.auto-crop/
+.cordantry/
   state.sqlite
   companies/<companyId>/
     departments/<departmentId>/Memory.md
@@ -240,7 +240,7 @@ auto-crop stores local state inside the workspace it operates on:
   workspaces/<taskId>/
 ```
 
-Do not run auto-crop against a repository unless you are comfortable with it creating and modifying files under that workspace.
+Do not run Cordantry against a repository unless you are comfortable with it creating and modifying files under that workspace.
 
 ## Credits
 

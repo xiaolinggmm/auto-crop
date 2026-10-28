@@ -1,5 +1,5 @@
-import type { ReplanMode, ReplanReplacementTask, ReplanTaskDefinition, Task, VerificationRequirement } from "@auto-crop/core";
-import type { Company, ProofSchema, RiskLevel } from "@auto-crop/core";
+import type { ReplanMode, ReplanReplacementTask, ReplanTaskDefinition, Task, VerificationRequirement } from "@cordantry/core";
+import type { Company, ProofSchema, RiskLevel } from "@cordantry/core";
 import type { Playbook } from "../playbooks/types";
 import type { StuckContext } from "./replanContext";
 
@@ -39,7 +39,7 @@ export function buildReplanPlannerPrompt(input: BuildReplanPlannerPromptInput): 
   return [
     "# Replan A Stuck Task",
     "",
-    "You are the planning agent for Auto-Crop. One task cannot succeed as specified. Propose one change for the founder to confirm.",
+    "You are the planning agent for Cordantry. One task cannot succeed as specified. Propose one change for the founder to confirm.",
     "Do not mutate the existing graph. Nothing you propose applies until the founder confirms it.",
     "",
     "## Company",

@@ -42,7 +42,7 @@ Settled decisions:
 6. The official Business Artifact and Proof rows are written only in settlement.
 7. Invalid action calls return structured errors so the agent can correct the envelope in the same run.
 8. If the run ends without a valid envelope, settlement fails as an invalid or missing delivery.
-9. The current `.auto-crop/business-artifact.json` path remains only as the current implementation path and later compatibility shim. It must convert into the same envelope path rather than remain a second model.
+9. The current `.cordantry/business-artifact.json` path remains only as the current implementation path and later compatibility shim. It must convert into the same envelope path rather than remain a second model.
 
 ## Target Shape
 
@@ -101,7 +101,7 @@ Suggested files:
 
 Tasks:
 
-1. Extract the current `.auto-crop/business-artifact.json` parse path so it produces an `ArtifactEnvelope` first.
+1. Extract the current `.cordantry/business-artifact.json` parse path so it produces an `ArtifactEnvelope` first.
 2. Convert the envelope into the existing `BusinessArtifact` capture result.
 3. Preserve current validation behavior, including execution report requirements, action intents, open decisions, verification requirements, and environment-blocked blocker handling.
 4. Keep Artifact Syntax Repair behavior unchanged for the current file path.
@@ -263,7 +263,7 @@ Tasks:
 
 1. Keep the file shim parser only for explicit migration/test fallback.
 2. Remove prompt language that says the file path is the normal delivery path.
-3. Update tests that hard-code `.auto-crop/business-artifact.json` as the only successful delivery path.
+3. Update tests that hard-code `.cordantry/business-artifact.json` as the only successful delivery path.
 4. Leave ADR 0028 repair tests only for the deprecated shim.
 
 Verification:

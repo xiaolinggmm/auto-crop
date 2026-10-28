@@ -1,4 +1,4 @@
-import type { Task } from "@auto-crop/core";
+import type { Task } from "@cordantry/core";
 
 /**
  * The proof-contract section of an agent prompt: exactly where the runtime will look for Proof
@@ -14,9 +14,9 @@ export function buildProofContractInstructions(
     return [
       ...instructions,
       "Before finishing, leave registerable diff proof in one of these runtime-collected locations:",
-      `- .auto-crop-proof/${task.id}.diff`,
+      `- .cordantry-proof/${task.id}.diff`,
       "- a top-level workspace `.diff` or `.patch` file",
-      "Files under `.auto-crop/` are not proof for repo-diff tasks.",
+      "Files under `.cordantry/` are not proof for repo-diff tasks.",
       "Do not rely on the Artifact Envelope alone; it is the business artifact, not diff proof.",
     ];
   }

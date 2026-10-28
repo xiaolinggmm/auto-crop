@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Company, Task } from "@auto-crop/core";
+import type { Company, Task } from "@cordantry/core";
 import type { TaskHandoff } from "./dependencyReadiness";
 import { buildTaskExecutionPrompt } from "./taskExecutionPrompt";
 
@@ -81,7 +81,7 @@ describe("buildTaskExecutionPrompt", () => {
     expect(prompt).toContain("Submit exactly one task delivery by calling `submit_artifact_envelope`");
     expect(prompt).toContain("The tool accepts only the Artifact Envelope payload");
     expect(prompt).toContain("correct the envelope and call it again");
-    expect(prompt).not.toContain(".auto-crop/business-artifact.json");
+    expect(prompt).not.toContain(".cordantry/business-artifact.json");
   });
 
   it("states which proof_refs the task accepts and that read sources belong in the payload", () => {
@@ -106,7 +106,7 @@ describe("buildTaskExecutionPrompt", () => {
       });
 
       expect(prompt).toContain("submit_artifact_envelope");
-      expect(prompt).not.toContain(".auto-crop/business-artifact.json");
+      expect(prompt).not.toContain(".cordantry/business-artifact.json");
       expect(prompt).not.toContain("Instead write");
     }
   });
@@ -187,7 +187,7 @@ describe("buildTaskExecutionPrompt", () => {
           summary: "Keyword research findings.",
           artifactWorkspacePath: "/tmp/research-workspace",
           handoffContract: "Use the accepted keyword research before product planning.",
-          handoffPackagePath: "/tmp/research-workspace/.auto-crop-handoff/package.json",
+          handoffPackagePath: "/tmp/research-workspace/.cordantry-handoff/package.json",
         } satisfies TaskHandoff,
       ],
     });

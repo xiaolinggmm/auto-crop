@@ -1,16 +1,16 @@
 # Accepted Business Artifact Gated Dependencies
 
-Auto-Crop will separate raw Proof from structured Business Artifacts, and dependent tasks will start only after upstream dependencies have accepted, current, valid Business Artifacts. This prevents downstream agents from treating blocker notes, stale proof files, or unrelated workspace content as business direction.
+Cordantry will separate raw Proof from structured Business Artifacts, and dependent tasks will start only after upstream dependencies have accepted, current, valid Business Artifacts. This prevents downstream agents from treating blocker notes, stale proof files, or unrelated workspace content as business direction.
 
 ## Context
 
 Recent end-to-end tests exposed a gap between execution completion and business completion.
 
-A Research task produced a keyword recommendation. The Product task could not read the Research report from another task workspace and wrote a blocker note instead of a product brief. The runtime still captured that note as file Proof. Engineering then received the Product Proof, observed that it was a blocker note, and continued by deriving product direction from the existing workspace and repository context. The resulting prototype implemented an unrelated AutoCrop product. Growth later produced a launch plan that mixed generic SEO steps with missing placeholders.
+A Research task produced a keyword recommendation. The Product task could not read the Research report from another task workspace and wrote a blocker note instead of a product brief. The runtime still captured that note as file Proof. Engineering then received the Product Proof, observed that it was a blocker note, and continued by deriving product direction from the existing workspace and repository context. The resulting prototype implemented an unrelated Cordantry product. Growth later produced a launch plan that mixed generic SEO steps with missing placeholders.
 
 The underlying model treats Proof as both evidence and handoff. A markdown file, URL, command log, or diff can prove that an agent produced something, but it does not prove that the business semantics are valid or consumable by downstream tasks. The current dependency model also lets review-ready Proof influence downstream readiness before CEO Office has accepted the upstream work.
 
-The system needs a general fix. SEO keyword-to-site work is only the test case; Auto-Crop should not hard-code SEO assumptions into dependency rules.
+The system needs a general fix. SEO keyword-to-site work is only the test case; Cordantry should not hard-code SEO assumptions into dependency rules.
 
 ## Considered Options
 
@@ -22,7 +22,7 @@ The system needs a general fix. SEO keyword-to-site work is only the test case; 
 
 ## Decision
 
-Auto-Crop will introduce **Business Artifacts** as structured, runtime-validated handoff records.
+Cordantry will introduce **Business Artifacts** as structured, runtime-validated handoff records.
 
 Proof remains the raw evidence carrier. Business Artifacts carry the consumable business semantics. A task may have Proof without having a consumable Business Artifact.
 

@@ -1,5 +1,5 @@
-import type { CompleteLocalizedText, LocalizedText } from "@auto-crop/core";
-import { localizedTextFromString } from "@auto-crop/core";
+import type { CompleteLocalizedText, LocalizedText } from "@cordantry/core";
+import { localizedTextFromString } from "@cordantry/core";
 
 export function runtimeText(en: string, zh: string): CompleteLocalizedText {
   return { en, zh };

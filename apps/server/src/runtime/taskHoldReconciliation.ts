@@ -5,7 +5,7 @@ import {
   localizedTextFromString,
   type Task,
   type TaskHold,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { resolveDependencyReadiness } from "./dependencyReadiness";
 

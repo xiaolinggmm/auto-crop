@@ -16,7 +16,7 @@ import { useLanguage } from "../ui/language";
 import "./onboarding.css";
 import type { AgentSummary, CreateCompanyInput } from "../api/client";
 
-const draftKey = "auto-crop.onboardingDraft";
+const draftKey = "cordantry.onboardingDraft";
 const emptyDraft = { name: "", vision: "", form: false, executionMode: "direct" as "direct" | "mah", selectedCeoAgentId: "", projectRoot: "", cliPath: "", slotClass: "background" as "background" | "interactive" };
 function readDraft(): typeof emptyDraft {
   try {
@@ -150,7 +150,7 @@ export function Onboarding({
           >
             <div className="story-top">
               <span className="story-kicker">
-                {form ? "auto-crop" : c.example}
+                {form ? "Cordantry" : c.example}
               </span>
               <div className="story-top-actions">
                 <LanguageSwitch />
@@ -192,7 +192,7 @@ export function Onboarding({
                   <fieldset className="grid gap-2">
                     <legend>{zh ? "执行模式" : "Execution mode"}</legend>
                     <div className="flex gap-6">{(["direct", "mah"] as const).map(mode => <label key={mode} className="flex items-center gap-2"><input type="radio" name="execution-mode" checked={draft.executionMode === mode} onChange={() => setDraft({...draft, executionMode: mode})} />{mode === "direct" ? (zh ? "默认模式 · 直接派发" : "Direct dispatch (default)") : (zh ? "高级模式 · MAH 协调" : "MAH coordination (advanced)")}</label>)}</div>
-                    <p className="text-sm text-muted-foreground">{zh ? "CEO 负责规划与决策，部门负责各自任务，Agent 执行工作。默认模式由 auto-crop 直接派发；高级模式通过已有 MAH 项目协调。创建后不能切换模式。" : "The CEO plans and decides, departments own tasks, and agents execute them. Direct mode dispatches through auto-crop; advanced mode coordinates through an existing MAH project. The mode cannot change after creation."}</p>
+                    <p className="text-sm text-muted-foreground">{zh ? "CEO 负责规划与决策，部门负责各自任务，Agent 执行工作。默认模式由 cordantry 直接派发；高级模式通过已有 MAH 项目协调。创建后不能切换模式。" : "The CEO plans and decides, departments own tasks, and agents execute them. Direct mode dispatches through cordantry; advanced mode coordinates through an existing MAH project. The mode cannot change after creation."}</p>
                   </fieldset>
                   <div>
                     <Label htmlFor="company-name">{c.name}</Label>

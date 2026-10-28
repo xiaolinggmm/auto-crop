@@ -164,7 +164,7 @@ export function createCliAgentAdapter(options: CliAgentOptions): CliAgentAdapter
       // Materialized outside the workspace so it can never be mistaken for Proof, and removed after
       // the run whatever its outcome.
       const schemaDir = request.outputSchema
-        ? mkdtempSync(join(tmpdir(), "auto-crop-output-schema-"))
+        ? mkdtempSync(join(tmpdir(), "cordantry-output-schema-"))
         : null;
       const outputSchemaPath = schemaDir ? join(schemaDir, "schema.json") : undefined;
       if (outputSchemaPath && request.outputSchema) {
@@ -176,7 +176,7 @@ export function createCliAgentAdapter(options: CliAgentOptions): CliAgentAdapter
         ? options.resolveContractCapabilities(launchSupport)
         : options.contractCapabilities ?? [];
       const mcpConfigDir = request.runtimeActions?.mcp && contractCapabilities.includes("artifact_envelope")
-        ? mkdtempSync(join(tmpdir(), "auto-crop-runtime-action-mcp-"))
+        ? mkdtempSync(join(tmpdir(), "cordantry-runtime-action-mcp-"))
         : null;
       let runtimeActionMcp: CommandValues["runtimeActionMcp"];
       if (mcpConfigDir && request.runtimeActions?.mcp) {
@@ -298,7 +298,7 @@ export function createClaudeCodeAdapter(
 export function createCodexAdapter(
   options: Pick<CliAgentOptions, "timeoutMs" | "log" | "readHelp"> & { model?: string } = {},
 ): CliAgentAdapter {
-  const model = options.model ?? process.env.AUTO_CROP_CODEX_MODEL ?? DEFAULT_CODEX_MODEL;
+  const model = options.model ?? process.env.CORDANTRY_CODEX_MODEL ?? DEFAULT_CODEX_MODEL;
 
   return createCliAgentAdapter({
     id: "codex",
@@ -401,7 +401,7 @@ export type RuntimeActionMcpServer = {
   toolNames: string[];
 };
 
-export const RUNTIME_ACTION_MCP_SERVER_NAME = "auto-crop-runtime-actions";
+export const RUNTIME_ACTION_MCP_SERVER_NAME = "cordantry-runtime-actions";
 
 /**
  * The server runs from TypeScript source, so it is launched with the tsx loader — resolved to an
@@ -409,7 +409,7 @@ export const RUNTIME_ACTION_MCP_SERVER_NAME = "auto-crop-runtime-actions";
  * resolves against a directory that has no `node_modules`.
  */
 export function runtimeActionMcpServer(context: RuntimeActionMcpContext): RuntimeActionMcpServer {
-  const packagedServerPath = process.env.AUTO_CROP_RUNTIME_ACTION_SERVER;
+  const packagedServerPath = process.env.CORDANTRY_RUNTIME_ACTION_SERVER;
   const serverPath = packagedServerPath
     ?? fileURLToPath(new URL("../runtime/runtimeActionMcpEntry.ts", import.meta.url));
   const args = packagedServerPath
@@ -421,14 +421,14 @@ export function runtimeActionMcpServer(context: RuntimeActionMcpContext): Runtim
     args,
     env: {
       ...(packagedServerPath ? { ELECTRON_RUN_AS_NODE: "1" } : {}),
-      AUTO_CROP_RUNTIME_ACTION_DIR: context.candidateDir,
-      AUTO_CROP_RUNTIME_ACTION_COMPANY_ID: context.companyId,
-      AUTO_CROP_RUNTIME_ACTION_TASK_ID: context.taskId,
-      AUTO_CROP_RUNTIME_ACTION_RUN_ID: context.runId,
-      AUTO_CROP_RUNTIME_ACTION_LOCALE: context.locale,
-      AUTO_CROP_RUNTIME_ACTION_REQUIRE_EXECUTION_DETAILS: String(context.requireExecutionDetails),
-      AUTO_CROP_RUNTIME_ACTION_PROOF_SCHEMA_ID: context.proofSchemaId,
-      AUTO_CROP_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES: context.acceptedProofTypes.join(","),
+      CORDANTRY_RUNTIME_ACTION_DIR: context.candidateDir,
+      CORDANTRY_RUNTIME_ACTION_COMPANY_ID: context.companyId,
+      CORDANTRY_RUNTIME_ACTION_TASK_ID: context.taskId,
+      CORDANTRY_RUNTIME_ACTION_RUN_ID: context.runId,
+      CORDANTRY_RUNTIME_ACTION_LOCALE: context.locale,
+      CORDANTRY_RUNTIME_ACTION_REQUIRE_EXECUTION_DETAILS: String(context.requireExecutionDetails),
+      CORDANTRY_RUNTIME_ACTION_PROOF_SCHEMA_ID: context.proofSchemaId,
+      CORDANTRY_RUNTIME_ACTION_ACCEPTED_PROOF_TYPES: context.acceptedProofTypes.join(","),
     },
     toolNames: ["submit_artifact_envelope"],
   };

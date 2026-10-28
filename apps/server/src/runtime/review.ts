@@ -111,7 +111,7 @@ function writeReviewMarkdown(input: {
   missingProofTasks: string[];
   proofSummaries: string[];
 }): string {
-  const reviewDir = join(input.projectRoot, ".auto-crop", "companies", input.companyId, "reviews");
+  const reviewDir = join(input.projectRoot, ".cordantry", "companies", input.companyId, "reviews");
   mkdirSync(reviewDir, { recursive: true });
   const reviewPath = join(reviewDir, `${input.reviewId}.md`);
   const content = [

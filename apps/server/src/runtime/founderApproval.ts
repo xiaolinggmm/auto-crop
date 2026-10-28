@@ -3,7 +3,7 @@ import {
   type Approval,
   type Task,
   type TaskEvent,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { checkTaskAffordance, type TaskAffordanceState } from "./taskAffordances";
 import { applyTaskTransition, releaseTaskHold } from "./taskTransition";

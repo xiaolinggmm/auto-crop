@@ -1,6 +1,6 @@
 # CEO Intake Runtime Input Flow
 
-Auto-Crop will treat user input submitted from the CEO Workspace as a durable CEO Intake. A CEO Intake is the post-creation counterpart to Founder Vision: it carries new user intent into the running company without overwriting the original Founder Vision.
+Cordantry will treat user input submitted from the CEO Workspace as a durable CEO Intake. A CEO Intake is the post-creation counterpart to Founder Vision: it carries new user intent into the running company without overwriting the original Founder Vision.
 
 ## Considered Options
 

@@ -12,7 +12,7 @@ import type {
   Task,
   TaskDependency,
   TaskEvent,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { AgentAdapter, AgentRunResult } from "../adapters/types";
 import type { createRepositories } from "../db/repositories";
 import { selectPlaybook } from "../playbooks/selectPlaybook";
@@ -186,8 +186,8 @@ export function buildCeoIntakePrompt(context: CeoIntakeAssessmentContext, intake
     "# Assess Founder Input",
     "",
     department
-      ? `You are the agent who leads the ${department.name} department of an Auto-Crop company. The founder sent input to this department. Its responsibility: ${department.responsibility}`
-      : "You are the CEO Agent of an Auto-Crop company. The founder sent new input to CEO Office.",
+      ? `You are the agent who leads the ${department.name} department of a Cordantry company. The founder sent input to this department. Its responsibility: ${department.responsibility}`
+      : "You are the CEO Agent of a Cordantry company. The founder sent new input to CEO Office.",
     "Decide what it needs. Do not do the work yourself, and do not use tools. Choose exactly one outcome:",
     ...outcomes,
     department

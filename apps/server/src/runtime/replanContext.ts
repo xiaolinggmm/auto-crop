@@ -1,4 +1,4 @@
-import type { ReplanBasis, ReplanProposal, Task, VerificationRequirement } from "@auto-crop/core";
+import type { ReplanBasis, ReplanProposal, Task, VerificationRequirement } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { parseUnblockRequest, type UnblockRequest } from "./unblockRequest";
 import {

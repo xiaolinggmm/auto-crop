@@ -1,5 +1,5 @@
 import { writeFileSync } from "node:fs";
-import { taskHoldKinds, type ReplanMode, type ReplanProposal, type ReplanTaskDefinition, type Task, type TaskEvent, type TaskHoldKind } from "@auto-crop/core";
+import { taskHoldKinds, type ReplanMode, type ReplanProposal, type ReplanTaskDefinition, type Task, type TaskEvent, type TaskHoldKind } from "@cordantry/core";
 import type { AgentAdapter } from "../adapters/types";
 import type { createRepositories } from "../db/repositories";
 import type { Playbook } from "../playbooks/types";

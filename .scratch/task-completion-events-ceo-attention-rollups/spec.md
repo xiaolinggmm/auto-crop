@@ -6,7 +6,7 @@ Status: resolved
 
 CEO Office is currently shaped around pending review. Departments finish work, submit checkable results, and then CEO Office manually approves or returns the task. This makes the company feel busy but fragmented: the founder can see that a task is waiting for review, but not what changed in the company, which department owns the result, which downstream work depends on it, what still blocks the Founder Vision, or what the next action should be.
 
-The review-centered model also breaks down when Auto-Crop cannot do every required action itself. For example, an agent can build a website or Web product, but a person may still need to deploy it, connect an account, configure a domain, pay for a service, or submit something through a third-party dashboard. Today, when the task ends, CEO Office does not reliably surface the Human Action, downstream dependency impact, or Vision Gap needed to keep moving toward the broader objective.
+The review-centered model also breaks down when Cordantry cannot do every required action itself. For example, an agent can build a website or Web product, but a person may still need to deploy it, connect an account, configure a domain, pay for a service, or submit something through a third-party dashboard. Today, when the task ends, CEO Office does not reliably surface the Human Action, downstream dependency impact, or Vision Gap needed to keep moving toward the broader objective.
 
 ## Solution
 
@@ -27,13 +27,13 @@ Next Step Routing turns each Next Step Item into the correct follow-up surface: 
 7. As a founder, I want CEO Office to avoid notifying me for every ordinary task completion, so that I am not buried in low-value messages.
 8. As a founder, I want CEO Office to interrupt me for exceptions, decisions, Human Actions, cross-department impact, goal-stage changes, and executive summaries, so that my attention goes where it matters.
 9. As a founder, I want related attention items grouped by Founder Vision, objective, or dependency chain, so that I see the business situation instead of isolated notifications.
-10. As a founder, I want a Human Action list in CEO Office, so that I know what Auto-Crop cannot do without my help.
+10. As a founder, I want a Human Action list in CEO Office, so that I know what Cordantry cannot do without my help.
 11. As a founder, I want Human Actions to keep their department ownership, so that I know whether Engineering, Growth, Product, Finance, or another department is responsible for the business action.
 12. As a founder, I want a Human Action to say which downstream work it blocks, so that I can judge urgency.
 13. As a founder, I want a Human Action to block only the downstream work that truly depends on it, so that unrelated preparation work can continue.
-14. As a founder, I want to submit evidence when I complete a Human Action, so that Auto-Crop can verify and continue the workflow.
-15. As a founder, I want Auto-Crop to verify Human Action evidence when possible, so that a mistaken "done" click does not unlock downstream work incorrectly.
-16. As a founder, I want deployment-like work to become a Human Action when Auto-Crop cannot deploy itself, so that a built artifact does not silently stall before launch.
+14. As a founder, I want to submit evidence when I complete a Human Action, so that Cordantry can verify and continue the workflow.
+15. As a founder, I want Cordantry to verify Human Action evidence when possible, so that a mistaken "done" click does not unlock downstream work incorrectly.
+16. As a founder, I want deployment-like work to become a Human Action when Cordantry cannot deploy itself, so that a built artifact does not silently stall before launch.
 17. As a founder, I want public launch, spending, account permissions, credentials, legal exposure, user data exposure, and irreversible external actions to require explicit attention, so that the system does not overstep.
 18. As a founder, I want direction changes to remain gated by Founder Approval, so that departments cannot silently pivot away from the accepted plan.
 19. As a founder, I want low-risk internal handoffs to continue automatically, so that CEO Office does not become a bottleneck for routine work.
@@ -42,7 +42,7 @@ Next Step Routing turns each Next Step Item into the correct follow-up surface: 
 22. As a founder, I want to mark an automatically accepted result for attention or follow-up, so that I can intervene without forcing every result through manual review.
 23. As a founder, I want to request rework or replanning when an accepted result looks strategically wrong, so that the company can correct course without deleting history.
 24. As a founder, I want Wait States to be visible, so that external delays such as search indexing, third-party review, customer response, or traffic observation do not disappear.
-25. As a founder, I want Wait States to create timed checks where possible, so that Auto-Crop comes back to the fact instead of relying on me to remember.
+25. As a founder, I want Wait States to create timed checks where possible, so that Cordantry comes back to the fact instead of relying on me to remember.
 26. As a founder, I want CEO Office to show the critical path through departments, so that I can see where the company is bottlenecked.
 27. As a founder, I want CEO Office to show which department is waiting on which upstream task, so that dependency problems are obvious.
 28. As a founder, I want CEO Office to show cross-department handoffs, so that I can understand how Research, Product, Engineering, Growth, and other departments are collaborating.

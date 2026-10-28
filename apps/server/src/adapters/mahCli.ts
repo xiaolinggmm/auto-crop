@@ -5,7 +5,7 @@ import { execFile } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
-import type { Locale, ProofType } from "@auto-crop/core";
+import type { Locale, ProofType } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { mahTerminalStates, type MahExecution, type MahSlotClass } from "../db/mahExecutions";
 import { collectMahFileDelivery, fileDeliveryInstructions } from "../runtime/mahFileDelivery";
@@ -21,10 +21,10 @@ export type MahCliOptions = {
   pollMs?: number;
   slotClass?: MahSlotClass;
 };
-export function resolveMahSlotClass(value = process.env.AUTO_CROP_MAH_SLOT): MahSlotClass {
+export function resolveMahSlotClass(value = process.env.CORDANTRY_MAH_SLOT): MahSlotClass {
   const normalized = value?.trim() || "background";
   if (normalized === "background" || normalized === "interactive") return normalized;
-  throw new Error(`Invalid AUTO_CROP_MAH_SLOT=${normalized}; expected background or interactive.`);
+  throw new Error(`Invalid CORDANTRY_MAH_SLOT=${normalized}; expected background or interactive.`);
 }
 export async function preflightMahSlot(options: {
   command: MahCommand;
@@ -33,7 +33,7 @@ export async function preflightMahSlot(options: {
 }): Promise<void> {
   let projectRoot: string;
   try { projectRoot = realpathSync(options.mahProjectRoot); }
-  catch { throw new Error("MAH slot preflight failed: AUTO_CROP_MAH_PROJECT_ROOT does not exist."); }
+  catch { throw new Error("MAH slot preflight failed: CORDANTRY_MAH_PROJECT_ROOT does not exist."); }
   const result = await options.command(["personal-os", "quota", "list", "--project-root", projectRoot, "--format", "json"]);
   let body: { ok?: boolean; agent_slots?: Partial<Record<"background" | "interactive" | "review", number>> } | null = null;
   try { body = JSON.parse(result.stdout); } catch { /* reported below */ }
@@ -42,11 +42,11 @@ export async function preflightMahSlot(options: {
   }
   if ((body.agent_slots[options.slotClass] ?? 0) > 0) return;
   if (options.slotClass === "background" && (body.agent_slots.interactive ?? 0) > 0) {
-    throw new Error("MAH background slot is unavailable. Enable background capacity or explicitly set AUTO_CROP_MAH_SLOT=interactive.");
+    throw new Error("MAH background slot is unavailable. Enable background capacity or explicitly set CORDANTRY_MAH_SLOT=interactive.");
   }
   throw new Error(`MAH ${options.slotClass} slot is unavailable for this account.`);
 }
-export function mahCommand(executable = process.env.AUTO_CROP_MAH_CLI ?? "mah"): MahCommand {
+export function mahCommand(executable = process.env.CORDANTRY_MAH_CLI ?? "mah"): MahCommand {
   return args => new Promise(resolveResult => {
     execFile(executable, args, { timeout: 15_000, maxBuffer: 12_000_000, encoding: "utf8" }, (error, stdout, stderr) => {
       resolveResult({ exitCode: error ? (typeof error.code === "number" ? error.code : null) : 0, stdout, stderr: stderr || error?.message || "" });
@@ -69,11 +69,11 @@ export function createMahCliAdapter(options: MahCliOptions): AgentAdapter {
         ? unknownResult("Aborted with a prior MAH execution; its termination is not confirmed.")
         : { status: "failed", exitCode: null, stdout: "", stderr: "Cancelled before MAH submission.", failureReason: "cancelled" };
       const context = request.runtimeActions?.mcp;
-      let projectRoot = options.mahProjectRoot ?? process.env.AUTO_CROP_MAH_PROJECT_ROOT;
-      if (!context || !projectRoot || !isAbsolute(projectRoot)) return { status: "failed", exitCode: null, stdout: "", stderr: "MAH requires a trusted Run context and an explicit absolute AUTO_CROP_MAH_PROJECT_ROOT.", failureReason: "agent_failed" };
+      let projectRoot = options.mahProjectRoot ?? process.env.CORDANTRY_MAH_PROJECT_ROOT;
+      if (!context || !projectRoot || !isAbsolute(projectRoot)) return { status: "failed", exitCode: null, stdout: "", stderr: "MAH requires a trusted Run context and an explicit absolute CORDANTRY_MAH_PROJECT_ROOT.", failureReason: "agent_failed" };
       try { projectRoot = realpathSync(projectRoot); }
       catch { return { status: "failed", exitCode: null, stdout: "", stderr: "MAH project root does not exist.", failureReason: "agent_failed" }; }
-      if (request.grant?.withheld.length) return { status: "failed", exitCode: null, stdout: "", stderr: "MAH CLI cannot enforce withheld Auto-Crop capabilities; delegation refused.", failureReason: "agent_failed" };
+      if (request.grant?.withheld.length) return { status: "failed", exitCode: null, stdout: "", stderr: "MAH CLI cannot enforce withheld Cordantry capabilities; delegation refused.", failureReason: "agent_failed" };
       let inputBundle: ReturnType<typeof buildMahInputBundle>;
       try { inputBundle = buildMahInputBundle(request.inputDirectories ?? []); }
       catch (error) { return { status: "failed", exitCode: null, stdout: "", stderr: `MAH input preparation failed before submission: ${String(error)}`, failureReason: "missing_deliverable" }; }
@@ -96,16 +96,16 @@ export function createMahCliAdapter(options: MahCliOptions): AgentAdapter {
         });
       } catch (error) { return unknownResult(String(error)); }
       const identity = { companyId: record.companyId, taskId: record.taskId, runId: record.runId, mahTaskId: record.mahTaskId };
-      const root = join(options.projectRoot, ".auto-crop", "mah", record.mahTaskId);
+      const root = join(options.projectRoot, ".cordantry", "mah", record.mahTaskId);
       mkdirSync(root, { recursive: true });
       const promptPath = join(root, "handoff.md");
       // MAH owns provider selection and worktrees. Local workspace paths are inputs, not its output authority.
-      const prompt = `${request.prompt}\n\n${fileDeliveryInstructions(identity, root)}\n\nMAH owns executor selection. Do not call Auto-Crop MCP tools. This is a delegated task, not a request for an execution brief.
-If an autocrop-inputs.json attachment is present, decode each base64 file into its stated relative path inside your own work area and verify its SHA-256 before using it. Those files are the accepted upstream evidence/verification snapshots. Do not read original Auto-Crop absolute paths. Preserve the supplied snapshots; perform checks on copies. Work in your MAH Task work area; modify managed project source only when the task explicitly calls for it.`;
+      const prompt = `${request.prompt}\n\n${fileDeliveryInstructions(identity, root)}\n\nMAH owns executor selection. Do not call Cordantry MCP tools. This is a delegated task, not a request for an execution brief.
+If an cordantry-inputs.json attachment is present, decode each base64 file into its stated relative path inside your own work area and verify its SHA-256 before using it. Those files are the accepted upstream evidence/verification snapshots. Do not read original Cordantry absolute paths. Preserve the supplied snapshots; perform checks on copies. Work in your MAH Task work area; modify managed project source only when the task explicitly calls for it.`;
       if (options.repositories.mahExecutions.claimSubmission(record.runId)) {
         try {
           writeFileSync(promptPath, prompt, { flag: "wx", mode: 0o600 });
-          const attachment = join(root, "autocrop-inputs.json");
+          const attachment = join(root, "cordantry-inputs.json");
           if (inputBundle.files.length) writeFileSync(attachment, JSON.stringify(inputBundle), { flag: "wx", mode: 0o600 });
           const returned = await command(["task", "submit", "--cwd", record.projectRoot, "--task-id", record.mahTaskId,
             "--description-file", promptPath, "--personal-os-slot", record.slotClass ?? "background", "--write", "--format", "json", ...(inputBundle.files.length ? ["--attach", attachment] : [])]);
@@ -168,7 +168,7 @@ export async function receiveMahExecution(options: MahCliOptions, runId: string)
   record = await reconcileMahExecution(options, runId);
   if (record.state !== "completed") throw new Error("MAH completion is not confirmed; delivery remains pending.");
   const command = options.command ?? mahCommand();
-  const root = join(options.projectRoot, ".auto-crop", "mah", record.mahTaskId);
+  const root = join(options.projectRoot, ".cordantry", "mah", record.mahTaskId);
   mkdirSync(root, { recursive: true });
   const request: AgentRunRequest = { taskId: record.taskId, prompt: "", promptPath: "", workspacePath: root, metadata: {},
     runtimeActions: { submitArtifactEnvelope: () => {}, mcp: { ...context, candidateDir: "", companyId: record.companyId, taskId: record.taskId, runId } } };
@@ -237,7 +237,7 @@ async function receiveDelivery(options: MahCliOptions, command: MahCommand, reco
   const context = request.runtimeActions!.mcp!;
   const identity = { companyId: record.companyId, taskId: record.taskId, runId: record.runId, mahTaskId: record.mahTaskId };
   const contract = { locale: context.locale as Locale, requireDetails: context.requireExecutionDetails, proofRefs: { proofSchemaId: context.proofSchemaId, acceptedTypes: context.acceptedProofTypes as ProofType[] } };
-  const archiveRoot = join(options.projectRoot, ".auto-crop", "mah", "snapshots");
+  const archiveRoot = join(options.projectRoot, ".cordantry", "mah", "snapshots");
   // A capture may have completed just before the process died and persisted its DB pointer.
   const snapshotDirectory = join(archiveRoot, digest(JSON.stringify(identity)));
   if (existsSync(snapshotDirectory)) {
@@ -247,7 +247,7 @@ async function receiveDelivery(options: MahCliOptions, command: MahCommand, reco
   }
   let inputFiles: ReturnType<typeof buildMahInputBundle>["files"] = [];
   if (record.inputBundleDigest) {
-    const rawInputs = readFileSync(join(root, "autocrop-inputs.json"), "utf8");
+    const rawInputs = readFileSync(join(root, "cordantry-inputs.json"), "utf8");
     if (digest(rawInputs) !== record.inputBundleDigest) throw new Error("MAH input bundle integrity mismatch");
     inputFiles = JSON.parse(rawInputs).files;
   }

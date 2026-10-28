@@ -1,6 +1,6 @@
 # Bounded Recursive Dependency Cascade
 
-Auto-Crop will extend Dependency Cascade after CEO approval from direct consumers to a bounded recursive traversal of downstream Task Dependencies. This extends ADR 0009 rather than replacing it: the first recursive version still treats CEO Office approval as the acceptance gate, keeps the scheduler as the only execution mechanism, and limits propagation to dependency-derived task state.
+Cordantry will extend Dependency Cascade after CEO approval from direct consumers to a bounded recursive traversal of downstream Task Dependencies. This extends ADR 0009 rather than replacing it: the first recursive version still treats CEO Office approval as the acceptance gate, keeps the scheduler as the only execution mechanism, and limits propagation to dependency-derived task state.
 
 ## Considered Options
 
@@ -11,7 +11,7 @@ Auto-Crop will extend Dependency Cascade after CEO approval from direct consumer
 
 ## Decision
 
-Auto-Crop will use Bounded Recursive Cascade for CEO approve decisions with `maxDepth: 2`, breadth-first traversal, visited-task protection, and a hard depth clamp of 5. Direct consumers are depth 1, consumers of those consumers are depth 2, and the source task is not counted.
+Cordantry will use Bounded Recursive Cascade for CEO approve decisions with `maxDepth: 2`, breadth-first traversal, visited-task protection, and a hard depth clamp of 5. Direct consumers are depth 1, consumers of those consumers are depth 2, and the source task is not counted.
 
 Propagation continues from a refreshed task only when that task changes to `queued`. Waiting or blocking updates are still written and returned for the current depth, but they do not continue the cascade. Partial failures stop the failing branch, continue other branches, and are returned as non-blocking cascade errors.
 

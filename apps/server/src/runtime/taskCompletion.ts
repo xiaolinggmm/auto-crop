@@ -1,4 +1,4 @@
-import { localizedTextFromString, localizedTextSchema, nextStepItemSeveritySchema, nextStepItemTypeSchema, parseExecutionReportInput, type BusinessArtifact, type ExecutionReport, type Locale, type LocalizedText, type NextStepItem, type NextStepItemSeverity, type NextStepItemType, type Task, type TaskAcceptanceProvenance, type TaskCompletionEvent, type TaskCompletionOutcome } from "@auto-crop/core";
+import { localizedTextFromString, localizedTextSchema, nextStepItemSeveritySchema, nextStepItemTypeSchema, parseExecutionReportInput, type BusinessArtifact, type ExecutionReport, type Locale, type LocalizedText, type NextStepItem, type NextStepItemSeverity, type NextStepItemType, type Task, type TaskAcceptanceProvenance, type TaskCompletionEvent, type TaskCompletionOutcome } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { parseOpenDecisions, type FounderDecisionDeclaration } from "./founderDecision";
 import { createDefaultId } from "./ids";

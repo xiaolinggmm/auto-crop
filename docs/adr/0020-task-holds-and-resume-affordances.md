@@ -2,7 +2,7 @@
 
 Status: accepted
 
-Auto-Crop had no first-class answer to "why is this task not moving, and who can move it". That answer lived in four unrelated facts that nothing kept in sync — `tasks.status`, the current Business Artifact's `reviewStatus`, the status of the matching Human Action / Founder Decision / Approval, and the newest Task Progress Event — and each surface read a different one.
+Cordantry had no first-class answer to "why is this task not moving, and who can move it". That answer lived in four unrelated facts that nothing kept in sync — `tasks.status`, the current Business Artifact's `reviewStatus`, the status of the matching Human Action / Founder Decision / Approval, and the newest Task Progress Event — and each surface read a different one.
 
 The reported symptom was a task that CEO Office offered for approval while the API answered `Task is no longer waiting for CEO review.` and the department board showed the same task as blocked, with no offered action that could restart it. That is the shape of the whole class, not one defect: the task had left `review` by some path that did not know an approval was outstanding, and nothing reconciled the two facts or checked that the founder was left with a move.
 

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Proof, Task } from "@auto-crop/core";
+import type { Proof, Task } from "@cordantry/core";
 import { parseArtifactEnvelope, type ArtifactEnvelope } from "./artifactEnvelope";
 import {
   captureBusinessArtifact,
@@ -21,7 +21,7 @@ afterEach(() => {
 
 describe("captureBusinessArtifact", () => {
   it("captures a valid artifact file with snake_case aliases", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable",
@@ -72,7 +72,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("accepts structured Execution Report fields on deliverables", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable",
@@ -113,7 +113,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it.each([false, true])("requires actual work and evidence for a new execution (details present: %s)", (includeDetails) => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable", artifact_role: "findings", artifact_subtype: "comparison", task_type: "research.comparison", lineage: {},
@@ -133,7 +133,7 @@ describe("captureBusinessArtifact", () => {
     ["an unknown category", [{ category: "whatever", status: "performed", description: "Did a thing." }], "invalid_schema"],
     ["a declaration that is not a list", { category: "deployment" }, "invalid_schema"],
   ])("validates the Action Intent declaration: %s", (_label, actions, expected) => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable", artifact_role: "findings", artifact_subtype: "comparison", task_type: "research.comparison", lineage: {},
@@ -153,7 +153,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("rejects malformed or missing structured Execution Report fields on new deliverables", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable",
@@ -207,7 +207,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("accepts a deliverable whose Execution Report omits the company locale on a field (marker, not a failure)", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable",
@@ -242,7 +242,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("still fails a deliverable that omits the Execution Report entirely on a zh company", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable",
@@ -312,7 +312,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("records an invalid blocker artifact when the run submitted no Artifact Envelope", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
 
     const artifact = captureBusinessArtifact({
@@ -341,7 +341,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   function submitEnvironmentBlocker(workspacePath: string): ArtifactEnvelope {
-    writeFileSync(join(workspacePath, "index.html"), "<main>Auto Crop Workspace</main>", "utf8");
+    writeFileSync(join(workspacePath, "index.html"), "<main>Cordantry Workspace</main>", "utf8");
     return submitted({
       artifact_kind: "blocker",
       artifact_role: "validation",
@@ -358,7 +358,7 @@ describe("captureBusinessArtifact", () => {
   }
 
   it("keeps an environment-blocked blocker in place when its claim is not verified", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitEnvironmentBlocker(workspacePath);
 
@@ -375,7 +375,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("degrades an environment-blocked blocker to a reviewable deliverable when the runtime verifies the claim", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitEnvironmentBlocker(workspacePath);
 
@@ -431,7 +431,7 @@ describe("captureBusinessArtifact", () => {
   }
 
   it("reads a screenshot-capture blocker claim even without blocker_class/capability keys", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitNaturalScreenshotBlocker();
 
@@ -443,7 +443,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("degrades a screenshot-capture blocker to a deliverable when the runtime verifies the claim", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitNaturalScreenshotBlocker();
 
@@ -473,7 +473,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("records verifiedVia: capture_time_snapshot when the claim was confirmed from the snapshot", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitNaturalScreenshotBlocker();
 
@@ -508,7 +508,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("readEnvironmentBlockerClaim resolves the check URL by precedence", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitEnvironmentBlocker(workspacePath);
 
@@ -520,7 +520,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("readEnvironmentBlockerClaim falls back to a local-url proof", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "blocker",
@@ -537,7 +537,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("readEnvironmentBlockerClaim reads a reachability snapshot from server_validation", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "blocker",
@@ -561,7 +561,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("readEnvironmentBlockerClaim ignores a non-numeric server_validation status", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "blocker",
@@ -730,7 +730,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("fails structural validation when a deliverable omits the Task Outcome Summary", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable",
@@ -757,7 +757,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   it("accepts a localized-object Task Outcome Summary on a final_report", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "final_report",
@@ -876,7 +876,7 @@ describe("captureBusinessArtifact", () => {
   });
 
   function captureDeliverableWithPayload(payload: Record<string, unknown>) {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-business-artifact-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-business-artifact-"));
     createdDirs.push(workspacePath);
     const envelope = submitted({
       artifact_kind: "deliverable",

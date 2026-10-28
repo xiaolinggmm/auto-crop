@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "nod
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, expect, it, vi } from "vitest";
-import type { Company } from "@auto-crop/core";
+import type { Company } from "@cordantry/core";
 import { checkCompanyMahConfig, companyMahReadiness, invalidateCompanyMahReadiness } from "./companyExecution";
 
 const roots: string[] = [];

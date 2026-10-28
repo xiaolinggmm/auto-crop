@@ -1,4 +1,4 @@
-import type { AgentFailureReason, Task, TaskEvent, TaskProgressEvent, TaskStatus } from "@auto-crop/core";
+import type { AgentFailureReason, Task, TaskEvent, TaskProgressEvent, TaskStatus } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { isRetryExhausted, resetTaskAttempts } from "./boundedRecovery";
 import { resolveDependencyReadiness } from "./dependencyReadiness";

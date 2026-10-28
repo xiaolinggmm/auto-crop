@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Company, Task } from "@auto-crop/core";
+import type { Company, Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { executionBriefOutputSchema, prepareExecutionBrief } from "./executionBrief";
 

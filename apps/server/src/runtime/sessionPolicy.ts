@@ -59,6 +59,6 @@ export function resolveAgentSessionPolicy(input: AgentSessionPolicyInput): Agent
 }
 
 function isSessionExperimentEnabled(env: Record<string, string | undefined>): boolean {
-  const value = env.AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS?.trim().toLowerCase();
+  const value = env.CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS?.trim().toLowerCase();
   return value === "1" || value === "true";
 }

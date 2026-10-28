@@ -1,14 +1,14 @@
 # MAH Execution Binding Implementation Plan
 
-Historical plan: superseded for MAH integration by [the CLI delegation plan](mah-cli-delegation-plan.md) and ADR 0050. The Auto-Crop-only delivery record below describes commit 4ebcaf5, not the new backend.
+Historical plan: superseded for MAH integration by [the CLI delegation plan](mah-cli-delegation-plan.md) and ADR 0050. The Cordantry-only delivery record below describes commit 4ebcaf5, not the new backend.
 
-Status: full MAH integration remains proposed and blocked at P0. A separately authorized Auto-Crop-only foundation is implemented on `codex/mah-execution-governance`; see the bounded acceptance record below. No live MAH/provider acceptance is claimed.
+Status: full MAH integration remains proposed and blocked at P0. A separately authorized Cordantry-only foundation is implemented on `codex/mah-execution-governance`; see the bounded acceptance record below. No live MAH/provider acceptance is claimed.
 
 Authority: [ADR 0049](adr/0049-mah-direct-tasks-bind-executor-and-runtime-action.md), [Execution Governance Glossary](../GLOSSARY.md), [ADR 0035](adr/0035-a-settlement-is-one-transaction.md).
 
 ## Scope And Verified Baseline
 
-After CEO assignment, Auto-Crop delegates execution to MAH while retaining planning and business settlement authority. Claude and Codex are the first supported projections. AGY requests requiring the Runtime Action Channel must be rejected before provider launch. Neither MAH executor substitution nor Auto-Crop legacy-adapter fallback is permitted.
+After CEO assignment, Cordantry delegates execution to MAH while retaining planning and business settlement authority. Claude and Codex are the first supported projections. AGY requests requiring the Runtime Action Channel must be rejected before provider launch. Neither MAH executor substitution nor Cordantry legacy-adapter fallback is permitted.
 
 Read-only inspection on 2026-10-20 found:
 
@@ -16,7 +16,7 @@ Read-only inspection on 2026-10-20 found:
 - Public `mah task submit` supports descriptions, task IDs and metadata. Its help does not expose the execution-binding protocol required here.
 - Installed `packages/mah-protocol/dist/schema/task-request.js` requires a carrier addressed to `orchestrator` and rejects runtime routing fields including `forced_agent`. Metadata injection is not a supported substitute for Execution Requirements.
 - Installed `mah-task-runtime/dist/core/direct-runtime-snapshot-host.js` already contains executor/model snapshot machinery. It is a seam to investigate in source, not proof of atomic Runtime Action binding support.
-- Installed `mah-task-runtime/dist/adapters/shared/active-turn-restart-effect-host.js` can restart provider turns through session resume. That path must not silently retain an Auto-Crop Run identity.
+- Installed `mah-task-runtime/dist/adapters/shared/active-turn-restart-effect-host.js` can restart provider turns through session resume. That path must not silently retain a Cordantry Run identity.
 - A MAH development source checkout has not been located. `/Users/shiyuncong/code/mah` contains operational material, not a verified development checkout.
 
 The installed app is evidence only. Do not patch it, import private distribution modules as the integration contract, change global MCP registries, or use process-wide CLI wrappers. First identify the MAH repository, its governance, protocol ownership and supported build/test workflow. No proposed command or field below should be presented as currently available.
@@ -37,7 +37,7 @@ User authorized execution of this plan after the documentation review. Read-only
 
 P0 remains blocked on an accessible MAH development checkout or a supported extension providing the required protocol. CLI presence is confirmed, but it does not satisfy this gate. A source location was requested from the user while discovery continued. No provider task was submitted, no installation/configuration was changed, and no implementation package is marked complete. P1–P5 retain their dependencies; do not invent an unsupported transport or enable the backend to bypass this gate.
 
-Auto-Crop seams:
+Cordantry seams:
 
 | Area | Existing code | Required change |
 |---|---|---|
@@ -51,11 +51,11 @@ Auto-Crop seams:
 
 ## Ownership
 
-Auto-Crop owns Task, Key Result, CEO decisions, Planning Revisions, Run identity, execution recovery and reassignment budgets, Candidate validation and Business Settlement. It persists requests before sending them, verifies receipts against requirements, and reconciles unknown states.
+Cordantry owns Task, Key Result, CEO decisions, Planning Revisions, Run identity, execution recovery and reassignment budgets, Candidate validation and Business Settlement. It persists requests before sending them, verifies receipts against requirements, and reconciles unknown states.
 
 MAH owns authenticated admission, executor resolution, machine-local Registry, readiness checks, atomic binding freeze, governance capture, provider launch, task-scoped tool projection, process termination evidence and external-settlement lifecycle.
 
-The integration jointly defines versioned request, receipt, error and reconciliation contracts. MAH is authoritative for execution facts; Auto-Crop is authoritative for business outcome. Neither side infers the other's successful commit from a timeout.
+The integration jointly defines versioned request, receipt, error and reconciliation contracts. MAH is authoritative for execution facts; Cordantry is authoritative for business outcome. Neither side infers the other's successful commit from a timeout.
 
 ## Proposed Protocol Contract
 
@@ -65,7 +65,7 @@ Transport and public CLI/API names must be agreed in the MAH source repository b
 |---|---|
 | Execution Request | Schema version; request ID; company/task/run/planning-revision identity; required executor mapping reference/version/digest; substitution forbidden; logical Runtime Action Server major version and required tools; allowlisted delivery context |
 | Request digest | Versioned canonical encoding of all caller execution semantics; reject unknown fields; retain canonical bytes and digest; exclude server-generated lifecycle timestamps |
-| Executor Mapping | Explicit Auto-Crop assignee to MAH executor translation; resolve a fixed version, never infer from similar names; updates require a new request |
+| Executor Mapping | Explicit Cordantry assignee to MAH executor translation; resolve a fixed version, never infer from similar names; updates require a new request |
 | Execution Binding Receipt | Request ID/digest, exact executor/model, mapping version/digest, binding IDs, governance identity/digest, Runtime Action Server implementation version/digest and frozen context digest |
 | Candidate submission | Binding-authenticated context plus submission ID and envelope; caller envelope cannot assert trusted identities; store-assigned acceptance sequence, immutable candidate ID/digest and evidence references |
 | Settlement receipt | Receipt ID, request/run/binding identity, candidate ID/digest or explicit absence, committed accepted/rejected disposition, reason and business outcome reference |
@@ -73,25 +73,25 @@ Transport and public CLI/API names must be agreed in the MAH source repository b
 | Cancel/fence | Idempotent request and durable acknowledgement, revocation generation, business-eligibility boundary and separate process/write-isolation evidence |
 | Failure | Stable code, stage, request/binding IDs when present, retryable/reassignment-allowed attributes and recovery scope; those attributes never authorize MAH to reassign |
 
-Auto-Crop does not supply `to`, `forced_agent`, model snapshots, launcher commands, arbitrary environment, filesystem paths or Governance Snapshots. MAH resolves workspace and launcher details from trusted project/Registry configuration. Secrets are opaque references. Frozen digests must be checked against material actually launched; changed or unavailable material fails closed.
+Cordantry does not supply `to`, `forced_agent`, model snapshots, launcher commands, arbitrary environment, filesystem paths or Governance Snapshots. MAH resolves workspace and launcher details from trusted project/Registry configuration. Secrets are opaque references. Frozen digests must be checked against material actually launched; changed or unavailable material fails closed.
 
-Request IDs are unique within the authenticated integration principal and MAH project. Same ID and canonical content returns the existing request and its immutable admission result when available; lifecycle queries may advance. Different content conflicts. Concurrent submissions have one durable winner. Persisted rejection is final for that ID; later retries create a new Auto-Crop Run/request after safe closure. Transport retries reuse the existing ID.
+Request IDs are unique within the authenticated integration principal and MAH project. Same ID and canonical content returns the existing request and its immutable admission result when available; lifecycle queries may advance. Different content conflicts. Concurrent submissions have one durable winner. Persisted rejection is final for that ID; later retries create a new Cordantry Run/request after safe closure. Transport retries reuse the existing ID.
 
 Required failure classes include unsupported protocol, invalid requirements, mapping conflict, unsupported executor projection, executor unavailable, authentication/quota unavailable, binding failure, request-content conflict, revoked binding, unknown launch state and external-settlement timeout. AGY uses unsupported projection, not a fallback suggestion.
 
 ## State Machine
 
-These are integration lifecycle states, not replacements for existing Auto-Crop Task statuses.
+These are integration lifecycle states, not replacements for existing Cordantry Task statuses.
 
 | State | Durable facts and allowed progression |
 |---|---|
-| `request_pending` | Auto-Crop has persisted Run/request before transport. Retry transport with same ID or query; do not create a replacement on timeout. |
+| `request_pending` | Cordantry has persisted Run/request before transport. Retry transport with same ID or query; do not create a replacement on timeout. |
 | `admission_pending` | MAH has stored ID/digest. Static checks and volatile readiness precede freeze; no provider runs yet. |
-| `admission_rejected` | Immutable failure without binding. Auto-Crop closes its attempt; no external Candidate settlement is required. |
+| `admission_rejected` | Immutable failure without binding. Cordantry closes its attempt; no external Candidate settlement is required. |
 | `bound` | MAH atomically persists executor, model, action binding, governance and receipt. Provider may start only through the unique launch claim. |
 | `executing` | Launch evidence belongs to this binding and Run. Same-process interaction may continue; a new process requires a new request. |
-| `awaiting_external_settlement` | Execution ended or was safely fenced. New candidate admission is closed. Frozen candidate selection or explicit absence awaits Auto-Crop disposition. |
-| `settlement_committed` | Auto-Crop committed business outcome, Candidate disposition, receipt and outbox together. MAH may still report awaiting delivery. |
+| `awaiting_external_settlement` | Execution ended or was safely fenced. New candidate admission is closed. Frozen candidate selection or explicit absence awaits Cordantry disposition. |
+| `settlement_committed` | Cordantry committed business outcome, Candidate disposition, receipt and outbox together. MAH may still report awaiting delivery. |
 | `terminal` | MAH durably acknowledged the matching receipt, or the request was rejected before binding. Historical execution and fence evidence remain queryable. |
 
 Revocation is a monotonic binding fact that can happen during execution; it cannot be undone by a late completion event. Fencing permits replacement only after the old Run loses business eligibility. Reusing a shared writable workspace additionally requires confirmed process termination or enforced write isolation. An old fenced integration may still await its rejected settlement receipt while the successor executes.
@@ -122,11 +122,11 @@ Founder approval rules for unrelated plan changes remain intact; Founder actions
 
 | Interruption | Required recovery |
 |---|---|
-| Auto-Crop persisted request, transport did not finish | Query/retry identical request; no new Run |
+| Cordantry persisted request, transport did not finish | Query/retry identical request; no new Run |
 | MAH persisted rejection, response lost | Return same rejection |
 | Binding committed, launch not yet claimed | Recover unique launch claim with the same immutable binding |
 | Launch claimed, process-start outcome unknown | Reconcile using durable launch/process identity; if unresolved, stop and fence before any replacement |
-| Provider active, Auto-Crop restarts | Query existing request; renew/reconcile ownership without dispatching a second provider |
+| Provider active, Cordantry restarts | Query existing request; renew/reconcile ownership without dispatching a second provider |
 | Candidate stored, tool response lost | Return original submission result; preserve sequence |
 | Candidate selected, settlement rolls back | Reopen and retry same selection; no deletion or partial business state |
 | Business commit succeeded, receipt send failed | Replay receipt outbox; no duplicate settlement |
@@ -140,9 +140,9 @@ Founder approval rules for unrelated plan changes remain intact; Founder actions
 |---|---|---|---|
 | P0 | Joint | None | Identify MAH source checkout/build/test entry points; agree versioned schemas, transition ownership and fixture vectors. No MAH code work until located. |
 | P1 | MAH | P0 | Supported submit/query/cancel/receipt interface, durable idempotency, atomic freeze and unique launch claim; crash tests pass |
-| P2 | Auto-Crop | P0 | Request/receipt/outbox persistence, immutable Candidate store and shared settlement integration; rollback/reopen tests pass |
+| P2 | Cordantry | P0 | Request/receipt/outbox persistence, immutable Candidate store and shared settlement integration; rollback/reopen tests pass |
 | P3 | MAH | P1 | Registry resolution, task-scoped Claude/Codex projection, hidden-restart prohibition, revocation and AGY rejection |
-| P4 | Auto-Crop | P1, P2 | Explicit MAH backend, exact assignee, degraded minimal brief, CEO-only reassignment and independent budgets |
+| P4 | Cordantry | P1, P2 | Explicit MAH backend, exact assignee, degraded minimal brief, CEO-only reassignment and independent budgets |
 | P5 | Joint | P3, P4 | Reconciliation, workspace safety and real-provider acceptance; enable backend only after matrix passes |
 
 Each package must carry the pinned governance binding for its own repository, explicit writable paths, shared contract version, dependencies and acceptance evidence. Package definitions are a plan only; this document does not submit them or authorize provider runs. Shared contracts must be settled before independent implementations diverge.
@@ -176,14 +176,14 @@ Each package must carry the pinned governance binding for its own repository, ex
 
 Use deterministic contract tests, two-connection/database-reopen tests and fault injection for P1–P4. P5 additionally requires real Claude/Codex evidence and before/after global-configuration hashes without exposing secrets. Passing mocks alone does not establish CLI compatibility. Record tested MAH/provider versions and binding digests in the acceptance report.
 
-## Auto-Crop-Only Delivery Record — 2026-10-21
+## Cordantry-Only Delivery Record — 2026-10-21
 
-After source discovery failed and the user confirmed no MAH source URL was available, the user authorized independently verifiable Auto-Crop changes on a new branch. This does not waive P0 or complete P1–P5. `/Applications/MAH.app` was not modified. No real provider task was submitted for these checks.
+After source discovery failed and the user confirmed no MAH source URL was available, the user authorized independently verifiable Cordantry changes on a new branch. This does not waive P0 or complete P1–P5. `/Applications/MAH.app` was not modified. No real provider task was submitted for these checks.
 
 ### Delivered boundary
 
 - The direct scheduler selects only the Task assignee. Missing/unavailable executors are refused; no capability-based substitution occurs. Refusal evidence is scoped to executor and execution epoch.
-- `AUTO_CROP_EXECUTION_BACKEND` defaults to `direct`. `mah` is reserved and throws `mah_protocol_unavailable` before scheduler dispatch; unknown values also fail closed. This is a disablement gate, not a MAH adapter. Existing direct preparation/brief behavior remains unchanged.
+- `CORDANTRY_EXECUTION_BACKEND` defaults to `direct`. `mah` is reserved and throws `mah_protocol_unavailable` before scheduler dispatch; unknown values also fail closed. This is a disablement gate, not a MAH adapter. Existing direct preparation/brief behavior remains unchanged.
 - Dedicated reassignment requests invoke only the configured CEO with a no-tool planning grant. The caller cannot name the replacement. Decisions persist pending/applied/declined/failed/withdrawn states, request digest, prior executor/Run/decision, and successor Run lineage. Duplicate requests replay; conflicting content fails. Two applied decisions exhaust the Task-lifetime budget, independently of execution-attempt resets.
 - Assignment, epoch advancement, execution-attempt revision marker, Hold resolution, event and applied decision commit together. Protected Holds and active execution/workspace ownership block reassignment. Only after that commit is the named old Candidate Run revoked; failed/stale decisions retain its evidence eligibility. The main database epoch is the atomic business fence across the two stores.
 - Runtime Action submissions now use a SQLite journal. Submission IDs provide content-conflict detection and stable replay ordering. Invalid submissions do not erase a valid Candidate. Admission closes before selection; selection is replayable after rollback. Superseded evidence is retained for audit. Legacy JSON candidates are imported once without deleting their originals.

@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { writeFileSync } from "node:fs";
-import { type Task, type TaskHoldKind } from "@auto-crop/core";
+import { type Task, type TaskHoldKind } from "@cordantry/core";
 import type { AgentAdapter } from "../adapters/types";
 import type { createRepositories } from "../db/repositories";
 import type { ReassignmentDecision } from "../db/reassignments";

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import type { AgentRun, Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { AgentRun, Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -320,7 +320,7 @@ describe("task recovery", () => {
         status: "failed",
         latestFailureReason: "timeout",
         latestFailureMessage: "Task failed: Record implementation changes / timeout after 3m.",
-        artifactWorkspacePath: ".auto-crop/workspaces/task_1",
+        artifactWorkspacePath: ".cordantry/workspaces/task_1",
       },
       {
         ...createTaskRecord(),
@@ -350,13 +350,13 @@ describe("task recovery", () => {
     expect(recoveryTask).toMatchObject({
       title: "Record implementation changes (recovery)",
       status: "queued",
-      workspacePath: ".auto-crop/workspaces/task_1",
-      artifactWorkspacePath: ".auto-crop/workspaces/task_1",
+      workspacePath: ".cordantry/workspaces/task_1",
+      artifactWorkspacePath: ".cordantry/workspaces/task_1",
     });
     expect(recoveryTask?.description).toContain("## Proof Contract");
     expect(recoveryTask?.description).toContain("Original Proof Schema: repo-diff");
-    expect(recoveryTask?.description).toContain(".auto-crop-proof/task_1.diff");
-    expect(recoveryTask?.description).toContain("Files under `.auto-crop/` are not proof for repo-diff tasks.");
+    expect(recoveryTask?.description).toContain(".cordantry-proof/task_1.diff");
+    expect(recoveryTask?.description).toContain("Files under `.cordantry/` are not proof for repo-diff tasks.");
     expect(fixture.repositories.getTask("task_1")).toMatchObject({
       status: "failed",
       latestFailureReason: "timeout",
@@ -519,7 +519,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build prototypes.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/memory.md",
   };
 }
 
@@ -556,7 +556,7 @@ function createTaskRecord(): Task {
     assigneeAgentId: "codex",
     requiredCapabilities: ["code"],
     proofSchemaId: "repo-diff",
-    workspacePath: ".auto-crop/workspaces/task_1",
+    workspacePath: ".cordantry/workspaces/task_1",
     status: "queued",
     riskLevel: "medium",
     position: 0,
@@ -569,7 +569,7 @@ function createAgentRunRecord(): AgentRun {
     taskId: "task_1",
     agentId: "codex",
     status: "running",
-    logPath: ".auto-crop/companies/company_1/logs/task_1.log",
+    logPath: ".cordantry/companies/company_1/logs/task_1.log",
     startedAt: "2026-08-25T00:00:00.000Z",
     finishedAt: null,
     executionProfileName: "short",

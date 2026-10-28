@@ -4,7 +4,7 @@
 
 Fix `NO_PROOF` failures where an agent produced useful diff or patch output in a controlled task workspace, but the runtime did not register that output as reviewable Proof.
 
-The immediate failure mode is a `repo-diff` task such as `Record implementation changes` failing with `NO_PROOF` even though the task workspace contains `.auto-crop-proof/*.diff` or a top-level `*.patch` file. The fix should preserve the Proof gate: useful Agent Output can become Proof only when it matches the task's proof schema and a controlled recovery rule records it.
+The immediate failure mode is a `repo-diff` task such as `Record implementation changes` failing with `NO_PROOF` even though the task workspace contains `.cordantry-proof/*.diff` or a top-level `*.patch` file. The fix should preserve the Proof gate: useful Agent Output can become Proof only when it matches the task's proof schema and a controlled recovery rule records it.
 
 ## Decisions
 
@@ -14,12 +14,12 @@ The immediate failure mode is a `repo-diff` task such as `Record implementation 
 - Support both existing `diffText` capture and controlled workspace file recovery for `repo-diff`.
 - Prefer `diffText` when it is available.
 - If `diffText` is missing, scan only controlled paths:
-  - `.auto-crop-proof/*.diff`
+  - `.cordantry-proof/*.diff`
   - top-level workspace `*.diff`
   - top-level workspace `*.patch`
 - Do not recursively scan the whole workspace.
 - Ignore empty diff or patch files.
-- If multiple diff or patch files are found, merge them into one `.auto-crop-proof/<taskId>.diff` Proof and record one primary Proof entry.
+- If multiple diff or patch files are found, merge them into one `.cordantry-proof/<taskId>.diff` Proof and record one primary Proof entry.
 - Reuse `POST /api/tasks/:id/refresh` as the user-facing recovery trigger.
 - On refresh, try Proof Recovery before the existing dependency refresh behavior.
 - If Proof Recovery succeeds, move the task to `review` so CEO Office can approve or return it.
@@ -74,18 +74,18 @@ Implementation shape:
 - Keep the existing `diffText` branch in `captureProofs`.
 - Add a helper that discovers controlled diff candidates only when the schema accepts `diff`.
 - Candidate paths:
-  - `.auto-crop-proof/*.diff`
+  - `.cordantry-proof/*.diff`
   - workspace-root `*.diff`
   - workspace-root `*.patch`
 - Candidate files must be regular, non-empty text files.
-- Merge candidate contents into `.auto-crop-proof/<taskId>.diff`.
+- Merge candidate contents into `.cordantry-proof/<taskId>.diff`.
 - Include source filenames in the Proof summary, for example:
 
 ```text
 Diff proof recovered from prototype-audit-trail.patch.
 ```
 
-If a canonical `.auto-crop-proof/<taskId>.diff` already exists and is non-empty, it can be reused as the canonical Proof URI.
+If a canonical `.cordantry-proof/<taskId>.diff` already exists and is non-empty, it can be reused as the canonical Proof URI.
 
 ### Task Refresh
 
@@ -167,7 +167,7 @@ Add `docs/adr/0008-proof-recovery-from-controlled-workspace-output.md` to record
 Server tests:
 
 - `captureProofs` still captures `diffText` for `repo-diff`.
-- `captureProofs` recovers a non-empty `.auto-crop-proof/*.diff`.
+- `captureProofs` recovers a non-empty `.cordantry-proof/*.diff`.
 - `captureProofs` recovers a non-empty top-level `*.patch`.
 - `captureProofs` ignores empty diff and patch files.
 - Multiple candidate files merge into one canonical diff Proof.
@@ -186,8 +186,8 @@ Dashboard tests:
 Regression:
 
 ```bash
-pnpm --filter @auto-crop/server test
-pnpm --filter @auto-crop/dashboard test -- src/App.test.tsx --runInBand
+pnpm --filter @cordantry/server test
+pnpm --filter @cordantry/dashboard test -- src/App.test.tsx --runInBand
 pnpm typecheck
 pnpm lint
 ```

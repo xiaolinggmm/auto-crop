@@ -1,4 +1,4 @@
-import { projectCeoOfficeItems, resolveTaskAffordances } from "@auto-crop/core";
+import { projectCeoOfficeItems, resolveTaskAffordances } from "@cordantry/core";
 import { realpathSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
@@ -15,7 +15,7 @@ import type {
   Proof,
   Task,
   TaskCompletionEvent,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest, AgentRunResult } from "../adapters/types";
 import { createMockAgentAdapter } from "../adapters/mockAgent";
 import { createDatabaseClient } from "../db/client";
@@ -239,15 +239,15 @@ describe("runSchedulerOnce", () => {
           return { status: "complete", exitCode: 0, stdout: JSON.stringify({ purpose: "Write", approach: "Use the action channel", expectedOutcome: "A settled delivery" }), stderr: "" };
         }
         expect(request.prompt).toContain("submit_artifact_envelope");
-        expect(request.prompt).not.toContain(".auto-crop/business-artifact.json");
-        mkdirSync(join(request.workspacePath, ".auto-crop-proof"), { recursive: true });
-        writeFileSync(join(request.workspacePath, ".auto-crop-proof", "task_1.diff"), "diff --git a/index.html b/index.html\n", "utf8");
+        expect(request.prompt).not.toContain(".cordantry/business-artifact.json");
+        mkdirSync(join(request.workspacePath, ".cordantry-proof"), { recursive: true });
+        writeFileSync(join(request.workspacePath, ".cordantry-proof", "task_1.diff"), "diff --git a/index.html b/index.html\n", "utf8");
         request.runtimeActions?.submitArtifactEnvelope({
           artifact_kind: "deliverable",
           artifact_role: "implementation",
           artifact_subtype: "prototype_implementation",
           task_type: "engineering.prototype_implementation",
-          proof_refs: [{ type: "diff", uri: ".auto-crop-proof/task_1.diff", summary: "Action diff proof" }],
+          proof_refs: [{ type: "diff", uri: ".cordantry-proof/task_1.diff", summary: "Action diff proof" }],
           payload: {
             actions: [],
             execution_report: {
@@ -617,7 +617,7 @@ describe("runSchedulerOnce", () => {
 
       expect(task.status).toBe("failed");
       expect(repositories.listProofsForTask("task_1")).toEqual([]);
-      expect(existsSync(join(repositories.getTask("task_1")!.workspacePath!, ".auto-crop-handoff"))).toBe(false);
+      expect(existsSync(join(repositories.getTask("task_1")!.workspacePath!, ".cordantry-handoff"))).toBe(false);
       expect(repositories.listTaskLocks()).toEqual([]);
       client.close();
     });
@@ -1001,7 +1001,7 @@ describe("runSchedulerOnce", () => {
       const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
       // A run of some other task already holds this task's workspace. The task lock cannot express
       // that: it guards the task, and the contention is over the directory.
-      const workspacePath = join(projectRoot, ".auto-crop", "workspaces", "task_1");
+      const workspacePath = join(projectRoot, ".cordantry", "workspaces", "task_1");
       repositories.updateTaskWorkspacePath("task_1", workspacePath);
       repositories.acquireWorkspaceClaim({
         workspacePath, taskId: "other_task", runId: "agent_run_other", ownerId: "worker_b",
@@ -1075,7 +1075,7 @@ describe("runSchedulerOnce", () => {
 
     it("keeps an isolated directory out of use until the isolation is lifted", async () => {
       const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
-      const workspacePath = join(projectRoot, ".auto-crop", "workspaces", "task_1");
+      const workspacePath = join(projectRoot, ".cordantry", "workspaces", "task_1");
       repositories.updateTaskWorkspacePath("task_1", workspacePath);
       repositories.acquireWorkspaceClaim({
         workspacePath, taskId: "task_1", runId: "agent_run_dead", ownerId: "worker_a",
@@ -1315,13 +1315,13 @@ describe("runSchedulerOnce", () => {
     expect(repositories.getTask("task_1")?.status).toBe("complete");
     expect(repositories.getTask("task_2")?.status).toBe("complete");
     expect(repositories.listProofsForTask("task_1")).toHaveLength(1);
-    expect(existsSync(join(projectRoot, ".auto-crop", "companies", "company_1", "logs", "task_1.log"))).toBe(
+    expect(existsSync(join(projectRoot, ".cordantry", "companies", "company_1", "logs", "task_1.log"))).toBe(
       true,
     );
-    expect(readFileSync(join(projectRoot, ".auto-crop", "companies", "company_1", "logs", "task_1.log"), "utf8")).toContain(
+    expect(readFileSync(join(projectRoot, ".cordantry", "companies", "company_1", "logs", "task_1.log"), "utf8")).toContain(
       "proof: created artifact",
     );
-    expect(existsSync(join(projectRoot, ".auto-crop", "workspaces", "task_1", ".auto-crop-handoff", "package.json"))).toBe(
+    expect(existsSync(join(projectRoot, ".cordantry", "workspaces", "task_1", ".cordantry-handoff", "package.json"))).toBe(
       true,
     );
     expect(events).toContainEqual(expect.objectContaining({
@@ -1367,7 +1367,7 @@ describe("runSchedulerOnce", () => {
     const warningIndex = events.findIndex((event) => event.type === "task_warning" && event.message.includes(warning));
     expect(warningIndex).toBeGreaterThanOrEqual(0);
     expect(warningIndex).toBeLessThan(events.findIndex((event) => event.type === "task_started"));
-    const log = readFileSync(join(projectRoot, ".auto-crop", "companies", "company_1", "logs", "task_1.log"), "utf8");
+    const log = readFileSync(join(projectRoot, ".cordantry", "companies", "company_1", "logs", "task_1.log"), "utf8");
     expect(log).toContain("launchIsolation: compatible");
     expect(log).toContain(`launchWarning: ${warning}`);
 
@@ -2079,7 +2079,7 @@ describe("runSchedulerOnce", () => {
     expect(result.completed).toEqual(["task_1"]);
     expect(existsSync(join(workspacePath, "index.html"))).toBe(true);
     expect(existsSync(join(workspacePath, "node_modules"))).toBe(false);
-    expect(existsSync(join(workspacePath, ".auto-crop-handoff", "package.json"))).toBe(true);
+    expect(existsSync(join(workspacePath, ".cordantry-handoff", "package.json"))).toBe(true);
 
     client.close();
   });
@@ -2173,7 +2173,7 @@ describe("runSchedulerOnce", () => {
     expect(result.failed).toEqual(["task_1"]);
     expect(task?.status).toBe("failed");
     expect(task?.latestFailureMessage).toContain("repo-diff proof missing");
-    expect(task?.latestFailureMessage).toContain(".auto-crop-proof/*.diff");
+    expect(task?.latestFailureMessage).toContain(".cordantry-proof/*.diff");
     expect(task?.latestFailureMessage).toContain("top-level workspace *.diff/*.patch");
     expect(task?.latestFailureMessage).toContain("an Artifact Envelope is not diff proof");
 
@@ -2699,7 +2699,7 @@ describe("runSchedulerOnce", () => {
   });
 
   it("injects upstream proof handoffs into dependent agent prompts", async () => {
-    const producerWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-upstream-"));
+    const producerWorkspace = mkdtempSync(join(tmpdir(), "cordantry-upstream-"));
     createdDirs.push(producerWorkspace);
     const proofPath = join(producerWorkspace, "product-brief.md");
     writeFileSync(proofPath, "# Product Brief\n", "utf8");
@@ -2774,21 +2774,21 @@ describe("runSchedulerOnce", () => {
     expect(prompt).toContain("Source Proof: file / proof_1");
     expect(prompt).toContain(`Source URI: ${proofPath}`);
     expect(prompt).toContain("Handoff Contract: Consume the product brief before validating the prototype.");
-    expect(prompt).toContain(`Handoff Package: ${join(producerWorkspace, ".auto-crop-handoff", "package.json")}`);
+    expect(prompt).toContain(`Handoff Package: ${join(producerWorkspace, ".cordantry-handoff", "package.json")}`);
     expect(prompt).toContain(`Artifact Workspace: ${producerWorkspace}`);
 
     client.close();
   });
 
   it("collects proof and business artifacts from the actual run workspace", async () => {
-    const producerWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-upstream-"));
+    const producerWorkspace = mkdtempSync(join(tmpdir(), "cordantry-upstream-"));
     createdDirs.push(producerWorkspace);
     const producer = {
       ...createTaskRecord("task_1", "complete", "low", "landing-page-file"),
       workspacePath: producerWorkspace,
       artifactWorkspacePath: producerWorkspace,
     };
-    const consumerWorkspace = mkdtempSync(join(tmpdir(), "auto-crop-consumer-"));
+    const consumerWorkspace = mkdtempSync(join(tmpdir(), "cordantry-consumer-"));
     createdDirs.push(consumerWorkspace);
     const consumer = {
       ...createTaskRecord("task_2", "queued", "low", "repo-diff"),
@@ -2825,13 +2825,13 @@ describe("runSchedulerOnce", () => {
           run: async (request) => {
             if (request.metadata.phase === "execution_brief") return createMockAgentAdapter({ id: "planner", name: "Planner", capabilities: [] }).run(request);
             adapterWorkspacePath = request.workspacePath;
-            mkdirSync(join(request.workspacePath, ".auto-crop-proof"), { recursive: true });
+            mkdirSync(join(request.workspacePath, ".cordantry-proof"), { recursive: true });
             writeFileSync(
-              join(request.workspacePath, ".auto-crop-proof", `${request.taskId}.diff`),
+              join(request.workspacePath, ".cordantry-proof", `${request.taskId}.diff`),
               "diff --git a/index.html b/index.html\nnew file mode 100644\n",
               "utf8",
             );
-            mkdirSync(join(request.workspacePath, ".auto-crop"), { recursive: true });
+            mkdirSync(join(request.workspacePath, ".cordantry"), { recursive: true });
             request.runtimeActions!.submitArtifactEnvelope({
                 artifact_kind: "deliverable",
                 artifact_role: "implementation",
@@ -2885,7 +2885,7 @@ describe("runSchedulerOnce", () => {
       expect.objectContaining({
         taskId: consumer.id,
         type: "diff",
-        uri: join(producerWorkspace, ".auto-crop-proof", `${consumer.id}.diff`),
+        uri: join(producerWorkspace, ".cordantry-proof", `${consumer.id}.diff`),
       }),
     ]);
     expect(artifact).toMatchObject({
@@ -2939,9 +2939,9 @@ describe("runSchedulerOnce", () => {
     expect(result.completed).toEqual(["task_1"]);
     expect(prompt).toContain("## Proof Contract");
     expect(prompt).toContain("Original Proof Schema: repo-diff");
-    expect(prompt).toContain(".auto-crop-proof/task_1.diff");
+    expect(prompt).toContain(".cordantry-proof/task_1.diff");
     expect(prompt).toContain("top-level workspace `.diff` or `.patch` file");
-    expect(prompt).toContain("Files under `.auto-crop/` are not proof for repo-diff tasks.");
+    expect(prompt).toContain("Files under `.cordantry/` are not proof for repo-diff tasks.");
 
     client.close();
   });
@@ -3135,7 +3135,7 @@ describe("runSchedulerOnce", () => {
   it("creates a follow-up task from Partial Output and rewires downstream consumers", async () => {
     const producer = {
       ...createTaskRecord("task_1", "queued", "low", "landing-page-file"),
-      artifactWorkspacePath: ".auto-crop/workspaces/task_1",
+      artifactWorkspacePath: ".cordantry/workspaces/task_1",
     };
     const consumer = createTaskRecord("task_2", "queued", "low", "test-output");
     const { projectRoot, repositories, client } = createSchedulerFixture([producer, consumer]);
@@ -3180,8 +3180,8 @@ describe("runSchedulerOnce", () => {
     expect(followUpTask).toMatchObject({
       id: "follow_up_task_1",
       status: "queued",
-      workspacePath: ".auto-crop/workspaces/task_1",
-      artifactWorkspacePath: ".auto-crop/workspaces/task_1",
+      workspacePath: ".cordantry/workspaces/task_1",
+      artifactWorkspacePath: ".cordantry/workspaces/task_1",
       proofSchemaId: "landing-page-file",
     });
     expect(followUpTask?.description).toContain("Partial Output Source Task: task_1");
@@ -3196,13 +3196,13 @@ describe("runSchedulerOnce", () => {
     expect(events).toContainEqual(expect.objectContaining({
       type: "partial_output",
       taskId: "task_1",
-      artifactWorkspacePath: ".auto-crop/workspaces/task_1",
+      artifactWorkspacePath: ".cordantry/workspaces/task_1",
     }));
     expect(events).toContainEqual(expect.objectContaining({
       type: "task_warning",
       taskId: "task_1",
       message:
-        "Follow-up task created: Continue from Partial Output: Task task_1 will continue from Partial Output at .auto-crop/workspaces/task_1.",
+        "Follow-up task created: Continue from Partial Output: Task task_1 will continue from Partial Output at .cordantry/workspaces/task_1.",
     }));
 
     client.close();
@@ -3211,7 +3211,7 @@ describe("runSchedulerOnce", () => {
   it("includes repo-diff proof locations in scheduler-created Partial Output follow-ups", async () => {
     const producer = {
       ...createTaskRecord("task_1", "queued", "low", "repo-diff"),
-      artifactWorkspacePath: ".auto-crop/workspaces/task_1",
+      artifactWorkspacePath: ".cordantry/workspaces/task_1",
     };
     const { projectRoot, repositories, client } = createSchedulerFixture([producer]);
 
@@ -3241,8 +3241,8 @@ describe("runSchedulerOnce", () => {
       .find((task) => task.title === "Continue from Partial Output: Task task_1");
     expect(followUpTask?.description).toContain("## Proof Contract");
     expect(followUpTask?.description).toContain("Original Proof Schema: repo-diff");
-    expect(followUpTask?.description).toContain(".auto-crop-proof/task_1.diff");
-    expect(followUpTask?.description).toContain("Files under `.auto-crop/` are not proof for repo-diff tasks.");
+    expect(followUpTask?.description).toContain(".cordantry-proof/task_1.diff");
+    expect(followUpTask?.description).toContain("Files under `.cordantry/` are not proof for repo-diff tasks.");
 
     client.close();
   });
@@ -3256,8 +3256,8 @@ describe("runSchedulerOnce", () => {
         "",
         "Partial Output Source Task: task_1",
       ].join("\n"),
-      workspacePath: ".auto-crop/workspaces/task_1",
-      artifactWorkspacePath: ".auto-crop/workspaces/task_1",
+      workspacePath: ".cordantry/workspaces/task_1",
+      artifactWorkspacePath: ".cordantry/workspaces/task_1",
     };
     const { projectRoot, repositories, client } = createSchedulerFixture([followUpTask]);
     let workspacePath = "";
@@ -3304,7 +3304,7 @@ describe("runSchedulerOnce", () => {
     });
 
     expect(result.completed).toEqual(["follow_up_task_1"]);
-    expect(workspacePath).toBe(".auto-crop/workspaces/task_1");
+    expect(workspacePath).toBe(".cordantry/workspaces/task_1");
     expect(repositories.getTask("follow_up_task_1")?.status).toBe("complete");
 
     client.close();
@@ -4050,7 +4050,7 @@ function matchingCloseParen(source: string, start: number): number {
 }
 
 function createSchedulerFixture(tasks: Task[], companyOverrides: Partial<Company> = {}) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-scheduler-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-scheduler-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
@@ -4093,7 +4093,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build and validate the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
 }
 

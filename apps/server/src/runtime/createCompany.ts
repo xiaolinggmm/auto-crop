@@ -11,7 +11,7 @@ import type {
   Task,
   TaskDependency,
   TaskEvent,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { AgentAdapter } from "../adapters/types";
 import type { createRepositories } from "../db/repositories";
 import { planningCapabilityNeeds, resolveAgentCapabilityGrant } from "../policies/capabilityGrant";
@@ -594,7 +594,7 @@ function withPrototypeGuidance(description: string, proofSchemaId: string): stri
 
   if (proofSchemaId === "repo-diff") {
     guidance.push(
-      "Repo diff proof guidance: leave registerable diff proof at `.auto-crop-proof/<task-id>.diff` or as a top-level workspace `.diff`/`.patch` file. Files under `.auto-crop/` are not diff proof.",
+      "Repo diff proof guidance: leave registerable diff proof at `.cordantry-proof/<task-id>.diff` or as a top-level workspace `.diff`/`.patch` file. Files under `.cordantry/` are not diff proof.",
     );
   }
 

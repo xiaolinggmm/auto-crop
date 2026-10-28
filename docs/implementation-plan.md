@@ -47,7 +47,7 @@
 - Safety: global kill switch.
 - Test strategy: backend tests plus frontend key-flow tests, with mock agent E2E.
 - Docs: README, Quickstart, and Architecture must be updated as features evolve.
-- Project name: keep `auto-crop` for now.
+- Project name: keep `cordantry` for now.
 
 ## Runtime Model
 
@@ -202,7 +202,7 @@ type Approval = {
 - [x] Create a pnpm workspace with `apps/*` and `packages/*`.
 - [x] Add scripts: `dev`, `test`, `typecheck`, `lint`.
 - [x] Add a root TypeScript config shared by CLI, server, dashboard, and core.
-- [x] Add `.gitignore` entries for `node_modules`, `.auto-crop`, `dist`, `.env`, and Playwright artifacts.
+- [x] Add `.gitignore` entries for `node_modules`, `.cordantry`, `dist`, `.env`, and Playwright artifacts.
 - [x] Verify with `pnpm install` and `pnpm test`.
 - [x] Update `README.md` with the actual install command if it changes.
 
@@ -220,7 +220,7 @@ type Approval = {
 - [x] Define strict schemas for CEO JSON output, company blueprint, OKRs, departments, tasks, proof schemas, and reviews.
 - [x] Write tests that reject missing departments, tasks without proof schema IDs, and CEO output without strict JSON.
 - [x] Write tests that accept a valid AI SaaS company blueprint.
-- [x] Verify with `pnpm --filter @auto-crop/core test`.
+- [x] Verify with `pnpm --filter @cordantry/core test`.
 
 ## Task 3: SQLite Persistence
 
@@ -234,7 +234,7 @@ type Approval = {
 - [x] Add repository functions for create, read, update status, append proof, create approval, and fetch active queue.
 - [x] Add tests for task lifecycle transitions: queued -> running -> review -> complete.
 - [x] Add tests for queue recovery after a simulated server restart.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 4: File System Layout
 
@@ -242,11 +242,11 @@ type Approval = {
 - Create: `apps/server/src/runtime/workspace.ts`
 - Test: `apps/server/src/runtime/workspace.test.ts`
 
-- [x] Implement creation of `.auto-crop/companies/<companyId>/`.
+- [x] Implement creation of `.cordantry/companies/<companyId>/`.
 - [x] Create department directories with `Memory.md`, `tasks/`, `artifacts/`, `proof/`, `reviews/`, and `logs/`.
-- [x] Create task workspaces under `.auto-crop/workspaces/<taskId>/`.
+- [x] Create task workspaces under `.cordantry/workspaces/<taskId>/`.
 - [x] Add tests that paths cannot escape the project root.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 5: Agent Adapter Interface
 
@@ -262,7 +262,7 @@ type Approval = {
 - [x] Implement mock agent for tests.
 - [x] Write tests for adapter selection by capability.
 - [x] Write tests for command template variable interpolation using `{workspace}` and `{promptPath}`.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 6: Policy Engine
 
@@ -275,7 +275,7 @@ type Approval = {
 - [x] Implement Safe, Balanced, and Autonomous policies.
 - [x] Make Balanced the default: read/write workspace auto, safe commands auto, install/deploy ask, outside workspace deny, paid actions deny.
 - [x] Add tests for auto / ask / deny decisions.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 7: AI SaaS Playbook
 
@@ -289,7 +289,7 @@ type Approval = {
 - [x] Implement the AI SaaS playbook with Product, Research, Growth, and Engineering departments.
 - [x] Add proof schemas for product brief, research report, landing page file, repo diff, test output, local URL, screenshot, and optional deployment URL.
 - [x] Add tests that free-form SaaS visions map to the AI SaaS playbook.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 8: CEO Office Prompt and Parser
 
@@ -302,7 +302,7 @@ type Approval = {
 - [x] Require two sections: human-readable CEO brief and strict JSON.
 - [x] Parse and validate only the strict JSON.
 - [x] Add tests for valid output, malformed JSON, missing proof schemas, and unsupported departments.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 9: Company Creation Runtime
 
@@ -315,7 +315,7 @@ type Approval = {
 - [x] Run CEO adapter or mock CEO to produce a blueprint.
 - [x] Store company, departments, objectives, key results, tasks, and memory files.
 - [x] Return editable key fields before activation. (removed — the `editable` response field and its `PATCH /api/companies/:id/blueprint` counterpart were never wired to any client and were deleted as dead code.)
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 10: SQLite-Backed Scheduler
 
@@ -330,7 +330,7 @@ type Approval = {
 - [x] Stream output to file logs and SSE.
 - [x] Move tasks to review when proof is present, failed when no proof is present, and blocked when approval is required.
 - [x] Add tests with mock agents for parallel task execution and lock release.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 11: Proof Capture
 
@@ -343,7 +343,7 @@ type Approval = {
 - [x] Capture command output proof from log excerpts.
 - [x] Capture URL proof for local dev server and optional deployment.
 - [x] Reject tasks whose proof does not match the task proof schema.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 12: Failure Handling and Review
 
@@ -356,7 +356,7 @@ type Approval = {
 - [x] Let the Lead create a fix task, mark the task blocked, or escalate to CEO Office.
 - [x] Let CEO Office review proof against key results and update priorities.
 - [x] Write review markdown into the company review directory.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 13: Kill Switch
 
@@ -369,7 +369,7 @@ type Approval = {
 - [x] Cancel active child processes.
 - [x] Release task locks.
 - [x] Move the company into manual review.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 14: REST and SSE API
 
@@ -382,7 +382,7 @@ type Approval = {
 - [x] Add REST endpoints for agent detection, company creation, blueprint edit, activation, task approval, task cancel, proof list, review list, and kill switch.
 - [x] Add SSE endpoint for run logs and task status changes.
 - [x] Add API tests with mock runtime components.
-- [x] Verify with `pnpm --filter @auto-crop/server test`.
+- [x] Verify with `pnpm --filter @cordantry/server test`.
 
 ## Task 15: CLI
 
@@ -391,11 +391,11 @@ type Approval = {
 - Create: `apps/cli/src/commands/start.ts`
 - Test: `apps/cli/src/commands/start.test.ts`
 
-- [x] Implement `auto-crop start`.
+- [x] Implement `cordantry start`.
 - [x] Start the local server.
 - [x] Print the dashboard URL.
 - [x] Detect whether Claude Code or Codex are available.
-- [x] Verify with `pnpm --filter @auto-crop/cli test`.
+- [x] Verify with `pnpm --filter @cordantry/cli test`.
 
 ## Task 16: Dashboard Foundation
 
@@ -410,7 +410,7 @@ type Approval = {
 - [x] Build company dashboard with CEO Office, OKR System, departments, active tasks, proof, approvals, and review.
 - [x] Use company operating dashboard as the primary UI, not chat or kanban.
 - [x] Add SSE-driven task status updates.
-- [x] Verify with `pnpm --filter @auto-crop/dashboard test`.
+- [x] Verify with `pnpm --filter @cordantry/dashboard test`.
 
 ## Task 17: Playwright Key Flow
 
@@ -424,7 +424,7 @@ type Approval = {
 - [x] Observe mock agent task execution through SSE.
 - [x] View proof and review.
 - [x] Trigger kill switch and verify active work pauses.
-- [x] Verify with `pnpm --filter @auto-crop/dashboard e2e`.
+- [x] Verify with `pnpm --filter @cordantry/dashboard e2e`.
 
 Local verification note: Playwright Chromium may need an unrestricted local run on macOS; the E2E suite now passes when allowed to launch the browser.
 
@@ -436,10 +436,10 @@ Local verification note: Playwright Chromium may need an unrestricted local run 
 - Create: `docs/architecture.md`
 
 - [x] Document clone-based setup.
-- [x] Document future `npx auto-crop start` usage.
+- [x] Document future `npx cordantry start` usage.
 - [x] Document supported agents and custom command-template agents.
 - [x] Document Safe, Balanced, and Autonomous modes.
-- [x] Document local files created under `.auto-crop/`.
+- [x] Document local files created under `.cordantry/`.
 - [x] Document the CEO Office, OKR System, departments, proof, review, playbooks, adapter interface, and kill switch.
 - [x] Update README whenever functionality changes.
 
@@ -475,7 +475,7 @@ Local verification note: Playwright Chromium may need an unrestricted local run 
 - [x] `pnpm install`
 - [x] `pnpm test`
 - [x] `pnpm typecheck`
-- [x] `pnpm --filter @auto-crop/dashboard e2e`
+- [x] `pnpm --filter @cordantry/dashboard e2e`
 - [x] Manual smoke test with mock agent: create company, activate tasks, view proof, run review, trigger kill switch.
 - [x] Manual smoke test with one real local agent when available: create isolated workspace, run one low-risk task, confirm proof is captured.
 

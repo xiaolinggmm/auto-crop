@@ -1,6 +1,6 @@
 import { readFileSync, realpathSync } from "node:fs";
 import { isAbsolute, join } from "node:path";
-import type { Company, CompanyMahConfig } from "@auto-crop/core";
+import type { Company, CompanyMahConfig } from "@cordantry/core";
 import { mahCommand, preflightMahSlot, type MahCommand } from "../adapters/mahCli";
 
 /** A stable managed-project identity, independent of its current filesystem location. */
@@ -24,7 +24,7 @@ export async function checkCompanyMahConfig(value: unknown, command?: MahCommand
   const slotClass = input.slotClass ?? "background";
   if (slotClass !== "background" && slotClass !== "interactive") throw new Error("Choose a background or interactive MAH slot.");
   if (input.cliPath !== undefined && typeof input.cliPath !== "string") throw new Error("MAH executable path must be text.");
-  const cliPath = (input.cliPath as string | undefined)?.trim() || process.env.AUTO_CROP_MAH_CLI || "mah";
+  const cliPath = (input.cliPath as string | undefined)?.trim() || process.env.CORDANTRY_MAH_CLI || "mah";
   await preflightMahSlot({ command: command ?? mahCommand(cliPath), mahProjectRoot: identity.projectRoot, slotClass });
   return { ...identity, cliPath, slotClass };
 }

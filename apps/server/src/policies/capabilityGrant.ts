@@ -1,4 +1,4 @@
-import type { Task } from "@auto-crop/core";
+import type { Task } from "@cordantry/core";
 import { decideAction, type ActionPolicy, type ActionType } from "./policy";
 
 /**

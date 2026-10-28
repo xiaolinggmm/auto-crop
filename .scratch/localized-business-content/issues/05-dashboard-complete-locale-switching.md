@@ -17,8 +17,8 @@ Wire Localized Business Content through the dashboard and verify full English/Ch
 
 ## Acceptance Criteria
 
-- In English mode, Auto-Crop-authored UI and business content is English.
-- In Chinese mode, Auto-Crop-authored UI and business content is Chinese.
+- In English mode, Cordantry-authored UI and business content is English.
+- In Chinese mode, Cordantry-authored UI and business content is Chinese.
 - User-provided text, URLs, file paths, command output, and agent brand names are unchanged.
 - No raw internal enum/code values appear in ordinary dashboard UI.
 - Visual layout remains stable in both languages.
@@ -42,6 +42,6 @@ This ticket closes the feature and should include a final audit of user-visible 
 
 ## Verification
 
-- `pnpm --filter @auto-crop/dashboard typecheck`
-- `pnpm --filter @auto-crop/dashboard test`
-- `pnpm --filter @auto-crop/dashboard exec playwright test` was attempted but could not run because the local Playwright Chromium executable is missing.
+- `pnpm --filter @cordantry/dashboard typecheck`
+- `pnpm --filter @cordantry/dashboard test`
+- `pnpm --filter @cordantry/dashboard exec playwright test` was attempted but could not run because the local Playwright Chromium executable is missing.

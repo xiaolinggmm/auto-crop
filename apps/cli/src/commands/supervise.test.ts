@@ -5,9 +5,9 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { once } from "node:events";
 import { afterEach, describe, expect, it } from "vitest";
-import { recordExecutionEvent } from "@auto-crop/server";
+import { recordExecutionEvent } from "@cordantry/server";
 import { openState } from "./fixtures/state";
-import { superviseAutoCrop } from "./supervise";
+import { superviseCordantry } from "./supervise";
 
 const createdDirs: string[] = [];
 
@@ -25,7 +25,7 @@ afterEach(() => {
  * abandoned, and starts a replacement. A fake that resolved a promise instead of exiting would test
  * none of that.
  */
-describe("superviseAutoCrop", () => {
+describe("superviseCordantry", () => {
   const untilTrue = async (predicate: () => boolean, timeoutMs = 15_000): Promise<void> => {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
@@ -55,9 +55,9 @@ describe("superviseAutoCrop", () => {
         launches++;
         return spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
       },
-    } as unknown as Parameters<typeof superviseAutoCrop>[0];
+    } as unknown as Parameters<typeof superviseCordantry>[0];
 
-    const supervisor = await superviseAutoCrop(options);
+    const supervisor = await superviseCordantry(options);
     try { expect(launches).toBe(1); } finally { await supervisor.close(); }
   });
 
@@ -65,7 +65,7 @@ describe("superviseAutoCrop", () => {
     const projectRoot = createTempProjectRoot();
     const { client, repositories } = openState(projectRoot);
     let child: ChildProcess | undefined, writerPid: number | undefined, launches = 0, isolatedBeforeRestart = false;
-    const supervisor = await superviseAutoCrop({ projectRoot, scanIntervalMs: 20, restartDelayMs: 20, log: () => undefined,
+    const supervisor = await superviseCordantry({ projectRoot, scanIntervalMs: 20, restartDelayMs: 20, log: () => undefined,
       spawnWorker: ownerId => {
         launches++;
         if (launches > 1) {
@@ -73,7 +73,7 @@ describe("superviseAutoCrop", () => {
           return spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
         }
         child = spawn(process.execPath, ["--import", "tsx", fileURLToPath(new URL("./fixtures/exitingWorker.ts", import.meta.url)), projectRoot, ownerId, "wedged"], {
-          env: { ...process.env, AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: "60" }, stdio: ["ignore", "ignore", "pipe", "ipc"],
+          env: { ...process.env, CORDANTRY_FORCE_AGENT_TIMEOUT_MS: "60" }, stdio: ["ignore", "ignore", "pipe", "ipc"],
         });
         child.on("message", message => { const data = message as { type: string; pid: number }; if (data.type === "writer-started") writerPid = data.pid; });
         return child;
@@ -109,14 +109,14 @@ describe("superviseAutoCrop", () => {
         return spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
       },
     };
-    const first = await superviseAutoCrop(options);
+    const first = await superviseCordantry(options);
     try {
-      await expect(superviseAutoCrop(options)).rejects.toThrow("already running");
+      await expect(superviseCordantry(options)).rejects.toThrow("already running");
       expect(launches).toBe(1);
     } finally {
       await first.close();
     }
-    const next = await superviseAutoCrop(options);
+    const next = await superviseCordantry(options);
     await next.close();
     expect(launches).toBe(2);
   });
@@ -207,11 +207,11 @@ describe("superviseAutoCrop", () => {
       return spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
     } };
     try {
-      await expect(superviseAutoCrop(options)).rejects.toThrow("injected reconciliation failure");
+      await expect(superviseCordantry(options)).rejects.toThrow("injected reconciliation failure");
       expect(starts).toBe(0);
       expect(repositories.getTask("task_1")?.status).toBe("running");
       client.exec("DROP TRIGGER fail_outbox");
-      const running = await superviseAutoCrop(options);
+      const running = await superviseCordantry(options);
       await running.close();
       expect(starts).toBe(1);
     } finally { client.close(); }
@@ -228,7 +228,7 @@ describe("superviseAutoCrop", () => {
     let starts = 0;
     let replacementSawIsolation = false;
     const logs: string[] = [];
-    const options: Parameters<typeof superviseAutoCrop>[0] = {
+    const options: Parameters<typeof superviseCordantry>[0] = {
       projectRoot, scanIntervalMs: 60_000, restartDelayMs: 30, log: (line) => logs.push(line),
       spawnWorker: (ownerId) => {
         starts++;
@@ -239,7 +239,7 @@ describe("superviseAutoCrop", () => {
         }
         owner = ownerId;
         first = spawn(process.execPath, ["--import", "tsx", fileURLToPath(new URL("./fixtures/exitingWorker.ts", import.meta.url)), projectRoot, ownerId, budgetMode ? "budget" : "observe"], {
-          env: { ...process.env, ...(budgetMode ? { AUTO_CROP_FORCE_AGENT_TIMEOUT_MS: "60" } : {}) },
+          env: { ...process.env, ...(budgetMode ? { CORDANTRY_FORCE_AGENT_TIMEOUT_MS: "60" } : {}) },
           stdio: ["ignore", "ignore", "pipe", "ipc"],
         });
         first.on("message", (message) => {
@@ -249,7 +249,7 @@ describe("superviseAutoCrop", () => {
         return first;
       },
     };
-    let supervised = await superviseAutoCrop(options);
+    let supervised = await superviseCordantry(options);
     try {
       await untilTrue(() => writerPid !== undefined);
       const run = repositories.listRunningAgentRuns("company_1")[0];
@@ -265,7 +265,7 @@ describe("superviseAutoCrop", () => {
         await expect(supervised.close()).rejects.toThrow("exit reconciliation failed");
       }
       client.exec("DROP TRIGGER fail_outbox");
-      if (mode.endsWith("supervisor_restart")) supervised = await superviseAutoCrop(options);
+      if (mode.endsWith("supervisor_restart")) supervised = await superviseCordantry(options);
       await untilTrue(() => starts === 2, 3_000);
       expect(replacementSawIsolation).toBe(true);
       expect(repositories.listOpenTaskHolds("task_1").map((hold) => hold.kind)).toEqual(["termination_unconfirmed"]);
@@ -306,7 +306,7 @@ describe("superviseAutoCrop", () => {
 
     const logs: string[] = [];
     const workerPids: number[] = [];
-    const supervised = await superviseAutoCrop({
+    const supervised = await superviseCordantry({
       projectRoot,
       scanIntervalMs: 250,
       restartDelayMs: 100,
@@ -350,7 +350,7 @@ describe("superviseAutoCrop", () => {
     });
     let workerStartedWhileTaskWasRunning: boolean | null = null;
 
-    const supervised = await superviseAutoCrop({
+    const supervised = await superviseCordantry({
       projectRoot,
       scanIntervalMs: 60_000,
       log: () => undefined,
@@ -372,9 +372,9 @@ describe("superviseAutoCrop", () => {
 });
 
 function createTempProjectRoot(): string {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-supervise-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-supervise-"));
   createdDirs.push(projectRoot);
-  mkdirSync(join(projectRoot, ".auto-crop"), { recursive: true });
+  mkdirSync(join(projectRoot, ".cordantry"), { recursive: true });
   return projectRoot;
 }
 
@@ -382,7 +382,7 @@ function launchCli(projectRoot: string) {
   const entry = fileURLToPath(new URL("../index.ts", import.meta.url));
   const child = spawn(process.execPath, ["--import", "tsx", entry, "start"], {
     cwd: fileURLToPath(new URL("../../../../", import.meta.url)),
-    env: { ...process.env, INIT_CWD: projectRoot, AUTO_CROP_PORT: "0" },
+    env: { ...process.env, INIT_CWD: projectRoot, CORDANTRY_PORT: "0" },
     stdio: ["ignore", "pipe", "pipe"],
   });
   let output = "";

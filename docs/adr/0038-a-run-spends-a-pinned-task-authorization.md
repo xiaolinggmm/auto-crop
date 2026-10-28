@@ -14,7 +14,7 @@ Monotonic readings never cross a process boundary. UTC is audit time and a disco
 
 A live budget run is not reaped by the legacy wall-clock deadline, even if a dashboard read supplies a distant UTC time. The owner checks phase/run remaining time before each adapter invocation and before committing success; the adapter's timer is the minimum remaining allowance. Brief, work, repair and finalization all spend the same reservation, without an extra 150 seconds. Output cannot renew that allowance. Termination grace is containment overhead, not permission to accept an over-budget success.
 
-P4.3 exposes `AUTO_CROP_EXECUTION_POLICY=budget-v1` and validated JSON configuration through the supervised CLI. A pure health policy feeds persisted observations in the external Supervisor loop; GET never runs policy. The Supervisor can stop its exact owned Worker after liveness expires, then K3 isolates descendants before replacement. Dashboard balances and explicit authorization/cancellation controls share server guards. The real-platform threshold study and default enablement remain P5; see [trial and rollback instructions](../execution-budget-opt-in.md).
+P4.3 exposes `CORDANTRY_EXECUTION_POLICY=budget-v1` and validated JSON configuration through the supervised CLI. A pure health policy feeds persisted observations in the external Supervisor loop; GET never runs policy. The Supervisor can stop its exact owned Worker after liveness expires, then K3 isolates descendants before replacement. Dashboard balances and explicit authorization/cancellation controls share server guards. The real-platform threshold study and default enablement remain P5; see [trial and rollback instructions](../execution-budget-opt-in.md).
 
 ## Stop and renewed authorization
 

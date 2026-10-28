@@ -4,7 +4,7 @@ import {
   type ActionIntent,
   type ActionIntentCategory,
   type ActionIntentStatus,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);

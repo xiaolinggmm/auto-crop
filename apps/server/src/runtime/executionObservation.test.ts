@@ -329,7 +329,7 @@ function seedRun(repositories: ReturnType<typeof createRepositories>): void {
     id: "task_1", companyId: "company_1", departmentId: "department_1", keyResultId: "key_result_1",
     title: "Record implementation changes", description: "Record implementation changes.",
     assigneeAgentId: "codex", requiredCapabilities: ["code"], proofSchemaId: "repo-diff",
-    workspacePath: ".auto-crop/workspaces/task_1", status: "running", riskLevel: "medium", position: 0,
+    workspacePath: ".cordantry/workspaces/task_1", status: "running", riskLevel: "medium", position: 0,
   });
   repositories.createAgentRun({
     id: "agent_run_1", taskId: "task_1", agentId: "codex", status: "running", logPath: "agent.log",

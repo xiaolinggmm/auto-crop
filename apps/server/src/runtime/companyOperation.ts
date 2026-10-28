@@ -1,4 +1,4 @@
-import type { Company, CompanyStatus } from "@auto-crop/core";
+import type { Company, CompanyStatus } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { defaultExecutionRegistry, type ExecutionRegistry } from "./executionControl";
 

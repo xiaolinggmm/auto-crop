@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company, NextStepItem, Proof, Task, TaskCompletionEvent, VerificationRework } from "@auto-crop/core";
+import type { Company, NextStepItem, Proof, Task, TaskCompletionEvent, VerificationRework } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
@@ -161,7 +161,7 @@ function recordingAdapter(prompts: Record<string, string>): AgentAdapter {
 }
 
 function createFixture(tasks: Task[]) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-settled-facts-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-settled-facts-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
@@ -169,7 +169,7 @@ function createFixture(tasks: Task[]) {
   repositories.createCompany(company());
   repositories.createDepartment({
     id: "department_1", companyId: "company_1", name: "Research", responsibility: "Research.", leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/research/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/research/Memory.md",
   });
   repositories.createObjective({ id: "objective_1", companyId: "company_1", title: "Find a keyword", status: "active", priority: 1 });
   repositories.createKeyResult({

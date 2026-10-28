@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
@@ -301,7 +301,7 @@ function summarize(fixture: ReturnType<typeof createFixture>, taskId: string): O
 }
 
 function createFixture() {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-finalize-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-finalize-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);
@@ -314,7 +314,7 @@ function createFixture() {
 }
 
 function createDeliveringTask(fixture: ReturnType<typeof createFixture>, options: { subtask: boolean; status: Task["status"] }): Task {
-  const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-finalize-ws-"));
+  const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-finalize-ws-"));
   createdDirs.push(workspacePath);
   if (options.subtask) {
     fixture.repositories.createTask({ ...baseTask("parent_1", "waiting_dependency"), taskKind: "parent" });
@@ -416,7 +416,7 @@ function departmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build the product.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/Memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/Memory.md",
   };
 }
 

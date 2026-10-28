@@ -10,7 +10,7 @@ Fix the current one-size-fits-all agent timeout by introducing Task Execution Pr
 - Use `requiredCapabilities` only for fallback or unknown schemas.
 - Keep profiles as runtime-derived data in the first version; do not add database columns.
 - Let task-level profile timeout override adapter defaults.
-- Superseded by `docs/runtime-observability-and-artifact-workspace-plan.md`: `AUTO_CROP_AGENT_TIMEOUT_MS` should not silently lower a task profile budget. Use `AUTO_CROP_FORCE_AGENT_TIMEOUT_MS` for deliberate full override test runs.
+- Superseded by `docs/runtime-observability-and-artifact-workspace-plan.md`: `CORDANTRY_AGENT_TIMEOUT_MS` should not silently lower a task profile budget. Use `CORDANTRY_FORCE_AGENT_TIMEOUT_MS` for deliberate full override test runs.
 - Keep timed-out tasks in `failed`; Partial Output remains useful but does not make a task complete.
 - Keep UI changes inside existing dashboard components.
 
@@ -70,7 +70,7 @@ Proof collection errors should fail only the current task and release its lock. 
 ## Verification
 
 - Server tests cover `landing-page-file` resolving to a long timeout.
-- Server tests cover `AUTO_CROP_AGENT_TIMEOUT_MS` overriding profile timeout.
+- Server tests cover `CORDANTRY_AGENT_TIMEOUT_MS` overriding profile timeout.
 - Server tests cover timeout failures producing timeout-specific events/messages.
 - Server tests cover Proof collector errors failing only the current task.
 - Dashboard tests cover timeout failure messages in existing task displays.
@@ -79,8 +79,8 @@ Proof collection errors should fail only the current task and release its lock. 
 Run:
 
 ```bash
-pnpm --filter @auto-crop/server test
-pnpm --filter @auto-crop/server typecheck
-pnpm --filter @auto-crop/dashboard test
-pnpm --filter @auto-crop/dashboard typecheck
+pnpm --filter @cordantry/server test
+pnpm --filter @cordantry/server typecheck
+pnpm --filter @cordantry/dashboard test
+pnpm --filter @cordantry/dashboard typecheck
 ```

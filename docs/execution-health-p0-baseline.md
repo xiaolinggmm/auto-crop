@@ -79,7 +79,7 @@ Task 之外的四个调用点没有 run 记录、没有超时归因、没有取�
 
 ADR 0034 的 claim 只保护 run 行、Task 状态与 Business Artifact。`appendProof`（`scheduler.ts:575`）、`createHandoffPackage`（`:617`）、`updateTaskArtifactWorkspacePath`（`:791`）全部在 `claimRun` 之前，无条件执行。
 
-结果：过期回收获胜后，Task 仍落下一条 proof、一个 `.auto-crop-handoff/` 目录；若该 Task 此前有 Partial Output，其产物指针已被改写到本次（已作废的）工作区，下游读到的是失败运行留下的目录。
+结果：过期回收获胜后，Task 仍落下一条 proof、一个 `.cordantry-handoff/` 目录；若该 Task 此前有 Partial Output，其产物指针已被改写到本次（已作废的）工作区，下游读到的是失败运行留下的目录。
 
 证据（已改写为断言修复后的行为）：`scheduler.test.ts`
 - `writes no proof and publishes no handoff package after losing the claim`

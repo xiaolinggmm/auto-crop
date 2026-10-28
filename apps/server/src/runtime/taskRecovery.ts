@@ -1,6 +1,6 @@
 import { assertOrdinaryRecoveryAllowed } from "./budgetAuthorization";
-import type { Proof, ProofSchema, Task, TaskEvent, TaskProgressEvent } from "@auto-crop/core";
-import { isAffordanceApplicable } from "@auto-crop/core";
+import type { Proof, ProofSchema, Task, TaskEvent, TaskProgressEvent } from "@cordantry/core";
+import { isAffordanceApplicable } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { isRetryExhausted, retryExhaustedRefusalMessage, terminateAsRetryExhausted } from "./boundedRecovery";
 import { formatExecutionBudget } from "./executionProfile";
@@ -399,7 +399,7 @@ export function recoverTask(input: RecoverTaskInput): RecoverTaskResult {
   };
 }
 
-/** One declaration, shared with the offer: `isAffordanceApplicable` in `@auto-crop/core`. */
+/** One declaration, shared with the offer: `isAffordanceApplicable` in `@cordantry/core`. */
 function isTaskRecoveryEligible(task: Task): boolean {
   return isAffordanceApplicable("recover_task", task.status);
 }

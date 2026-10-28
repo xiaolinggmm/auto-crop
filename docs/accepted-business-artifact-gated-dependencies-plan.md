@@ -6,7 +6,7 @@ Planned. This plan captures the first implementation phase for preventing invali
 
 ## Goal
 
-Make Auto-Crop's department workflow produce results that match the founder's vision by requiring downstream work to consume accepted, current, valid Business Artifacts rather than raw Proof files.
+Make Cordantry's department workflow produce results that match the founder's vision by requiring downstream work to consume accepted, current, valid Business Artifacts rather than raw Proof files.
 
 The first acceptance target is a fresh end-to-end run where:
 
@@ -172,7 +172,7 @@ Document in the ADR that the registry should move into playbook configuration la
 
 ## Artifact Creation
 
-Update task prompts to require agents to write `.auto-crop/business-artifact.json` in the task workspace for deliverable tasks.
+Update task prompts to require agents to write `.cordantry/business-artifact.json` in the task workspace for deliverable tasks.
 
 Prompt requirements:
 
@@ -186,13 +186,13 @@ Prompt requirements:
 - declare blocker state explicitly if the deliverable cannot be produced
 - put use-case-specific names such as `keyword_research` in `artifact_subtype`, not in `artifact_kind` or `artifact_role`
 
-Support the old `artifactType` field and markdown fenced JSON only as compatibility fallbacks. Prefer `.auto-crop/business-artifact.json` with the new fields.
+Support the old `artifactType` field and markdown fenced JSON only as compatibility fallbacks. Prefer `.cordantry/business-artifact.json` with the new fields.
 
 ## Proof Capture Integration
 
 After Proof capture:
 
-1. Look for `.auto-crop/business-artifact.json` in the task workspace.
+1. Look for `.cordantry/business-artifact.json` in the task workspace.
 2. If absent, look for a fenced JSON Business Artifact block in the declared Proof file.
 3. If neither exists for a task that needs a Business Artifact, create an invalid artifact record with `invalid_schema`.
 4. Run deterministic validation.
@@ -411,7 +411,7 @@ Repository tests:
 
 Proof tests:
 
-- captures `.auto-crop/business-artifact.json`
+- captures `.cordantry/business-artifact.json`
 - extracts fenced JSON fallback
 - records `invalid_schema` when artifact is absent
 - records `invalid_blocker` when blocker text is detected
@@ -474,7 +474,7 @@ End-to-end regression:
 ### Phase 3: Artifact Validation
 
 - Add artifact schema registry.
-- Add artifact parser for `.auto-crop/business-artifact.json` and fenced JSON fallback.
+- Add artifact parser for `.cordantry/business-artifact.json` and fenced JSON fallback.
 - Add blocker detection.
 - Add lineage and drift validation helpers.
 - Add unit tests for all validation outcomes.

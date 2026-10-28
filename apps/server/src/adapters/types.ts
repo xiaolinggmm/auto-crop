@@ -1,4 +1,4 @@
-import type { AgentFailureReason } from "@auto-crop/core";
+import type { AgentFailureReason } from "@cordantry/core";
 import type { AgentCapabilityGrant } from "../policies/capabilityGrant";
 import type { LaunchPlan } from "./launchPolicy";
 
@@ -150,7 +150,7 @@ export type AgentAdapter = {
   contractCapabilities?: AdapterContractCapability[];
   resolveContractCapabilities?(): Promise<AdapterContractCapability[]>;
   /**
-   * Whether this adapter can run a task under Auto-Crop's launch semantics — not merely whether its
+   * Whether this adapter can run a task under Cordantry's launch semantics — not merely whether its
    * executable exists. An adapter whose launch plan is `unavailable` is not detected.
    */
   detect(): Promise<boolean>;

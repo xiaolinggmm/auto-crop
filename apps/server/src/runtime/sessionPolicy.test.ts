@@ -22,7 +22,7 @@ describe("resolveAgentSessionPolicy", () => {
         permissionMode: "autonomous",
         purpose: "replan_planner",
         grantId: "workspace_read+workspace_write+web_research",
-        env: { AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS: "1" },
+        env: { CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS: "1" },
       }),
     ).toEqual({
       status: "enabled",
@@ -45,7 +45,7 @@ describe("resolveAgentSessionPolicy", () => {
         agentId: "codex",
         permissionMode: "autonomous",
         purpose: "replan_planner",
-        env: { AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS: "1" },
+        env: { CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS: "1" },
       }),
     ).toEqual({ status: "disabled", reason: "missing_grant" });
   });
@@ -57,7 +57,7 @@ describe("resolveAgentSessionPolicy", () => {
         agentId: "codex",
         permissionMode: "balanced",
         purpose: "worker_task",
-        env: { AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS: "true" },
+        env: { CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS: "true" },
       }),
     ).toEqual({ status: "disabled", reason: "purpose_not_eligible" });
   });
@@ -69,7 +69,7 @@ describe("resolveAgentSessionPolicy", () => {
         agentId: "codex",
         permissionMode: null,
         purpose: "replan_planner",
-        env: { AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS: "1" },
+        env: { CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS: "1" },
       }),
     ).toEqual({ status: "disabled", reason: "missing_permission_mode" });
   });

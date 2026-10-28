@@ -11,7 +11,7 @@ if (!root) {
   throw new Error("Missing root element.");
 }
 
-const apiUrl = import.meta.env.VITE_AUTO_CROP_API_URL ?? "";
+const apiUrl = import.meta.env.VITE_CORDANTRY_API_URL ?? "";
 const apiClient = createApiClient(apiUrl);
 
 // Dev-only design gallery (docs/design/ice-mist-ui-spec.md stage 1); dropped from production builds.

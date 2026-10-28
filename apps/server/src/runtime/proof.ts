@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { basename, isAbsolute, join, relative, resolve } from "node:path";
-import type { Proof, ProofSchema, ProofType, Task } from "@auto-crop/core";
+import type { Proof, ProofSchema, ProofType, Task } from "@cordantry/core";
 import type { FileReference } from "./artifactEnvelope";
 import { fileProofSummaryText, runtimeText } from "./localizedRuntimeText";
 
@@ -108,7 +108,7 @@ export function captureProofs(input: CaptureProofsInput): Proof[] {
   }
 
   if (input.diffText && accepts(input.proofSchema, "diff")) {
-    const proofDir = join(input.workspacePath, ".auto-crop-proof");
+    const proofDir = join(input.workspacePath, ".cordantry-proof");
     mkdirSync(proofDir, { recursive: true });
     const diffPath = join(proofDir, `${input.task.id}.diff`);
     writeFileSync(diffPath, input.diffText, "utf8");
@@ -124,7 +124,7 @@ export function captureProofs(input: CaptureProofsInput): Proof[] {
   } else if (accepts(input.proofSchema, "diff")) {
     const recoveredDiff = recoverControlledDiffProof(input.workspacePath);
     if (recoveredDiff) {
-      const proofDir = join(input.workspacePath, ".auto-crop-proof");
+      const proofDir = join(input.workspacePath, ".cordantry-proof");
       mkdirSync(proofDir, { recursive: true });
       const diffPath = join(proofDir, `${input.task.id}.diff`);
       writeFileSync(diffPath, recoveredDiff.content, "utf8");
@@ -234,7 +234,7 @@ export function createHandoffPackage(input: CreateHandoffPackageInput): HandoffP
     return null;
   }
 
-  const packageDir = join(input.workspacePath, ".auto-crop-handoff");
+  const packageDir = join(input.workspacePath, ".cordantry-handoff");
   const artifactsDir = join(packageDir, "artifacts");
   const fileRefsDir = join(packageDir, "file-refs");
   rmSync(packageDir, { force: true, recursive: true });
@@ -319,7 +319,7 @@ export function getHandoffPackageManifestPath(task: Pick<Task, "workspacePath">)
     return null;
   }
 
-  const manifestPath = join(task.workspacePath, ".auto-crop-handoff", "package.json");
+  const manifestPath = join(task.workspacePath, ".cordantry-handoff", "package.json");
   return existsSync(manifestPath) ? manifestPath : null;
 }
 
@@ -387,11 +387,11 @@ function listControlledDiffCandidates(workspacePath: string): Array<{ path: stri
     candidates.push({ path, name });
   };
 
-  const proofDir = join(workspacePath, ".auto-crop-proof");
+  const proofDir = join(workspacePath, ".cordantry-proof");
   if (existsSync(proofDir) && statSync(proofDir).isDirectory()) {
     for (const entry of readdirSync(proofDir).sort()) {
       if (entry.endsWith(".diff")) {
-        addCandidate(resolvePathInsideWorkspace(workspacePath, join(".auto-crop-proof", entry)), entry);
+        addCandidate(resolvePathInsideWorkspace(workspacePath, join(".cordantry-proof", entry)), entry);
       }
     }
   }

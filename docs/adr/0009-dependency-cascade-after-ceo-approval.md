@@ -1,10 +1,10 @@
 # Dependency Cascade After CEO Approval
 
-Auto-Crop will propagate dependency readiness after CEO Office approves a task with Consumable Proof. The first implementation will re-evaluate direct downstream consumers and move dependency-blocked tasks back to `queued` when all of their dependencies are ready.
+Cordantry will propagate dependency readiness after CEO Office approves a task with Consumable Proof. The first implementation will re-evaluate direct downstream consumers and move dependency-blocked tasks back to `queued` when all of their dependencies are ready.
 
 ## Context
 
-Auto-Crop already gates downstream work on Proof. A task may not start just because an upstream agent reported useful output; the upstream deliverable must be recorded as Proof and accepted through CEO Office.
+Cordantry already gates downstream work on Proof. A task may not start just because an upstream agent reported useful output; the upstream deliverable must be recorded as Proof and accepted through CEO Office.
 
 This creates a visible continuity gap. When an upstream task first reports without Proof, downstream tasks can become blocked because the dependency has no Consumable Proof. If the upstream department later supplies valid Proof and CEO Office approves it, the upstream task becomes complete, but the downstream task can remain blocked until a user manually refreshes it.
 
@@ -20,7 +20,7 @@ That manual refresh makes the project feel less like an operating company and mo
 
 ## Decision
 
-Auto-Crop will add **Dependency Cascade** as a runtime propagation step after CEO Office approves a task with Consumable Proof.
+Cordantry will add **Dependency Cascade** as a runtime propagation step after CEO Office approves a task with Consumable Proof.
 
 The first implementation will:
 

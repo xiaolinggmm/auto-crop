@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { expect, test, type Page } from "@playwright/test";
-import type { Proof } from "@auto-crop/core";
+import type { Proof } from "@cordantry/core";
 import { fixtureApiPort } from "./fixtureApi";
 import {
   aiSaasPlaybook,
@@ -15,7 +15,7 @@ import {
   runCeoIntakeJobs,
   runCompanyReview,
   runSchedulerOnce,
-} from "@auto-crop/server";
+} from "@cordantry/server";
 
 let fixture: Awaited<ReturnType<typeof startFixtureServer>>;
 
@@ -117,7 +117,7 @@ async function openPage(page: Page, name: string) {
 }
 
 async function startFixtureServer() {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-dashboard-e2e-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-dashboard-e2e-"));
   const database = createDatabaseClient(":memory:");
   migrate(database);
   const repositories = createRepositories(database);

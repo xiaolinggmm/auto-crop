@@ -1,4 +1,4 @@
-import { hasOversightBearingAction, type BusinessArtifact, type Task } from "@auto-crop/core";
+import { hasOversightBearingAction, type BusinessArtifact, type Task } from "@cordantry/core";
 import { parseActionIntents } from "./actionIntent";
 import { isReviewableBusinessArtifact } from "./businessArtifact";
 

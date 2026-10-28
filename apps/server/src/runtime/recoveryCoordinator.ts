@@ -1,4 +1,4 @@
-import { isAffordanceApplicable } from "@auto-crop/core";
+import { isAffordanceApplicable } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import type { OutboxEvent } from "./executionEvents";
 import { briefRecoveryEligibility, collectRecoveryCandidateFilesForEvent, RECOVERY_DELAY_MS, type RecoveryMode } from "./automaticRecovery";

@@ -7,6 +7,6 @@ export default defineConfig({
     alias: [{ find: /^@\//, replacement: fileURLToPath(new URL("./apps/dashboard/src/", import.meta.url)) }],
   },
   test: {
-    exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**", "**/.auto-crop/**"],
+    exclude: ["**/node_modules/**", "**/dist/**", "**/e2e/**", "**/.cordantry/**"],
   },
 });

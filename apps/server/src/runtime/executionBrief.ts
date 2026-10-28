@@ -1,4 +1,4 @@
-import type { Company, ExecutionBrief, Task } from "@auto-crop/core";
+import type { Company, ExecutionBrief, Task } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest, AgentRunResult } from "../adapters/types";
 import { noToolGrant } from "../policies/capabilityGrant";
 import type { TaskHandoff } from "./dependencyReadiness";

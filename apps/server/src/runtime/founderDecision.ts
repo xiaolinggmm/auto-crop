@@ -4,7 +4,7 @@ import {
   type FounderDecisionOption,
   type Locale,
   type StrategicDecisionKind,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 
 /**
  * A well-formed `open_decisions` entry, normalized: the completing agent's declared open choice on a

@@ -16,7 +16,7 @@ const cleanups: Array<() => void> = [];
 afterEach(() => cleanups.splice(0).forEach(f => f()));
 function fixture(command: MahCommand) {
   const root = realpathSync(mkdtempSync(join(tmpdir(), "mah-adapter-")));
-  mkdirSync(join(root, ".auto-crop"));
+  mkdirSync(join(root, ".cordantry"));
   const { repositories, client } = openState(root);
   cleanups.push(() => { client.close(); rmSync(root, { recursive: true, force: true }); });
   const context = { companyId: "company_1", taskId: "task_1", runId: "run-1" };
@@ -37,7 +37,7 @@ describe("MAH CLI delegation", () => {
     expect(resolveSlot!()).toBe("background");
     expect(resolveSlot!("background")).toBe("background");
     expect(resolveSlot!("interactive")).toBe("interactive");
-    expect(() => resolveSlot!("review")).toThrow(/AUTO_CROP_MAH_SLOT.*background.*interactive/);
+    expect(() => resolveSlot!("review")).toThrow(/CORDANTRY_MAH_SLOT.*background.*interactive/);
   });
 
   it("exposes a startup preflight for MAH slot availability", () => {
@@ -64,7 +64,7 @@ describe("MAH CLI delegation", () => {
       command: async () => json({ ok: true, agent_slots: { interactive: 1, background: 0, review: 0 } }),
       mahProjectRoot: root,
       slotClass: "background",
-    })).rejects.toThrow(/background.*unavailable.*AUTO_CROP_MAH_SLOT=interactive/i);
+    })).rejects.toThrow(/background.*unavailable.*CORDANTRY_MAH_SLOT=interactive/i);
   });
 
   it("uses MAH routing and task artifacts, snapshots delivery and never runs a preparation provider", async () => {
@@ -114,7 +114,7 @@ describe("MAH CLI delegation", () => {
     });
     expect(await f.adapter.run(f.request)).toMatchObject({ status: "failed", terminationConfirmed: false });
     const id = f.repositories.mahExecutions.list("task_1")[0]!.mahTaskId;
-    const reopened = createDatabaseClient(join(f.root, ".auto-crop", "state.sqlite"));
+    const reopened = createDatabaseClient(join(f.root, ".cordantry", "state.sqlite"));
     try {
       const repositories = createRepositories(reopened);
       expect(repositories.mahExecutions.blocksDispatch("task_1")).toBe(true);

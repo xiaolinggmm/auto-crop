@@ -14,7 +14,7 @@ export type RecoveryMode = "report_only" | "brief-only-v1";
 export const RECOVERY_DELAY_MS = 30_000;
 const MAX_CANDIDATE_FILES = 50;
 const MAX_CANDIDATE_FILE_BYTES = 1024 * 1024;
-const SKIPPED_RECOVERY_DIRS = new Set([".git", "node_modules", ".auto-crop-handoff"]);
+const SKIPPED_RECOVERY_DIRS = new Set([".git", "node_modules", ".cordantry-handoff"]);
 
 export type RecoveryCandidateFile = {
   workspaceRole: "task_workspace" | "artifact_workspace";
@@ -25,9 +25,9 @@ export type RecoveryCandidateFile = {
 };
 
 export function recoveryModeFromEnvironment(env = process.env): RecoveryMode {
-  const mode = env.AUTO_CROP_RECOVERY_MODE ?? "report_only";
-  if (mode !== "report_only" && mode !== "brief-only-v1") throw new Error("AUTO_CROP_RECOVERY_MODE must be report_only or brief-only-v1");
-  if (mode !== "report_only" && env.AUTO_CROP_EXECUTION_POLICY !== "budget-v1") throw new Error("Automatic recovery requires budget-v1");
+  const mode = env.CORDANTRY_RECOVERY_MODE ?? "report_only";
+  if (mode !== "report_only" && mode !== "brief-only-v1") throw new Error("CORDANTRY_RECOVERY_MODE must be report_only or brief-only-v1");
+  if (mode !== "report_only" && env.CORDANTRY_EXECUTION_POLICY !== "budget-v1") throw new Error("Automatic recovery requires budget-v1");
   return mode;
 }
 

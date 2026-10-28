@@ -52,9 +52,9 @@ type AgentLoadState = "idle" | "loading" | "ready" | "failed";
 type CompanyListLoadState = "loading" | "ready" | "failed";
 /** `starting` finds the company to open; `workbench` is every page of an open company. */
 type AppView = "starting" | "onboarding" | "creating" | "workbench";
-const currentCompanyStorageKey = "auto-crop.currentCompanyId";
-const currentViewStorageKey = "auto-crop.currentView";
-const creationIdempotencyKeyStorageKey = "auto-crop.creationIdempotencyKey";
+const currentCompanyStorageKey = "cordantry.currentCompanyId";
+const currentViewStorageKey = "cordantry.currentView";
+const creationIdempotencyKeyStorageKey = "cordantry.creationIdempotencyKey";
 const creationCompleteHoldMs = 1200;
 
 export default function App({ apiClient }: AppProps) {
@@ -416,7 +416,7 @@ export default function App({ apiClient }: AppProps) {
     }
     try {
       const response = await client.createCompany({...input, creationIdempotencyKey: key});
-      window.sessionStorage.removeItem("auto-crop.onboardingDraft");
+      window.sessionStorage.removeItem("cordantry.onboardingDraft");
       clearCreationIdempotencyKey();
       setReturnCompanyId(null);
       setReviewOnboarding(false);

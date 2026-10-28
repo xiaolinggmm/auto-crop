@@ -11,7 +11,7 @@ import {
   type Proof,
   type ProofType,
   type Task,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { AgentCapabilityGrant, RuntimeCapability } from "../policies/capabilityGrant";
 import { parseActionIntents } from "./actionIntent";
 import type { ArtifactEnvelope, ProofReference } from "./artifactEnvelope";

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AgentRun, Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { AgentRun, Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -348,7 +348,7 @@ function createFixture() {
     id: "task_1", companyId: "company_1", departmentId: "department_1", keyResultId: "key_result_1",
     title: "Record implementation changes", description: "Record implementation changes.",
     assigneeAgentId: "codex", requiredCapabilities: ["code"], proofSchemaId: "repo-diff",
-    workspacePath: ".auto-crop/workspaces/task_1", status: "queued", riskLevel: "medium", position: 0,
+    workspacePath: ".cordantry/workspaces/task_1", status: "queued", riskLevel: "medium", position: 0,
   } satisfies Task);
   return { repositories, client };
 }

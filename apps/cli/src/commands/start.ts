@@ -1,7 +1,7 @@
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { AddressInfo } from "node:net";
-import { createId } from "@auto-crop/core";
+import { createId } from "@cordantry/core";
 import {
   aiSaasPlaybook,
   createApiServer,
@@ -23,7 +23,7 @@ import {
   type MahSlotClass,
   type SchedulerEvent,
   type SchedulerWakeReason,
-} from "@auto-crop/server";
+} from "@cordantry/server";
 
 /**
  * How often a live run's owner records that it is still here.
@@ -34,7 +34,7 @@ import {
  */
 const HEARTBEAT_INTERVAL_MS = 20_000;
 
-export type StartAutoCropOptions = {
+export type StartCordantryOptions = {
   dashboardRoot?: string;
   projectRoot: string;
   host?: string;
@@ -53,18 +53,18 @@ export type StartAutoCropOptions = {
   mahSlotClass?: MahSlotClass;
 };
 
-export type StartedAutoCrop = {
+export type StartedCordantry = {
   url: string;
   close(): Promise<void>;
 };
 
-export async function startAutoCrop(options: StartAutoCropOptions): Promise<StartedAutoCrop> {
+export async function startCordantry(options: StartCordantryOptions): Promise<StartedCordantry> {
   const executionBudget = options.executionBudget ?? executionBudgetFromEnvironment();
   const host = options.host ?? "127.0.0.1";
   const port = options.port ?? 0;
   const log = options.log ?? console.log;
-  const schedulerIntervalMs = options.schedulerIntervalMs ?? Number(process.env.AUTO_CROP_SCHEDULER_INTERVAL_MS ?? 5_000);
-  const stateDir = join(options.projectRoot, ".auto-crop");
+  const schedulerIntervalMs = options.schedulerIntervalMs ?? Number(process.env.CORDANTRY_SCHEDULER_INTERVAL_MS ?? 5_000);
+  const stateDir = join(options.projectRoot, ".cordantry");
   mkdirSync(stateDir, { recursive: true });
 
   // Execution mode and MAH readiness belong to each company, never server startup.

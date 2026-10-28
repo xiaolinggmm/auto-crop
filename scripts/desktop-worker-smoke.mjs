@@ -8,7 +8,7 @@ import { join, resolve } from "node:path";
 const require = createRequire(new URL("../apps/desktop/package.json", import.meta.url));
 const electron = require("electron");
 
-const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-desktop-smoke-"));
+const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-desktop-smoke-"));
 const port = await availablePort();
 const root = resolve(import.meta.dirname, "..");
 const child = spawn(electron, [join(root, "apps/desktop/dist/worker.mjs")], {
@@ -16,10 +16,10 @@ const child = spawn(electron, [join(root, "apps/desktop/dist/worker.mjs")], {
   env: {
     ...process.env,
     ELECTRON_RUN_AS_NODE: "1",
-    AUTO_CROP_DASHBOARD_ROOT: join(root, "apps/dashboard/dist"),
-    AUTO_CROP_PORT: String(port),
-    AUTO_CROP_PROJECT_ROOT: projectRoot,
-    AUTO_CROP_RUNTIME_ACTION_SERVER: join(root, "apps/desktop/dist/runtime-action.mjs"),
+    CORDANTRY_DASHBOARD_ROOT: join(root, "apps/dashboard/dist"),
+    CORDANTRY_PORT: String(port),
+    CORDANTRY_PROJECT_ROOT: projectRoot,
+    CORDANTRY_RUNTIME_ACTION_SERVER: join(root, "apps/desktop/dist/runtime-action.mjs"),
   },
   stdio: ["ignore", "pipe", "pipe", "ipc"],
 });
@@ -46,7 +46,7 @@ try {
     fetch(url),
     fetch(`${url}/api/agents`),
   ]);
-  if (!dashboard.ok || !(await dashboard.text()).includes("<title>auto-crop</title>")) {
+  if (!dashboard.ok || !(await dashboard.text()).includes("<title>Cordantry</title>")) {
     throw new Error(`Dashboard was not served by the packaged worker.\n${output}`);
   }
   if (!agents.ok || !Array.isArray((await agents.json()).agents)) {

@@ -5,16 +5,16 @@ import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { app, BrowserWindow, dialog, Menu } from "electron";
-import { superviseAutoCrop, type SupervisedAutoCrop } from "../../cli/src/commands/supervise";
+import { superviseCordantry, type SupervisedCordantry } from "../../cli/src/commands/supervise";
 import { agentPath, configuredProjectRoot, loadDesktopSettings, saveDesktopSettings } from "./runtime";
 
 let window: BrowserWindow | null = null;
-let supervised: SupervisedAutoCrop | null = null;
+let supervised: SupervisedCordantry | null = null;
 let shuttingDown = false;
 const currentDir = dirname(fileURLToPath(import.meta.url));
 
 function logPath(): string {
-  return join(app.getPath("logs"), "auto-crop.log");
+  return join(app.getPath("logs"), "cordantry.log");
 }
 
 function log(line: string): void {
@@ -39,13 +39,13 @@ function settingsPath(): string {
 
 async function selectProject(force = false): Promise<string | null> {
   const saved = configuredProjectRoot(
-    process.env.AUTO_CROP_PROJECT_ROOT,
+    process.env.CORDANTRY_PROJECT_ROOT,
     loadDesktopSettings(settingsPath()).projectRoot,
   );
   if (!force && saved && existsSync(saved) && statSync(saved).isDirectory()) return saved;
 
   const options = {
-    title: "Choose the project Auto Crop will operate on",
+    title: "Choose the project Cordantry will operate on",
     buttonLabel: "Use this project",
     properties: ["openDirectory", "createDirectory"] as Array<"openDirectory" | "createDirectory">,
   };
@@ -69,13 +69,13 @@ async function startProject(projectRoot: string): Promise<void> {
     ...process.env,
     PATH: agentPath(homedir(), process.env.PATH),
     ELECTRON_RUN_AS_NODE: "1",
-    AUTO_CROP_DASHBOARD_ROOT: dashboardRoot(),
-    AUTO_CROP_PORT: String(port),
-    AUTO_CROP_PROJECT_ROOT: projectRoot,
-    AUTO_CROP_RUNTIME_ACTION_SERVER: actionServerPath,
+    CORDANTRY_DASHBOARD_ROOT: dashboardRoot(),
+    CORDANTRY_PORT: String(port),
+    CORDANTRY_PROJECT_ROOT: projectRoot,
+    CORDANTRY_RUNTIME_ACTION_SERVER: actionServerPath,
   };
 
-  supervised = await superviseAutoCrop({
+  supervised = await superviseCordantry({
     projectRoot,
     log,
     spawnWorker: () => {
@@ -97,7 +97,7 @@ async function startProject(projectRoot: string): Promise<void> {
       height: 960,
       minWidth: 900,
       minHeight: 640,
-      title: "Auto Crop",
+      title: "Cordantry",
       webPreferences: { contextIsolation: true, nodeIntegration: false, sandbox: true },
     });
   }
@@ -111,14 +111,14 @@ async function switchProject(): Promise<void> {
   try {
     await startProject(projectRoot);
   } catch (error) {
-    dialog.showErrorBox("Auto Crop could not start", `${(error as Error).message}\n\nLogs: ${logPath()}`);
+    dialog.showErrorBox("Cordantry could not start", `${(error as Error).message}\n\nLogs: ${logPath()}`);
   }
 }
 
 function installMenu(): void {
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     {
-      label: "Auto Crop",
+      label: "Cordantry",
       submenu: [
         { label: "Open Project…", accelerator: "CmdOrCtrl+O", click: () => void switchProject() },
         { type: "separator" },
@@ -179,10 +179,10 @@ void (async () => {
   try {
     await startProject(projectRoot);
   } catch (error) {
-    dialog.showErrorBox("Auto Crop could not start", `${(error as Error).message}\n\nLogs: ${logPath()}`);
+    dialog.showErrorBox("Cordantry could not start", `${(error as Error).message}\n\nLogs: ${logPath()}`);
     app.quit();
   }
 })().catch((error) => {
-  dialog.showErrorBox("Auto Crop could not start", (error as Error).message);
+  dialog.showErrorBox("Cordantry could not start", (error as Error).message);
   app.quit();
 });

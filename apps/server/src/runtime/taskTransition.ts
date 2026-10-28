@@ -15,7 +15,7 @@ import {
   type TaskHoldResolver,
   type TaskHoldSubjectKind,
   type TaskStatus,
-} from "@auto-crop/core";
+} from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 
 /**

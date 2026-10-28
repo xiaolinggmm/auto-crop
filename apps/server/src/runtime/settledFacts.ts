@@ -1,4 +1,4 @@
-import type { Task } from "@auto-crop/core";
+import type { Task } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
 import { collectFounderDecisions, collectHumanActions } from "./ceoAttention";
 import { isVerdictStandardCurrent } from "./verificationContract";

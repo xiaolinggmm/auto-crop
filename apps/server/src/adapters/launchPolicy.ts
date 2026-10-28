@@ -2,7 +2,7 @@
  * Launch Policy: what an Agent Run's process must be denied before any capability is granted back
  * (ADR 0021), and how far an installed CLI can actually enforce it.
  *
- * The policy is Auto-Crop's vocabulary and is the same for every adapter. The flags that express it
+ * The policy is Cordantry's vocabulary and is the same for every adapter. The flags that express it
  * are not: each adapter declares which flags it needs, the installed CLI's help text says which exist,
  * and the result is an {@link AdapterLaunchSupport} decided before dispatch. A flag the CLI does not
  * declare is never passed — passing it blindly is how a task used to die on

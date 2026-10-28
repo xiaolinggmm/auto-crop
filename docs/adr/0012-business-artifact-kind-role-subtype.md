@@ -1,6 +1,6 @@
 # Business Artifact Kind, Role, and Subtype
 
-Auto-Crop will replace the old single `artifactType` concept with Artifact Kind, Artifact Role, and Artifact Subtype. Kind drives workflow behavior, Role describes the stable handoff shape, and Subtype carries playbook-specific business names such as `keyword_research`. This avoids repeatedly adding enum mappings whenever an agent names a valid use-case-specific artifact differently.
+Cordantry will replace the old single `artifactType` concept with Artifact Kind, Artifact Role, and Artifact Subtype. Kind drives workflow behavior, Role describes the stable handoff shape, and Subtype carries playbook-specific business names such as `keyword_research`. This avoids repeatedly adding enum mappings whenever an agent names a valid use-case-specific artifact differently.
 
 ## Considered Options
 

@@ -2,7 +2,7 @@ import { mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync, writeFileSync
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { deriveCeoPendingItems, type BusinessArtifact, type CEOOfficeItem, type Proof, type Task, type TaskEvent } from "@auto-crop/core";
+import { deriveCeoPendingItems, type BusinessArtifact, type CEOOfficeItem, type Proof, type Task, type TaskEvent } from "@cordantry/core";
 import type { AgentAdapter, AgentRunRequest } from "../adapters/types";
 import { createMockAgentAdapter } from "../adapters/mockAgent";
 import { createDatabaseClient } from "../db/client";
@@ -31,7 +31,7 @@ afterEach(() => {
 describe("API routes", () => {
   it("defaults companies to direct even when a global MAH backend is configured", async () => {
     const fixture = await startFixtureServer({ mahCommand: async () => { throw new Error("MAH must not be used"); } });
-    vi.stubEnv("AUTO_CROP_EXECUTION_BACKEND", "mah");
+    vi.stubEnv("CORDANTRY_EXECUTION_BACKEND", "mah");
     try {
       const created = await createCompanyForApi(fixture);
       expect(fixture.repositories.getCompany(created.company.id)).toMatchObject({ executionMode: "direct", mahConfig: null });
@@ -150,7 +150,7 @@ describe("API routes", () => {
       id: "review_1",
       companyId: created.company.id,
       summary: "Review exists.",
-      reviewPath: ".auto-crop/reviews/review_1.md",
+      reviewPath: ".cordantry/reviews/review_1.md",
       createdAt: "2026-08-17T00:00:00.000Z",
     } satisfies ReviewRecord);
     fixture.repositories.appendTaskEvent({
@@ -552,7 +552,7 @@ describe("API routes", () => {
       status: "running",
       startedAt: "2026-08-17T00:00:00.000Z",
       finishedAt: null,
-      promptPath: ".auto-crop/companies/company_1/ceo-prompt.md",
+      promptPath: ".cordantry/companies/company_1/ceo-prompt.md",
       failureMessage: null,
     });
 
@@ -914,7 +914,7 @@ describe("API routes", () => {
       dependencyNote: "Waiting for department subtasks.",
       taskKind: "parent" as const,
     };
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-subtask-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-subtask-proof-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "prototype-audit-trail.patch"), "diff --git a/app/page.tsx b/app/page.tsx\n", "utf8");
     const subtask = {
@@ -3838,7 +3838,7 @@ describe("department subtask Founder Decision lifecycle", () => {
     const { repositories } = fixture;
     const template = activatedTasks(fixture, created.company.id, 1)[0]!;
     const parent = { ...createIsolatedTask(template, "lifecycle_parent", "Build the prototype", "waiting_dependency", 300), taskKind: "parent" as const };
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-lifecycle-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-lifecycle-"));
     createdDirs.push(workspacePath);
     const define = {
       ...createIsolatedTask(template, "lifecycle_define", "Define the slice", entry === "agent_run" ? "running" : "failed", 301),
@@ -3971,7 +3971,7 @@ async function startFixtureServer(options: {
   failCompanyEventTypes?: Set<string>;
   log?: (line: string) => void;
 } = {}) {
-  const projectRoot = mkdtempSync(join(tmpdir(), "auto-crop-api-"));
+  const projectRoot = mkdtempSync(join(tmpdir(), "cordantry-api-"));
   createdDirs.push(projectRoot);
   const client = createDatabaseClient(":memory:");
   migrate(client);

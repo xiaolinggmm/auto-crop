@@ -26,7 +26,7 @@ export function acquireSupervisorOwnership(path: string) {
       | undefined;
     if (previous && (previous.host !== host || isPresent(previous.supervisor_pid)
       || (previous.worker_pid !== null && isPresent(previous.worker_pid)))) {
-      throw new Error("Auto-Crop is already running, or its previous worker cannot be confirmed stopped. Stop the existing processes before starting this project again.");
+      throw new Error("Cordantry is already running, or its previous worker cannot be confirmed stopped. Stop the existing processes before starting this project again.");
     }
     database.prepare(`INSERT OR REPLACE INTO ownership VALUES (1, ?, ?, ?, NULL)`)
       .run(token, host, process.pid);

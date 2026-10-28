@@ -11,8 +11,8 @@ it("does not confuse silence with owner loss, or output with verified progress",
 });
 it("requires explicit validated opt-in and keeps observe as the default", () => {
   expect(executionBudgetFromEnvironment({})).toBeUndefined();
-  expect(executionBudgetFromEnvironment({ AUTO_CROP_EXECUTION_POLICY: "budget-v1" })).toEqual({});
-  expect(() => executionBudgetFromEnvironment({ AUTO_CROP_EXECUTION_POLICY: "budget" })).toThrow();
-  expect(() => executionBudgetFromEnvironment({ AUTO_CROP_EXECUTION_POLICY: "budget-v1", AUTO_CROP_EXECUTION_BUDGET_JSON: '{"runHardMs":-1}' })).toThrow();
-  expect(() => executionBudgetFromEnvironment({ AUTO_CROP_EXECUTION_POLICY: "budget-v1", AUTO_CROP_EXECUTION_BUDGET_JSON: '{"suspectAfterMs":100000}' })).toThrow();
+  expect(executionBudgetFromEnvironment({ CORDANTRY_EXECUTION_POLICY: "budget-v1" })).toEqual({});
+  expect(() => executionBudgetFromEnvironment({ CORDANTRY_EXECUTION_POLICY: "budget" })).toThrow();
+  expect(() => executionBudgetFromEnvironment({ CORDANTRY_EXECUTION_POLICY: "budget-v1", CORDANTRY_EXECUTION_BUDGET_JSON: '{"runHardMs":-1}' })).toThrow();
+  expect(() => executionBudgetFromEnvironment({ CORDANTRY_EXECUTION_POLICY: "budget-v1", CORDANTRY_EXECUTION_BUDGET_JSON: '{"suspectAfterMs":100000}' })).toThrow();
 });

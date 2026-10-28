@@ -1,6 +1,6 @@
 # Quickstart
 
-This guide is for running auto-crop from a source checkout. For normal use, download a desktop
+This guide is for running Cordantry from a source checkout. For normal use, download a desktop
 installer from GitHub Releases and follow [Desktop distribution](desktop-distribution.md); release
 users do not need Node.js or pnpm.
 
@@ -15,7 +15,7 @@ users do not need Node.js or pnpm.
 
 ```bash
 git clone <repo-url>
-cd auto-crop
+cd cordantry
 pnpm install
 pnpm test
 pnpm typecheck
@@ -25,29 +25,22 @@ The SQLite layer uses Node's built-in `node:sqlite` module. On Node 24 this prin
 
 ## Start The Local Runtime
 
-From the project you want auto-crop to operate on:
+From the project you want Cordantry to operate on:
 
 ```bash
-AUTO_CROP_PORT=8787 pnpm --filter @auto-crop/cli start
+CORDANTRY_PORT=8787 pnpm --filter @cordantry/cli start
 ```
 
-The CLI creates `.auto-crop/state.sqlite`, starts the local API server, detects Claude Code and Codex adapters, and prints the local server URL.
+The CLI creates `.cordantry/state.sqlite`, starts the local API server, detects Claude Code and Codex adapters, and prints the local server URL.
 
-For MAH-backed task execution, set the managed project and slot before startup:
+Choose the execution mode when creating a company. Direct dispatch is selected by default and uses the local CEO and scheduler. MAH coordination requires an existing managed project path and a MAH CLI executable; `CORDANTRY_MAH_CLI` supplies the default executable when omitted.
 
-```bash
-export AUTO_CROP_EXECUTION_BACKEND=mah
-export AUTO_CROP_MAH_CLI=/Applications/MAH.app/Contents/Resources/bin/mah
-export AUTO_CROP_MAH_PROJECT_ROOT=/absolute/path/to/managed/mah/project
-export AUTO_CROP_MAH_SLOT=background
-```
-
-The slot defaults to `background`. If the account has only interactive capacity, explicitly set `AUTO_CROP_MAH_SLOT=interactive`. Startup checks the selected slot and does not fall back silently.
+MAH creation checks the project's identity and selected slot before saving. The slot defaults to `background`; explicitly select `interactive` in the advanced options if needed. Company mode and project identity cannot be changed after creation. MAH availability does not block runtime startup or Direct companies, and failed MAH tasks never silently fall back to Direct dispatch.
 
 Future package usage is intended to be:
 
 ```bash
-npx auto-crop start
+npx cordantry start
 ```
 
 ## Run The Dashboard
@@ -55,7 +48,7 @@ npx auto-crop start
 During development, run the dashboard separately and point it at the API server:
 
 ```bash
-VITE_AUTO_CROP_API_URL=http://127.0.0.1:8787 pnpm --filter @auto-crop/dashboard dev
+VITE_CORDANTRY_API_URL=http://127.0.0.1:8787 pnpm --filter @cordantry/dashboard dev
 ```
 
 The dashboard also accepts an API URL query parameter:
@@ -68,10 +61,10 @@ http://127.0.0.1:5173/?apiUrl=http%3A%2F%2F127.0.0.1%3A8787
 
 1. Start the local runtime.
 2. Open the dashboard.
-3. Enter a company name.
+3. Enter a company name and choose Direct dispatch (default) or MAH coordination.
 4. Continue to agent detection and choose one detected CEO agent. Claude Code is the recommended first CEO Agent on this machine; Codex may require local permissions.
 5. Enter a founder vision.
-6. Choose Safe, Balanced, or Autonomous mode. Balanced is the default.
+6. For MAH coordination, provide the managed project and CLI paths, and select a slot if the default background slot is unsuitable.
 7. Click Create Company and wait on the CRT-styled creation loading page.
 8. Land in the Department Workspace with CEO selected by default.
 9. Use the left rail to inspect generated departments and their queued tasks.
@@ -80,9 +73,9 @@ http://127.0.0.1:5173/?apiUrl=http%3A%2F%2F127.0.0.1%3A8787
 
 ## Troubleshooting
 
-If the CEO selection step shows `Local API is not connected`, make sure the local runtime is still running and that `VITE_AUTO_CROP_API_URL` points at the API server URL printed by the CLI.
+If the CEO selection step shows `Local API is not connected`, make sure the local runtime is still running and that `VITE_CORDANTRY_API_URL` points at the API server URL printed by the CLI.
 
-If company creation returns a CEO Agent timeout or blueprint error, retry with a smaller founder vision, confirm the selected local agent can run from the terminal, and consider increasing `AUTO_CROP_AGENT_TIMEOUT_MS` when starting the runtime.
+If company creation returns a CEO Agent timeout or blueprint error, retry with a smaller founder vision, confirm the selected local agent can run from the terminal, and consider increasing `CORDANTRY_AGENT_TIMEOUT_MS` when starting the runtime.
 
 ## Supported Agents
 
@@ -120,27 +113,27 @@ pnpm smoke:real-agent
 The real-agent smoke requires a working local agent, defaults to Claude Code, and runs in an isolated temporary workspace. To try Codex:
 
 ```bash
-AUTO_CROP_REAL_AGENT=codex pnpm smoke:real-agent
+CORDANTRY_REAL_AGENT=codex pnpm smoke:real-agent
 ```
 
 Dashboard commands:
 
 ```bash
-pnpm --filter @auto-crop/dashboard test
-pnpm --filter @auto-crop/dashboard typecheck
+pnpm --filter @cordantry/dashboard test
+pnpm --filter @cordantry/dashboard typecheck
 ```
 
 Browser E2E:
 
 ```bash
-pnpm --filter @auto-crop/dashboard exec playwright install chromium
-pnpm --filter @auto-crop/dashboard e2e
+pnpm --filter @cordantry/dashboard exec playwright install chromium
+pnpm --filter @cordantry/dashboard e2e
 ```
 
 If you already have a compatible Chromium executable:
 
 ```bash
-PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium pnpm --filter @auto-crop/dashboard e2e
+PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/path/to/chromium pnpm --filter @cordantry/dashboard e2e
 ```
 
 On some restricted macOS environments, Playwright can fail before running tests with `bootstrap_check_in` permission errors. Use an unrestricted local environment or CI runner for E2E verification.

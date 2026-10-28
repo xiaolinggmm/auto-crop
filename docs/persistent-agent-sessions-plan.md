@@ -2,11 +2,11 @@
 
 ## Goal
 
-Add an experimental Persistent Agent Session capability for planning and coordination work so eligible agents can reuse context across Agent Runs without changing Auto-Crop's Proof-gated task model.
+Add an experimental Persistent Agent Session capability for planning and coordination work so eligible agents can reuse context across Agent Runs without changing Cordantry's Proof-gated task model.
 
 ## Architecture
 
-Auto-Crop keeps One-shot Agent Runs as the default. A Session Policy may allow selected planning paths to attempt an Agent Session when `AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS=1` is set and the selected adapter exposes a session capability. If the session path is unavailable before task execution starts, the runtime falls back to one-shot and records concise Agent Activity.
+Cordantry keeps One-shot Agent Runs as the default. A Session Policy may allow selected planning paths to attempt an Agent Session when `CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS=1` is set and the selected adapter exposes a session capability. If the session path is unavailable before task execution starts, the runtime falls back to one-shot and records concise Agent Activity.
 
 Persistent sessions are an execution optimization, not a deliverable channel. The scheduler must still build the task prompt from the task description, upstream handoffs, Consumable Proof, and Handoff Package paths. Session Memory must never replace Proof, Dependency Readiness, or Handoff Package inputs.
 
@@ -21,13 +21,13 @@ Persistent sessions are an execution optimization, not a deliverable channel. Th
 
 ## Cumora Lessons To Borrow
 
-- **Optional session adapter:** Cumora's engine adapter shape uses a persistent `startSession` path with one-shot `run` fallback. Auto-Crop should use the same discipline without copying the daemon architecture.
+- **Optional session adapter:** Cumora's engine adapter shape uses a persistent `startSession` path with one-shot `run` fallback. Cordantry should use the same discipline without copying the daemon architecture.
 - **Standing prompt plus per-run delta:** Deliver stable instructions once per session when supported, but still send each task's explicit prompt delta and handoff context.
-- **Separate local session state:** Keep session state outside task workspaces, under `.auto-crop/sessions/<companyId>/<agentId>/<permissionMode>/`.
+- **Separate local session state:** Keep session state outside task workspaces, under `.cordantry/sessions/<companyId>/<agentId>/<permissionMode>/`.
 - **Probe before relying on sessions:** A failed session probe should mean "run one-shot", not "agent unavailable".
 - **Reset bad sessions:** Stale resume ids, context overflow, dead processes, or permission errors should drop the session instead of wedging future work.
 - **Code mechanisms over prompt rules:** Correctness must come from scheduler policy, Proof, and Handoff Package contracts, not from asking the agent to remember boundaries.
-- **Fail-closed launch with explicit config (landed as ADR 0021):** Cumora's BYOA daemon runs Claude Code `--restricted` and Codex `--ignore-user-config --ignore-rules`, denying web and shell by default and handing back one audited surface. Auto-Crop took the posture — an Agent Capability Grant per run, nothing inherited from the operator's machine — without the daemon, the device pairing, or the MCP bridge.
+- **Fail-closed launch with explicit config (landed as ADR 0021):** Cumora's BYOA daemon runs Claude Code `--restricted` and Codex `--ignore-user-config --ignore-rules`, denying web and shell by default and handing back one audited surface. Cordantry took the posture — an Agent Capability Grant per run, nothing inherited from the operator's machine — without the daemon, the device pairing, or the MCP bridge.
 
 ## Domain Rules
 
@@ -151,7 +151,7 @@ Files:
 
 Behavior:
 
-- [x] Reads `AUTO_CROP_EXPERIMENTAL_AGENT_SESSIONS`.
+- [x] Reads `CORDANTRY_EXPERIMENTAL_AGENT_SESSIONS`.
 - [x] Returns disabled by default.
 - [x] Allows only explicit planning/coordination call sites.
 - [x] Produces a session key from company id, agent id, and Permission Mode.

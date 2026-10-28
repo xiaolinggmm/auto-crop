@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
+import type { Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";
@@ -137,7 +137,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   // Recovered proof gets the scheduler's delivery policy, so an eligible ordinary deliverable is accepted
   // automatically rather than always sent to CEO review (see deliveryFinalization).
   it("does not settle a recovered candidate after the task ownership epoch changes", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-recovery-stale-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-recovery-stale-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "output.patch"), "diff --git a/a.ts b/a.ts\n");
     leaveValidDelivery();
@@ -153,7 +153,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("rolls recovery back without losing the candidate, then records a durable disposition", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-recovery-rollback-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-recovery-rollback-"));
     createdDirs.push(workspacePath);
     const candidateDir = join(workspacePath, "candidates");
     runtimeActionChannel = createRuntimeActionChannel({ candidateDir });
@@ -175,7 +175,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("recovers controlled repo-diff output from failed no-proof tasks and finalizes it like a finished run", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "prototype-audit-trail.patch"), "diff --git a/app/page.tsx b/app/page.tsx\n", "utf8");
     leaveValidDelivery();
@@ -231,7 +231,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("recovers controlled repo-diff output from missing-business-artifact refreshes", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "implementation-changes.diff"), "diff --git a/index.html b/index.html\n", "utf8");
     leaveValidDelivery();
@@ -274,8 +274,8 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("recovers proof from an upstream artifact workspace during refresh", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-empty-"));
-    const upstreamWorkspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-upstream-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-empty-"));
+    const upstreamWorkspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-upstream-"));
     createdDirs.push(workspacePath, upstreamWorkspacePath);
     writeFileSync(
       join(upstreamWorkspacePath, "implementation-changes.diff"),
@@ -321,7 +321,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
     expect(result.task.status).toBe("complete");
     expect(fixture.repositories.listProofsForTask("task_1")[0]).toMatchObject({
       type: "diff",
-      uri: join(upstreamWorkspacePath, ".auto-crop-proof", "task_1.diff"),
+      uri: join(upstreamWorkspacePath, ".cordantry-proof", "task_1.diff"),
       summary: "Diff proof recovered from implementation-changes.diff.",
     });
     expect(result.event).toMatchObject({ type: "automatic_acceptance", status: "complete" });
@@ -338,7 +338,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
    * opened another Hold on the new capture, and never re-ran the work — so neither exit led out.
    */
   it("re-runs a task whose workspace still holds no reviewable artifact instead of recapturing it", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "prototype-audit-trail.patch"), "diff --git a/app/page.tsx b/app/page.tsx\n", "utf8");
     const fixture = createFixture([
@@ -380,7 +380,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("blocks recovered proof before CEO review when the business artifact is missing", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "prototype-audit-trail.patch"), "diff --git a/app/page.tsx b/app/page.tsx\n", "utf8");
     const fixture = createFixture([
@@ -432,9 +432,9 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("does not degrade an unverified screenshot sandbox blocker during proof recovery", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
-    writeFileSync(join(workspacePath, "index.html"), "<main>Auto Crop Workspace</main>", "utf8");
+    writeFileSync(join(workspacePath, "index.html"), "<main>Cordantry Workspace</main>", "utf8");
     leaveScreenshotSandboxBlocker();
     const fixture = createFixture([
       {
@@ -464,7 +464,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("parks a recovered Blocker Report with an Unblock Request on its Human Action, closing the invalid-delivery Hold", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "index.html"), "<main>notes</main>", "utf8");
     leaveDelivery({
@@ -516,7 +516,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("does not recover unrelated failed tasks", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
     writeFileSync(join(workspacePath, "prototype-audit-trail.patch"), "diff --git a/app/page.tsx b/app/page.tsx\n", "utf8");
     const fixture = createFixture([
@@ -550,7 +550,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
   });
 
   it("explains expected repo-diff proof locations when refresh cannot recover proof", () => {
-    const workspacePath = mkdtempSync(join(tmpdir(), "auto-crop-refresh-proof-"));
+    const workspacePath = mkdtempSync(join(tmpdir(), "cordantry-refresh-proof-"));
     createdDirs.push(workspacePath);
     leaveValidDelivery();
     const fixture = createFixture([
@@ -577,7 +577,7 @@ describe("refreshTaskDependencyState proof recovery", () => {
 
     expect(result.recovery?.status).toBe("not_found");
     expect(result.recovery?.message).toContain("repo-diff proof missing");
-    expect(result.recovery?.message).toContain(".auto-crop-proof/*.diff");
+    expect(result.recovery?.message).toContain(".cordantry-proof/*.diff");
     expect(result.recovery?.message).toContain("top-level workspace *.diff/*.patch");
     expect(result.recovery?.message).toContain("an Artifact Envelope is not diff proof");
     expect(fixture.repositories.listProofsForTask("task_1")).toEqual([]);
@@ -702,7 +702,7 @@ function createDepartmentRecord(): Department {
     name: "Engineering",
     responsibility: "Build prototypes.",
     leadAgentId: "codex",
-    memoryPath: ".auto-crop/companies/company_1/departments/engineering/memory.md",
+    memoryPath: ".cordantry/companies/company_1/departments/engineering/memory.md",
   };
 }
 
@@ -739,7 +739,7 @@ function createTaskRecord(): Task {
     assigneeAgentId: "codex",
     requiredCapabilities: ["code"],
     proofSchemaId: "repo-diff",
-    workspacePath: ".auto-crop/workspaces/task_1",
+    workspacePath: ".cordantry/workspaces/task_1",
     status: "queued",
     riskLevel: "medium",
     position: 0,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { AgentRun } from "@auto-crop/core";
+import type { AgentRun } from "@cordantry/core";
 import { createDatabaseClient } from "../db/client";
 import { createRepositories } from "../db/repositories";
 import { migrate } from "../db/schema";

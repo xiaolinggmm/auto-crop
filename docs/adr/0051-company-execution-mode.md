@@ -6,7 +6,7 @@ status: accepted
 
 Founders choose Direct Dispatch or MAH Coordination when starting company creation; leaving the selection unchanged means Direct Dispatch. This confirmed product decision scopes execution mode to each company, rather than the application runtime, so MAH setup does not prevent founders from trying the existing direct workflow and different companies can use different modes.
 
-Both modes retain Auto-Crop's CEO planning, department/Agent responsibility and business validation. Direct Dispatch preserves the existing direct execution workflow; MAH Coordination preserves ADR 0050's delegation boundary, under which MAH coordinates a delegated execution rather than taking over company planning.
+Both modes retain Cordantry's CEO planning, department/Agent responsibility and business validation. Direct Dispatch preserves the existing direct execution workflow; MAH Coordination preserves ADR 0050's delegation boundary, under which MAH coordinates a delegated execution rather than taking over company planning.
 
 Execution mode cannot be changed after company creation. If MAH is not ready during creation, preserve the founder's input and block creation until configuration is corrected or the founder explicitly selects Direct Dispatch. Never silently substitute a mode.
 
@@ -20,7 +20,7 @@ Legacy-company mode migration is out of scope: existing data is test data, not p
 
 Connection configuration may be repaired after creation, for example when the MAH installation or original project moves. Repair must retain the same MAH project and execution mode. Unresolved delegations must be reconciled against their original execution records before any replacement dispatch.
 
-Both modes share one creation form, with the mode selector at the beginning and Direct Dispatch selected by default. Name, vision and CEO Agent selection are shared; MAH Coordination additionally exposes project selection and readiness checks. Switching the selection before creation preserves entered form values. Both modes require a CEO Agent because business planning remains with Auto-Crop.
+Both modes share one creation form, with the mode selector at the beginning and Direct Dispatch selected by default. Name, vision and CEO Agent selection are shared; MAH Coordination additionally exposes project selection and readiness checks. Switching the selection before creation preserves entered form values. Both modes require a CEO Agent because business planning remains with Cordantry.
 
 MAH Coordination defaults to the background slot class. Advanced configuration permits an explicit interactive-slot selection; validate the selected class and never silently substitute one for the other. Quota-management UI is outside this scope.
 

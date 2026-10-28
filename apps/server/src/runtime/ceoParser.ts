@@ -1,4 +1,4 @@
-import { ceoResponseSchema, localizedTextFromString, type CeoResponseInput } from "@auto-crop/core";
+import { ceoResponseSchema, localizedTextFromString, type CeoResponseInput } from "@cordantry/core";
 import type { Playbook } from "../playbooks/types";
 import { isCollectableSchema } from "./proof";
 

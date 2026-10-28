@@ -1,9 +1,9 @@
 import { join } from "node:path";
-import type { Company, Department, KeyResult, Objective, Task } from "@auto-crop/core";
-import { createDatabaseClient, createRepositories, migrate } from "@auto-crop/server";
+import type { Company, Department, KeyResult, Objective, Task } from "@cordantry/core";
+import { createDatabaseClient, createRepositories, migrate } from "@cordantry/server";
 
 export function openState(projectRoot: string) {
-  const client = createDatabaseClient(join(projectRoot, ".auto-crop", "state.sqlite"));
+  const client = createDatabaseClient(join(projectRoot, ".cordantry", "state.sqlite"));
   migrate(client);
   const repositories = createRepositories(client);
   repositories.createCompany({
@@ -26,7 +26,7 @@ export function openState(projectRoot: string) {
     id: "task_1", companyId: "company_1", departmentId: "department_1", keyResultId: "key_result_1",
     title: "Record implementation changes", description: "Record implementation changes.",
     assigneeAgentId: "codex", requiredCapabilities: ["code"], proofSchemaId: "repo-diff",
-    workspacePath: join(projectRoot, ".auto-crop", "workspaces", "task_1"), status: "queued", riskLevel: "medium", position: 0,
+    workspacePath: join(projectRoot, ".cordantry", "workspaces", "task_1"), status: "queued", riskLevel: "medium", position: 0,
   } satisfies Task);
   return { repositories, client };
 }

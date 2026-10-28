@@ -32,9 +32,9 @@ import type {
   TaskProgressEvent,
   TaskStatus,
   WaitState,
-} from "@auto-crop/core";
-import type { CompleteLocalizedText, Locale, LocalizedText } from "@auto-crop/core";
-import { isLocale, localizedTextFromString, projectCeoOfficeItems } from "@auto-crop/core";
+} from "@cordantry/core";
+import type { CompleteLocalizedText, Locale, LocalizedText } from "@cordantry/core";
+import { isLocale, localizedTextFromString, projectCeoOfficeItems } from "@cordantry/core";
 import type { AgentAdapter } from "../adapters/types";
 import type { createRepositories, ReviewRecord } from "../db/repositories";
 import { EventStream } from "../events/sse";
