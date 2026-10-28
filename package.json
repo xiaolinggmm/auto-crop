@@ -6,6 +6,7 @@
   "packageManager": "pnpm@11.9.0",
   "scripts": {
     "build": "pnpm --filter @cordantry/dashboard build && pnpm --filter @cordantry/desktop build",
+    "build:website": "pnpm --filter @cordantry/website build",
     "desktop": "pnpm build && pnpm --filter @cordantry/desktop dev",
     "dist": "pnpm --filter @cordantry/dashboard build && pnpm --filter @cordantry/desktop dist",
     "dev": "pnpm -r --parallel --if-present dev",
