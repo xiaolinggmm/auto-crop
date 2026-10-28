@@ -92,3 +92,62 @@ it("shows complete static scenes with reduced motion and supports direct navigat
   ).toBeInTheDocument();
   vi.unstubAllGlobals();
 });
+
+
+it("preserves all choices when switching execution modes and submits MAH configuration", async () => {
+  const submit = vi.fn();
+  const user = userEvent.setup();
+  render(<LanguageProvider><Onboarding agents={[{id: "codex", name: "Codex", detected: true, capabilities: []}]} onCreate={submit} /></LanguageProvider>);
+  await user.click(screen.getByRole("button", {name: "Create directly"}));
+  expect(screen.getByRole("radio", {name: "Direct dispatch (default)"})).toBeChecked();
+  await user.type(screen.getByLabelText("Company name"), "Studio");
+  await user.type(screen.getByLabelText("Founder vision"), "Build something");
+  await user.selectOptions(screen.getByLabelText("CEO agent"), "codex");
+  await user.click(screen.getByRole("radio", {name: "MAH coordination (advanced)"}));
+  await user.type(screen.getByLabelText("MAH project root"), "/projects/demo");
+  await user.type(screen.getByLabelText("MAH executable"), "/tools/mah");
+  await user.click(screen.getByRole("radio", {name: "Direct dispatch (default)"}));
+  await user.click(screen.getByRole("radio", {name: "MAH coordination (advanced)"}));
+  expect(screen.getByLabelText("MAH project root")).toHaveValue("/projects/demo");
+  await user.click(screen.getByRole("button", {name: "Generate team and plan"}));
+  expect(submit).toHaveBeenCalledWith(expect.objectContaining({executionMode: "mah", companyName: "Studio", selectedCeoAgentId: "codex", mahConfig: {projectRoot: "/projects/demo", cliPath: "/tools/mah", slotClass: "background"}}));
+});
+
+
+it("accepts Windows absolute project paths and explicitly selected interactive slots", async () => {
+  const submit = vi.fn();
+  const user = userEvent.setup();
+  render(<LanguageProvider><Onboarding agents={[{id: "codex", name: "Codex", detected: true, capabilities: []}]} onCreate={submit} /></LanguageProvider>);
+  await user.click(screen.getByRole("button", {name: "Create directly"}));
+  await user.type(screen.getByLabelText("Company name"), "Studio");
+  await user.type(screen.getByLabelText("Founder vision"), "Build");
+  await user.selectOptions(screen.getByLabelText("CEO agent"), "codex");
+  await user.click(screen.getByRole("radio", {name: "MAH coordination (advanced)"}));
+  fireEvent.change(screen.getByLabelText("MAH project root"), {target: {value: "C:\\work\\project"}});
+  await user.click(screen.getByText("Advanced"));
+  await user.selectOptions(screen.getByLabelText("Slot class"), "interactive");
+  await user.click(screen.getByRole("button", {name: "Generate team and plan"}));
+  expect(submit).toHaveBeenCalledWith(expect.objectContaining({mahConfig: {projectRoot: "C:\\work\\project", cliPath: "mah", slotClass: "interactive"}}));
+});
+
+it("blocks both modes when no agent is detected", async () => {
+  const user = userEvent.setup();
+  render(<LanguageProvider><Onboarding agents={[{id: "codex", name: "Codex", detected: false, capabilities: []}]} onCreate={vi.fn()} /></LanguageProvider>);
+  await user.click(screen.getByRole("button", {name: "Create directly"}));
+  await user.type(screen.getByLabelText("Company name"), "Studio");
+  await user.type(screen.getByLabelText("Founder vision"), "Build");
+  expect(screen.queryByRole("option", {name: "Codex"})).not.toBeInTheDocument();
+  expect(screen.getByRole("button", {name: "Generate team and plan"})).toBeDisabled();
+  await user.click(screen.getByRole("radio", {name: "MAH coordination (advanced)"}));
+  await user.type(screen.getByLabelText("MAH project root"), "/project");
+  expect(screen.getByRole("button", {name: "Generate team and plan"})).toBeDisabled();
+});
+
+it("locks the draft while a creation request is being validated", async () => {
+  const user = userEvent.setup();
+  render(<LanguageProvider><Onboarding isCreating agents={[{id: "codex", name: "Codex", detected: true, capabilities: []}]} onCreate={vi.fn()} /></LanguageProvider>);
+  await user.click(screen.getByRole("button", {name: "Create directly"}));
+  expect(screen.getByLabelText("Company name")).toBeDisabled();
+  expect(screen.getByLabelText("CEO agent")).toBeDisabled();
+  expect(screen.getByRole("button", {name: "Validating and creating…"})).toBeDisabled();
+});

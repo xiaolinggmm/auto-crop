@@ -4,6 +4,18 @@ This context defines how Cordantry assigns work, delegates execution and receive
 
 ## Language
 
+**Company Execution Mode**:
+The company's choice, made during company creation, of Direct Dispatch or MAH Coordination for task execution; it cannot be changed after creation. Direct Dispatch is the default when the founder makes no other selection.
+_Avoid_: Application-wide mode, CEO model, permission mode
+
+**Direct Dispatch**:
+The execution mode in which Cordantry's CEO and scheduler retain task planning and department/Agent assignment, and assigned Agents execute the work directly.
+_Avoid_: MAH decomposition
+
+**MAH Coordination**:
+The execution mode in which Cordantry retains business planning and delegates task execution to MAH, which coordinates its own execution resources.
+_Avoid_: MAH as CEO, whole-company delegation
+
 **MAH Delegation**:
 One Cordantry execution attempt entrusted to one MAH Task, with MAH responsible for its internal executor choices.
 _Avoid_: Fixed executor binding, provider invocation

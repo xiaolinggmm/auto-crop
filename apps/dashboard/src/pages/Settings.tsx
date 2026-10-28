@@ -1,7 +1,7 @@
 import { Building2, Check, Languages, Plus, RefreshCw } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { CompanyListItem, CompanySummary } from "../api/client";
-import { Alert, AlertDescription, AlertTitle, Button } from "../components/ui";
+import { Alert, AlertDescription, AlertTitle, Button, Input, Label } from "../components/ui";
 import { StatusTag } from "../components/ice-mist";
 import { CompanyStatus } from "../components/workbench/CompanyStatus";
 import { LanguageSwitch } from "../components/workbench/LanguageSwitch";
@@ -19,6 +19,7 @@ export type SettingsProps = {
   onOpenCompany(companyId: string): void;
   onCreateNewCompany(): void;
   onReviewOnboarding?(): void;
+  onRepairMahConnection?(input: {projectRoot: string; cliPath: string}): Promise<void>;
   stopCommand: WorkbenchCommand;
 };
 
@@ -30,11 +31,23 @@ export function Settings({
   company,
   onCreateNewCompany,
   onReviewOnboarding,
+  onRepairMahConnection,
   onLoadCompanies,
   onOpenCompany,
   stopCommand,
 }: SettingsProps) {
   const { t, language } = useLanguage();
+  const zh = language === "zh";
+  const [projectRoot, setProjectRoot] = useState(company.mahConfig?.projectRoot ?? "");
+  const [cliPath, setCliPath] = useState(company.mahConfig?.cliPath ?? "mah");
+  const [saving, setSaving] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  useEffect(() => {
+    setProjectRoot(company.mahConfig?.projectRoot ?? "");
+    setCliPath(company.mahConfig?.cliPath ?? "mah");
+    setConnectionError(null);
+  }, [company.id, company.mahConfig?.projectRoot, company.mahConfig?.cliPath]);
 
   useEffect(() => {
     onLoadCompanies();
@@ -49,6 +62,32 @@ export function Settings({
           <CompanyStatus status={company.status} />
         </div>
         <StopOperatingConfirm command={stopCommand} companyName={company.name} />
+      </WorkbenchSection>
+
+      <WorkbenchSection icon={<Building2 aria-hidden="true" />} title={zh ? "执行模式" : "Execution mode"}>
+        <p className="font-semibold">{company.executionMode === "mah" ? (zh ? "高级模式 · MAH 协调" : "MAH coordination (advanced)") : (zh ? "默认模式 · 直接派发" : "Direct dispatch (default)")}</p>
+        <p className="text-sm text-muted-foreground">{zh ? "公司创建后不能切换执行模式或 MAH 项目。如需切换，请创建新公司。" : "Execution mode and MAH project cannot change after creation. Create a new company to use a different mode or project."}</p>
+        {company.executionMode === "mah" && <form className="grid gap-3" onSubmit={async event => {
+          event.preventDefault();
+          if (!onRepairMahConnection || saving) return;
+          setSaving(true); setSaved(false); setConnectionError(null);
+          try {
+            await onRepairMahConnection({projectRoot: projectRoot.trim(), cliPath: cliPath.trim() || "mah"});
+            setSaved(true);
+          } catch (error) {
+            setConnectionError(error instanceof Error ? error.message : String(error));
+          } finally { setSaving(false); }
+        }}>
+          <p className="text-sm">{zh ? "可修复连接路径。服务器会验证路径仍指向原 MAH 项目。" : "Repair connection paths here. The server verifies they still identify the original MAH project."}</p>
+          <p className="break-all text-sm">{zh ? "项目 ID：" : "Project ID: "}{company.mahConfig?.projectId ?? "—"} · {company.mahConfig?.slotClass ?? "background"}</p>
+          <Label htmlFor="settings-mah-root">{zh ? "MAH 项目根目录" : "MAH project root"}</Label>
+          <Input id="settings-mah-root" required value={projectRoot} disabled={saving} onChange={event => {setProjectRoot(event.target.value); setSaved(false);}} />
+          <Label htmlFor="settings-mah-cli">{zh ? "MAH 可执行文件" : "MAH executable"}</Label>
+          <Input id="settings-mah-cli" value={cliPath} disabled={saving} onChange={event => {setCliPath(event.target.value); setSaved(false);}} />
+          {connectionError && <Alert role="alert" variant="danger">{connectionError}</Alert>}
+          {saved && <p role="status">{zh ? "连接已保存。" : "Connection saved."}</p>}
+          <Button type="submit" disabled={saving || !projectRoot.trim() || !onRepairMahConnection}>{saving ? (zh ? "验证中…" : "Validating…") : (zh ? "验证并保存连接" : "Validate and save connection")}</Button>
+        </form>}
       </WorkbenchSection>
 
       <WorkbenchSection icon={<Building2 aria-hidden="true" />} title={t("settings.allCompanies")}>

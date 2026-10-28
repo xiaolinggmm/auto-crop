@@ -33,6 +33,10 @@ CORDANTRY_PORT=8787 pnpm --filter @cordantry/cli start
 
 The CLI creates `.cordantry/state.sqlite`, starts the local API server, detects Claude Code and Codex adapters, and prints the local server URL.
 
+Choose the execution mode when creating a company. Direct dispatch is selected by default and uses the local CEO and scheduler. MAH coordination requires an existing managed project path and a MAH CLI executable; `CORDANTRY_MAH_CLI` supplies the default executable when omitted.
+
+MAH creation checks the project's identity and selected slot before saving. The slot defaults to `background`; explicitly select `interactive` in the advanced options if needed. Company mode and project identity cannot be changed after creation. MAH availability does not block runtime startup or Direct companies, and failed MAH tasks never silently fall back to Direct dispatch.
+
 Future package usage is intended to be:
 
 ```bash
@@ -57,10 +61,10 @@ http://127.0.0.1:5173/?apiUrl=http%3A%2F%2F127.0.0.1%3A8787
 
 1. Start the local runtime.
 2. Open the dashboard.
-3. Enter a company name.
+3. Enter a company name and choose Direct dispatch (default) or MAH coordination.
 4. Continue to agent detection and choose one detected CEO agent. Claude Code is the recommended first CEO Agent on this machine; Codex may require local permissions.
 5. Enter a founder vision.
-6. Choose Safe, Balanced, or Autonomous mode. Balanced is the default.
+6. For MAH coordination, provide the managed project and CLI paths, and select a slot if the default background slot is unsuitable.
 7. Click Create Company and wait on the CRT-styled creation loading page.
 8. Land in the Department Workspace with CEO selected by default.
 9. Use the left rail to inspect generated departments and their queued tasks.

@@ -37,6 +37,30 @@ describe("superviseCordantry", () => {
     throw new Error("Timed out waiting for the supervised system to settle.");
   };
 
+  it("starts its worker even when global MAH capacity is unavailable", async () => {
+    const projectRoot = createTempProjectRoot();
+    let launches = 0;
+    const options = {
+      projectRoot,
+      executionBackend: "mah",
+      mahProjectRoot: projectRoot,
+      mahSlotClass: "background",
+      mahCommand: async () => ({
+        exitCode: 0,
+        stdout: JSON.stringify({ ok: true, agent_slots: { interactive: 1, background: 0, review: 0 } }),
+        stderr: "",
+      }),
+      log: () => undefined,
+      spawnWorker: () => {
+        launches++;
+        return spawn(process.execPath, ["-e", "setInterval(() => {}, 1000)"], { stdio: "ignore" });
+      },
+    } as unknown as Parameters<typeof superviseCordantry>[0];
+
+    const supervisor = await superviseCordantry(options);
+    try { expect(launches).toBe(1); } finally { await supervisor.close(); }
+  });
+
   it.skipIf(process.platform === "win32")("detects a frozen live Worker independently and isolates its surviving writer before replacement", async () => {
     const projectRoot = createTempProjectRoot();
     const { client, repositories } = openState(projectRoot);

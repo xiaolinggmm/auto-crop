@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -29,6 +29,79 @@ afterEach(() => {
 });
 
 describe("API routes", () => {
+  it("defaults companies to direct even when a global MAH backend is configured", async () => {
+    const fixture = await startFixtureServer({ mahCommand: async () => { throw new Error("MAH must not be used"); } });
+    vi.stubEnv("CORDANTRY_EXECUTION_BACKEND", "mah");
+    try {
+      const created = await createCompanyForApi(fixture);
+      expect(fixture.repositories.getCompany(created.company.id)).toMatchObject({ executionMode: "direct", mahConfig: null });
+    } finally { vi.unstubAllEnvs(); await fixture.close(); }
+  });
+
+  it("validates and saves company MAH binding, rejects unavailable capacity and immutable mode edits", async () => {
+    let capacity = 0;
+    const fixture = await startFixtureServer({ mahCommand: async () => ({ exitCode: 0, stdout: JSON.stringify({ ok: true, agent_slots: { background: capacity, interactive: 1 } }), stderr: "" }) });
+    mkdirSync(join(fixture.projectRoot, ".mah-project"));
+    writeFileSync(join(fixture.projectRoot, ".mah-project/project.json"), JSON.stringify({ project_id: "project-a" }));
+    const input = { companyName: "Pricing Page Studio", founderVision: "Build an AI SaaS", selectedCeoAgentId: "codex", permissionMode: "balanced", executionMode: "mah", mahConfig: { projectRoot: fixture.projectRoot } };
+    try {
+      const refused = await fetch(`${fixture.baseUrl}/api/companies`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input) });
+      expect(refused.status).toBe(400);
+      expect(fixture.repositories.listCompanies()).toEqual([]);
+      capacity = 1;
+      const created = await postJson<{ company: { id: string; executionMode: string } }>(`${fixture.baseUrl}/api/companies`, input);
+      expect(created.company.executionMode).toBe("mah");
+      expect(fixture.repositories.getCompany(created.company.id)).toMatchObject({ executionMode: "mah", mahConfig: { projectRoot: realpathSync(fixture.projectRoot), projectId: "project-a", slotClass: "background" } });
+      const changed = await fetch(`${fixture.baseUrl}/api/companies/${created.company.id}/mah-connection`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...input.mahConfig, executionMode: "direct" }) });
+      expect(changed.status).toBe(409);
+      writeFileSync(join(fixture.projectRoot, ".mah-project/project.json"), JSON.stringify({ project_id: "project-b" }));
+      const replaced = await fetch(`${fixture.baseUrl}/api/companies/${created.company.id}/mah-connection`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input.mahConfig) });
+      expect(replaced.status).toBe(409);
+      expect(fixture.repositories.getCompany(created.company.id)?.mahConfig?.projectId).toBe("project-a");
+    } finally { await fixture.close(); }
+  });
+
+  it("coalesces concurrent creation requests while MAH readiness is pending", async () => {
+    let release!: () => void;
+    const ready = new Promise<void>(resolve => { release = resolve; });
+    let probes = 0;
+    const fixture = await startFixtureServer({ mahCommand: async () => { probes++; await ready; return {exitCode: 0, stdout: JSON.stringify({ok: true, agent_slots: {background: 1}}), stderr: ""}; } });
+    mkdirSync(join(fixture.projectRoot, ".mah-project"));
+    writeFileSync(join(fixture.projectRoot, ".mah-project/project.json"), JSON.stringify({project_id: "one"}));
+    const input = { companyName: "Pricing Page Studio", founderVision: "Build an AI SaaS", selectedCeoAgentId: "codex", permissionMode: "balanced", executionMode: "mah", mahConfig: {projectRoot: fixture.projectRoot}, creationIdempotencyKey: "same-request" };
+    try {
+      const send = () => fetch(`${fixture.baseUrl}/api/companies`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(input)});
+      const requests = [send(), send()];
+      await vi.waitFor(() => expect(probes).toBe(2));
+      release();
+      const responses = await Promise.all(requests);
+      expect(responses.every(response => response.status === 202 || response.status === 200)).toBe(true);
+      const bodies = await Promise.all(responses.map(response => response.json()));
+      expect(bodies[0].company.id).toBe(bodies[1].company.id);
+      expect(fixture.repositories.listCompanies()).toHaveLength(1);
+      await getJson(`${fixture.baseUrl}/api/companies/${bodies[0].company.id}/state`);
+    } finally { release(); await vi.waitFor(() => expect(fixture.repositories.listCompanies().some(company => company.status === "creating")).toBe(false)); await fixture.close(); }
+  });
+
+  it("repairs a moved original MAH project without replacing unresolved delegation UUIDs", async () => {
+    const fixture = await startFixtureServer({ mahCommand: async () => ({exitCode: 0, stdout: JSON.stringify({ok: true, agent_slots: {background: 1}}), stderr: ""}) });
+    const oldRoot = join(fixture.projectRoot, "original");
+    const movedRoot = join(fixture.projectRoot, "moved");
+    mkdirSync(join(oldRoot, ".mah-project"), {recursive: true});
+    writeFileSync(join(oldRoot, ".mah-project/project.json"), JSON.stringify({project_id: "original-project"}));
+    try {
+      const created = await postJson<{company: {id: string}}>(`${fixture.baseUrl}/api/companies`, {companyName: "Pricing Page Studio", founderVision: "Build an AI SaaS", selectedCeoAgentId: "codex", permissionMode: "balanced", executionMode: "mah", mahConfig: {projectRoot: oldRoot}});
+      const task = fixture.repositories.listTasksForCompany(created.company.id)[0];
+      fixture.repositories.mahExecutions.save({runId: "old-run", taskId: task.id, companyId: created.company.id, mahTaskId: "original-uuid", projectRoot: oldRoot, requestDigest: "original-digest", state: "unknown", createdAt: new Date().toISOString(), detail: "unresolved"});
+      renameSync(oldRoot, movedRoot);
+      const repaired = await fetch(`${fixture.baseUrl}/api/companies/${created.company.id}/mah-connection`, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({projectRoot: movedRoot})});
+      expect(repaired.status).toBe(200);
+      expect(fixture.repositories.getCompany(created.company.id)?.mahConfig).toMatchObject({projectId: "original-project", projectRoot: realpathSync(movedRoot)});
+      expect(fixture.repositories.mahExecutions.get("old-run")).toMatchObject({mahTaskId: "original-uuid", requestDigest: "original-digest", state: "unknown", projectRoot: realpathSync(movedRoot)});
+      expect(fixture.repositories.mahExecutions.blocksDispatch(task.id)).toBe(true);
+    } finally { await fixture.close(); }
+  });
+
   it("detects agents, creates a running company, exposes proof/reviews, cancels tasks, and pauses, resumes and stops the company", async () => {
     const fixture = await startFixtureServer();
 

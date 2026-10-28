@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -22,6 +22,55 @@ afterEach(() => {
 });
 
 describe("startCordantry", () => {
+  it("starts the API even if an obsolete global MAH configuration is unavailable", async () => {
+    const projectRoot = createTempProjectRoot();
+    const options = {
+      projectRoot,
+      agents: [],
+      executionBackend: "mah",
+      mahProjectRoot: projectRoot,
+      mahSlotClass: "background",
+      mahCommand: async () => ({
+        exitCode: 0,
+        stdout: JSON.stringify({ ok: true, agent_slots: { interactive: 1, background: 0, review: 0 } }),
+        stderr: "",
+      }),
+      log: () => undefined,
+    } as unknown as Parameters<typeof startCordantry>[0];
+
+    const started = await startCordantry(options);
+    try { expect((await fetch(`${started.url}/api/companies`)).status).toBe(200); } finally { await started.close(); }
+  });
+
+  it("does not use global MAH slot settings at startup", async () => {
+    const projectRoot = createTempProjectRoot();
+    const calls: string[][] = [];
+    const options = {
+      projectRoot,
+      agents: [],
+      schedulerIntervalMs: 60_000,
+      executionBackend: "mah",
+      mahProjectRoot: projectRoot,
+      mahSlotClass: "interactive",
+      mahCommand: async (args: string[]) => {
+        calls.push(args);
+        return {
+          exitCode: 0,
+          stdout: JSON.stringify({ ok: true, agent_slots: { interactive: 1, background: 0, review: 0 } }),
+          stderr: "",
+        };
+      },
+      log: () => undefined,
+    } as unknown as Parameters<typeof startCordantry>[0];
+
+    const started = await startCordantry(options);
+    try {
+      expect(calls).toEqual([]);
+    } finally {
+      await started.close();
+    }
+  });
+
   it("starts the local API server, prints the dashboard URL, and detects configured agents", async () => {
     const projectRoot = createTempProjectRoot();
     const logs: string[] = [];

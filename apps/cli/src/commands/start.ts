@@ -18,6 +18,9 @@ import {
   executionBudgetFromEnvironment,
   type BudgetPolicy,
   type AgentAdapter,
+  type ExecutionBackend,
+  type MahCommand,
+  type MahSlotClass,
   type SchedulerEvent,
   type SchedulerWakeReason,
 } from "@cordantry/server";
@@ -41,6 +44,13 @@ export type StartCordantryOptions = {
   agents?: AgentAdapter[];
   schedulerIntervalMs?: number;
   log?: (line: string) => void;
+  /** @deprecated Ignored: execution mode is persisted per company (ADR 0051). */
+  executionBackend?: ExecutionBackend;
+  mahCommand?: MahCommand;
+  /** @deprecated Select a MAH project in the company creation form. */
+  mahProjectRoot?: string;
+  /** @deprecated Slot selection is persisted in the company MAH configuration. */
+  mahSlotClass?: MahSlotClass;
 };
 
 export type StartedCordantry = {
@@ -57,6 +67,7 @@ export async function startCordantry(options: StartCordantryOptions): Promise<St
   const stateDir = join(options.projectRoot, ".cordantry");
   mkdirSync(stateDir, { recursive: true });
 
+  // Execution mode and MAH readiness belong to each company, never server startup.
   const database = createDatabaseClient(join(stateDir, "state.sqlite"));
   migrate(database);
   const repositories = createRepositories(database);
@@ -74,6 +85,7 @@ export async function startCordantry(options: StartCordantryOptions): Promise<St
   let scheduler: ReturnType<typeof startSchedulerLoop> | undefined;
   const apiServer = createApiServer({
     dashboardRoot: options.dashboardRoot,
+    mahCommand: options.mahCommand,
     projectRoot: options.projectRoot,
     repositories,
     agents,
@@ -89,6 +101,7 @@ export async function startCordantry(options: StartCordantryOptions): Promise<St
     log,
     projectRoot: options.projectRoot,
     repositories,
+    mahCommand: options.mahCommand,
     createId,
     publish: (event) => apiServer.events.publish(event),
   });
@@ -127,6 +140,10 @@ export function startSchedulerLoop(input: {
   projectRoot: string;
   publish: Parameters<typeof runSchedulerOnce>[0]["emit"];
   repositories: ReturnType<typeof createRepositories>;
+  /** @deprecated Ignored: execution mode is persisted per company (ADR 0051). */
+  executionBackend?: ExecutionBackend;
+  mahAdapter?: AgentAdapter;
+  mahCommand?: MahCommand;
   createId?: (prefix: string) => string;
 }) {
   const workerId = input.workerId ?? createId("cli-worker");
@@ -192,6 +209,9 @@ export function startSchedulerLoop(input: {
     try {
       const result = await runSchedulerOnce({
         projectRoot: input.projectRoot,
+        executionBackend: input.executionBackend,
+        mahAdapter: input.mahAdapter,
+        mahCommand: input.mahCommand,
         repositories: input.repositories,
         adapters: input.agents,
         workerId,

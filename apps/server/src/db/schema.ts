@@ -635,6 +635,8 @@ function migrateCompanyCreationFields(database: DatabaseClient): void {
   const columns = getColumnNames(database, "companies");
   addColumnIfMissing(database, columns, "companies", "creation_idempotency_key TEXT");
   addColumnIfMissing(database, columns, "companies", "creation_input TEXT");
+  addColumnIfMissing(database, columns, "companies", "execution_mode TEXT NOT NULL DEFAULT 'direct'");
+  addColumnIfMissing(database, columns, "companies", "mah_config TEXT");
 }
 
 function migrateLocalizedBusinessContentFields(database: DatabaseClient): void {

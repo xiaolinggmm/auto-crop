@@ -25,15 +25,11 @@ A repeated task UUID may be re-enqueued, so **Cordantry never repeats submit aft
 
 ## Configuration
 
-Set these in the environment of the Cordantry server/worker (including any supervisor):
+Execution mode is selected when creating each company (ADR 0051), with Direct dispatch selected by default. Select MAH coordination to bind that company to an existing managed MAH project by its absolute path. The project is not automatically the application source directory or generated task workspace; MAH chooses its execution worktrees.
 
-```sh
-export CORDANTRY_EXECUTION_BACKEND=mah
-export CORDANTRY_MAH_CLI=/Applications/MAH.app/Contents/Resources/bin/mah
-export CORDANTRY_MAH_PROJECT_ROOT=/absolute/path/to/managed/mah/project
-```
+The creation form accepts an explicit MAH executable path; `CORDANTRY_MAH_CLI` supplies the API default when omitted. The slot defaults to `background`, with `interactive` available only through explicit selection. Creation validates project identity and the selected slot before saving the company. Mode and project identity cannot be changed after creation; connection paths may be repaired only to the original project.
 
-`CORDANTRY_MAH_PROJECT_ROOT` is explicit and must be the existing canonical MAH managed project root. It is **not** automatically the Cordantry application source directory or generated task workspace. MAH chooses its execution worktrees. Leave backend unset or set it to `direct` for the existing adapters; a failed MAH submission never switches to direct automatically. Existing unresolved MAH records block dispatch even if configuration is changed to direct.
+Server/worker startup is independent of MAH availability. Background readiness checks do not block Direct companies. Global backend/project/slot environment variables no longer select company execution mode. Failed or unresolved MAH submissions never fall back to Direct and retain their original task UUIDs.
 
 Planning/CEO calls retain their existing adapters. Only scheduler task execution delegates to MAH. The execution brief is synthesized locally without a provider invocation. MAH receives task activity constraints but Cordantry does not claim CLI-enforced tool isolation; required capabilities withheld by company policy cause refusal before submission.
 

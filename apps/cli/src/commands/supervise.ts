@@ -4,7 +4,18 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { acquireSupervisorOwnership } from "./supervisorOwnership";
 import { createId } from "@cordantry/core";
-import { createDatabaseClient, createRepositories, migrate, Supervisor, executionBudgetFromEnvironment, recoveryModeFromEnvironment, retentionPolicyFromEnvironment } from "@cordantry/server";
+import {
+  createDatabaseClient,
+  createRepositories,
+  executionBudgetFromEnvironment,
+  migrate,
+  recoveryModeFromEnvironment,
+  retentionPolicyFromEnvironment,
+  Supervisor,
+  type ExecutionBackend,
+  type MahCommand,
+  type MahSlotClass,
+} from "@cordantry/server";
 
 /**
  * How often the supervisor sweeps for work the worker cannot report itself.
@@ -27,6 +38,13 @@ export type SuperviseOptions = {
   scanIntervalMs?: number;
   restartDelayMs?: number;
   log?: (line: string) => void;
+  /** @deprecated Ignored: execution mode is persisted per company (ADR 0051). */
+  executionBackend?: ExecutionBackend;
+  mahCommand?: MahCommand;
+  /** @deprecated Select a MAH project in the company creation form. */
+  mahProjectRoot?: string;
+  /** @deprecated Slot selection is persisted in the company MAH configuration. */
+  mahSlotClass?: MahSlotClass;
 };
 
 export type SupervisedCordantry = {
@@ -156,7 +174,10 @@ export async function superviseCordantry(options: SuperviseOptions): Promise<Sup
         ? options.spawnWorker(ownerId)
         : spawn(process.execPath, [...process.execArgv, fileURLToPath(new URL("../index.ts", import.meta.url)), "__worker"], {
           stdio: ["inherit", "inherit", "inherit", "ipc"],
-          env: { ...process.env, INIT_CWD: projectRoot },
+          env: {
+            ...process.env,
+            INIT_CWD: projectRoot,
+          },
         });
       const child = worker;
       if (child.pid) ownership.recordWorker(child.pid);

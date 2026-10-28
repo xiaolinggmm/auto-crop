@@ -1,3 +1,4 @@
+import type { CreateCompanyInput } from "./api/client";
 import { ExecutionActionsContext } from "./ui/tasks/TaskExecutionPanel";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
@@ -187,6 +188,7 @@ export default function App({ apiClient }: AppProps) {
       const response = await client.getCompanyState(companyId);
       writeCurrentCompanyId(companyId);
       setReturnCompanyId(null);
+      setReviewOnboarding(false);
       applyCompanyState(response, ceoOfficeLocation);
     } catch (error) {
       setStartupError(formatErrorMessage(error));
@@ -303,7 +305,7 @@ export default function App({ apiClient }: AppProps) {
   useEffect(() => {
     // The creation view names the CEO; after a refresh straight into it the agents were never listed.
     // The Workbench names each department's agent.
-    const needsAgents = view === "creating" || view === "workbench";
+    const needsAgents = view === "onboarding" || view === "creating" || view === "workbench";
     if (needsAgents && agentLoadState === "idle") {
       void detectAgents();
     }
@@ -379,7 +381,7 @@ export default function App({ apiClient }: AppProps) {
     canCreateCompany: false,
     isCreating,
     companyStatus: blueprint?.company.status ?? null,
-    onCreateCompany: handleCreateCompany,
+    onCreateCompany: () => undefined,
     onPauseOperating: handlePauseOperating,
     onResumeOperating: handleResumeOperating,
     onStopOperating: handleStopOperating,
@@ -403,9 +405,28 @@ export default function App({ apiClient }: AppProps) {
     return () => window.removeEventListener("keydown", handleKeyDown);
   });
 
-  // Creation is unavailable until the MAH connection contract is implemented.
-  // Keep the command disabled and never fall back to the legacy direct-agent API.
-  function handleCreateCompany() {}
+  async function handleCreateCompany(input: CreateCompanyInput) {
+    if (isCreating) return;
+    setIsCreating(true);
+    setCreateError(null);
+    let key = window.localStorage.getItem(creationIdempotencyKeyStorageKey);
+    if (!key) {
+      key = crypto.randomUUID();
+      window.localStorage.setItem(creationIdempotencyKeyStorageKey, key);
+    }
+    try {
+      const response = await client.createCompany({...input, creationIdempotencyKey: key});
+      window.sessionStorage.removeItem("cordantry.onboardingDraft");
+      clearCreationIdempotencyKey();
+      setReturnCompanyId(null);
+      setReviewOnboarding(false);
+      applyCompanyState(response, ceoOfficeLocation);
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setIsCreating(false);
+    }
+  }
 
   async function handleRetryCompanyCreation() {
     const companyId = blueprint?.company.id;
@@ -743,7 +764,7 @@ export default function App({ apiClient }: AppProps) {
         >
           {renderWorkbenchPage(blueprint)}
         </WorkbenchFrame>
-        {reviewOnboarding && <Onboarding review onCancel={() => setReviewOnboarding(false)} />}
+        {reviewOnboarding && <Onboarding review agents={agents} agentLoadState={agentLoadState} onDetectAgents={() => void detectAgents()} onCreate={input => void handleCreateCompany(input)} isCreating={isCreating} error={createError} onCancel={() => setReviewOnboarding(false)} />}
       </div>,
     );
   }
@@ -762,10 +783,16 @@ export default function App({ apiClient }: AppProps) {
     if (location.page === "settings") {
       return (
         <Settings
+          key={company.company.id}
           companies={companies}
           companiesLoadError={companyListLoadError}
           companiesLoadState={companyListLoadState}
           company={company.company}
+          onRepairMahConnection={async input => {
+            const requestedCompanyId = company.company.id;
+            const response = await client.repairMahConnection(requestedCompanyId, input);
+            setBlueprint(current => current?.company.id === requestedCompanyId ? {...current, company: response.company} : current);
+          }}
           onReviewOnboarding={() => setReviewOnboarding(true)}
           onCreateNewCompany={() => handleCreateNewCompany()}
           onLoadCompanies={() => void loadCompanies()}
@@ -839,7 +866,7 @@ export default function App({ apiClient }: AppProps) {
   }
 
   return renderModernAppFrame(
-    <Onboarding onCancel={returnCompanyId ? () => void openCompany(returnCompanyId) : undefined} />,
+    <Onboarding agents={agents} agentLoadState={agentLoadState} onDetectAgents={() => void detectAgents()} onCreate={input => void handleCreateCompany(input)} isCreating={isCreating} error={createError} onCancel={returnCompanyId ? () => void openCompany(returnCompanyId) : undefined} />,
   );
 }
 

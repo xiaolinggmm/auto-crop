@@ -21,19 +21,77 @@ import type {
 } from "./api/client";
 
 describe("Dashboard App", () => {
-  it("opens the demo first and never submits the combined form to the legacy API", async () => {
+  it("creates a direct company from the form and opens its workspace", async () => {
     const api = createMockApiClient();
     const user = userEvent.setup();
     render(<App apiClient={api} />);
-    expect(await screen.findByRole("dialog")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Create directly" }));
+    await user.click(await screen.findByRole("button", { name: "Create directly" }));
     await user.type(screen.getByLabelText("Company name"), "My studio");
     await user.type(screen.getByLabelText("Founder vision"), "My goal");
-    expect(screen.getByRole("button", { name: "Generate team and plan" })).toBeDisabled();
-    await user.keyboard("{Meta>}{Enter}{/Meta}");
-    expect(api.createCompany).not.toHaveBeenCalled();
-    expect(api.listAgents).not.toHaveBeenCalled();
+    await user.selectOptions(screen.getByLabelText("CEO agent"), "codex");
+    await user.click(screen.getByRole("button", { name: "Generate team and plan" }));
+    await waitFor(() => expect(api.createCompany).toHaveBeenCalledWith(expect.objectContaining({ companyName: "My studio", founderVision: "My goal", executionMode: "direct", selectedCeoAgentId: "codex" })));
+    await waitFor(() => expect(api.subscribeEvents).toHaveBeenCalled());
+  });
+
+  it("keeps MAH input and actionable server errors on preflight refusal without opening creation", async () => {
+    const api = createMockApiClient();
+    api.createCompany = vi.fn().mockRejectedValue(new Error("MAH executable not found. Set an installed executable path."));
+    const user = userEvent.setup();
+    render(<App apiClient={api} />);
+    await user.click(await screen.findByRole("button", {name: "Create directly"}));
+    await user.click(screen.getByRole("radio", {name: "MAH coordination (advanced)"}));
+    await user.type(screen.getByLabelText("Company name"), "Studio");
+    await user.type(screen.getByLabelText("Founder vision"), "Build tools");
+    await user.selectOptions(screen.getByLabelText("CEO agent"), "codex");
+    await user.type(screen.getByLabelText("MAH project root"), "/project");
+    await user.click(screen.getByRole("button", {name: "Generate team and plan"}));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Set an installed executable path.");
+    expect(screen.getByLabelText("Company name")).toHaveValue("Studio");
+    expect(screen.getByLabelText("MAH project root")).toHaveValue("/project");
     expect(api.subscribeEvents).not.toHaveBeenCalled();
+    expect(api.createCompany).toHaveBeenCalledWith(expect.objectContaining({executionMode: "mah", mahConfig: {projectRoot: "/project", cliPath: "mah", slotClass: "background"}}));
+  });
+
+  it("ignores a completed MAH repair after switching to another company", async () => {
+    const api = createMockApiClient();
+    const first = createCompanyResponse();
+    first.company.executionMode = "mah";
+    first.company.mahConfig = {projectRoot: "/project-a", cliPath: "mah", slotClass: "background", projectId: "a"};
+    const second = {...createCompanyResponse(), company: {...createCompanyResponse().company, id: "company_2", name: "Second company", executionMode: "direct" as const}};
+    api.initialCompany = async () => first;
+    api.getCompanyState = vi.fn(async id => ({...(id === "company_2" ? second : first), proof: [], reviews: [], activity: [], replanProposals: []}));
+    api.listCompanies = vi.fn(async () => ({companies: [first.company, second.company].map(company => ({...company, createdAt: "2026-08-17", updatedAt: "2026-08-17", taskCount: 0}))}));
+    const pending = createDeferred<{company: typeof first.company}>();
+    api.repairMahConnection = vi.fn(() => pending.promise);
+    const user = userEvent.setup();
+    renderExistingCompany(api);
+    await expectExistingCompany();
+    await openPage(user, "Settings");
+    await user.click(screen.getByRole("button", {name: "Validate and save connection"}));
+    await user.click(screen.getByRole("button", {name: /Second company/}));
+    expect(await screen.findByRole("heading", {name: "Second company"})).toBeInTheDocument();
+    await act(async () => pending.resolve({company: {...first.company, mahConfig: {...first.company.mahConfig!, projectRoot: "/moved-a"}}}));
+    expect(screen.getByRole("heading", {name: "Second company"})).toBeInTheDocument();
+    await openPage(user, "Settings");
+    expect(screen.queryByLabelText("MAH project root")).not.toBeInTheDocument();
+    expect(screen.queryByText("Connection saved.")).not.toBeInTheDocument();
+  });
+
+  it("allows real creation from a reviewed demo", async () => {
+    const api = createMockApiClient();
+    const user = userEvent.setup();
+    renderExistingCompany(api);
+    await expectExistingCompany();
+    await openPage(user, "Settings");
+    await user.click(screen.getByRole("button", {name: "Watch the demo"}));
+    await user.click(screen.getByRole("button", {name: "Create directly"}));
+    await user.type(screen.getByLabelText("Company name"), "New company");
+    await user.type(screen.getByLabelText("Founder vision"), "New goal");
+    await user.selectOptions(screen.getByLabelText("CEO agent"), "codex");
+    await user.click(screen.getByRole("button", {name: "Generate team and plan"}));
+    await waitFor(() => expect(api.createCompany).toHaveBeenCalled());
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
   it("reviews the demo without background operation shortcuts and restores launcher focus", async () => {
@@ -4891,6 +4949,7 @@ function createMockApiClient(): ApiClient & { initialCompany: () => Promise<Awai
     }),
     listCompanies: vi.fn(async () => ({ companies: [] })),
     createCompany: vi.fn(async () => createCompanyResponse()),
+    repairMahConnection: vi.fn(async () => ({company: createCompanyResponse().company})),
     initialCompany: async () => createCompanyResponse(),
     async retryCompanyCreation() {
       return createCreatingCompanyResponse();

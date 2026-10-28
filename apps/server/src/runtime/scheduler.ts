@@ -1,6 +1,7 @@
+import { companyMahReadiness } from "./companyExecution";
 import { proofRefsToProof } from "./proofReferences";
-import { createMahCliAdapter } from "../adapters/mahCli";
-import { assertExecutionBackendAvailable, executorRefusalMarker, type ExecutionBackend } from "./executionBackend";
+import { createMahCliAdapter, mahCommand, type MahCommand } from "../adapters/mahCli";
+import { executorRefusalMarker, type ExecutionBackend } from "./executionBackend";
 import { parkExhaustedTask } from "./budgetAuthorization";
 import { isBudgetExhaustion, resolveBudgetSnapshot, systemExecutionClock, type BudgetPolicy, type ExecutionClock } from "./budgetPolicy";
 import { BudgetInterrupted, RunBudget } from "./runBudget";
@@ -95,9 +96,11 @@ export type SchedulerEvent = {
 
 export type RunSchedulerOnceInput = {
   projectRoot: string;
+  /** @deprecated Ignored: execution mode is persisted per company (ADR 0051). */
   executionBackend?: ExecutionBackend;
   /** Injectable MAH boundary for contract tests; never a fallback adapter. */
   mahAdapter?: AgentAdapter;
+  mahCommand?: MahCommand;
   /** Internal opt-in; production defaults to observe until P4.2/P4.3 are complete. */
   executionBudget?: Partial<BudgetPolicy>;
   executionClock?: ExecutionClock;
@@ -156,9 +159,7 @@ export type RunSchedulerOnceResult = {
 };
 
 export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<RunSchedulerOnceResult> {
-  const backend = input.executionBackend ?? process.env.CORDANTRY_EXECUTION_BACKEND ?? "direct";
-  assertExecutionBackendAvailable(backend, Boolean(input.mahAdapter || process.env.CORDANTRY_MAH_PROJECT_ROOT));
-  const mahAdapter = backend === "mah" ? input.mahAdapter ?? createMahCliAdapter(input) : null;
+  const companyAdapters = new Map<string, AgentAdapter | Error>();
   const now = input.now ?? (() => new Date());
   const createId = input.createId ?? defaultCreateId;
   const registry = input.executionRegistry ?? defaultExecutionRegistry;
@@ -183,7 +184,10 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
   }
 
   if (input.repositories.executionBudget.ownerBlocked(input.workerId)) return result;
-  const queuedTasks = input.repositories.fetchQueuedTasks(Math.max(input.maxTasks * 5, 20));
+  // Bound the scan per company so an unavailable MAH company cannot fill the entire queue window.
+  const queuedTasks = input.repositories.listCompanies().filter(company => company.status === "active")
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
+    .flatMap(company => input.repositories.fetchQueuedTasks(Math.max(input.maxTasks * 5, 20), company.id));
   const dispatches: Array<Promise<void>> = [];
 
   for (const task of queuedTasks) {
@@ -242,11 +246,49 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
       continue;
     }
 
+    if (input.repositories.mahExecutions.blocksDispatch(task.id)) {
+      appendLaunchUnavailableWarningOnce(input, task, [{ adapterId: "mah", isolationLevel: "unavailable", supportedFlags: [], missingFlags: [], warnings: ["MAH execution unresolved; reconcile the recorded UUID before any new dispatch."] }]);
+      continue;
+    }
+    const owner = input.repositories.getCompany(task.companyId);
+    if (!owner || owner.status !== "active") continue;
+    const backend = owner.executionMode ?? "direct";
+    let mahAdapter: AgentAdapter | null = null;
+    if (backend === "mah") {
+      let available = companyAdapters.get(owner.id);
+      if (!available) {
+        try {
+          if (!owner.mahConfig) throw new Error("MAH connection is missing. Repair this company's connection.");
+          if (input.mahAdapter) available = input.mahAdapter;
+          else {
+            const config = companyMahReadiness(input.repositories, owner, input.mahCommand);
+            if (config instanceof Error) throw config;
+            if (config.projectId !== owner.mahConfig.projectId) throw new Error("MAH project identity changed. Restore the original project connection.");
+            available = createMahCliAdapter({ ...input, mahProjectRoot: config.projectRoot, slotClass: config.slotClass, command: input.mahCommand ?? mahCommand(config.cliPath) });
+          }
+        } catch (error) { available = error instanceof Error ? error : new Error(String(error)); }
+        companyAdapters.set(owner.id, available);
+      }
+      if (available instanceof Error) {
+        appendLaunchUnavailableWarningOnce(input, task, [{ adapterId: "mah", isolationLevel: "unavailable", supportedFlags: [], missingFlags: [], warnings: [available.message] }]);
+        continue;
+      }
+      mahAdapter = available;
+    }
+
+    const currentOwner = input.repositories.getCompany(owner.id);
+    if (currentOwner?.status !== "active" || JSON.stringify(currentOwner.mahConfig) !== JSON.stringify(owner.mahConfig)) continue;
+
     const assessmentDecision = assessDepartmentTask(input, task);
     if (assessmentDecision === "deferred") {
       continue;
     }
 
+    const launch = await resolveLaunchableAdapter(mahAdapter ? [mahAdapter] : adapterCandidates(input.adapters, task));
+    if (!launch.launchable) {
+      appendLaunchUnavailableWarningOnce(input, task, launch.unavailable);
+      continue;
+    }
     dispatches.push(
       (async (handoffs: TaskHandoff[]) => {
         const existingBudget = input.repositories.executionBudget.getTask(task.id);
@@ -359,11 +401,6 @@ export async function runSchedulerOnce(input: RunSchedulerOnceInput): Promise<Ru
           // An unresolved external submission survives worker death and backend switches.
           if (input.repositories.mahExecutions.blocksDispatch(task.id)) {
             appendLaunchUnavailableWarningOnce(input, task, [{ adapterId: "mah", isolationLevel: "unavailable", supportedFlags: [], missingFlags: [], warnings: ["MAH execution unresolved; reconcile the recorded UUID before any new dispatch."] }]);
-            return;
-          }
-          const launch = await resolveLaunchableAdapter(mahAdapter ? [mahAdapter] : adapterCandidates(input.adapters, task));
-          if (!launch.launchable) {
-            appendLaunchUnavailableWarningOnce(input, task, launch.unavailable);
             return;
           }
           const adapter = launch.adapter;

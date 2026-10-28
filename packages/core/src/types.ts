@@ -486,7 +486,19 @@ export type CeoAttentionRollup = {
   createdAt: string;
 };
 
+export type CompanyExecutionMode = "direct" | "mah";
+
+export type CompanyMahConfig = {
+  projectRoot: string;
+  projectId: string;
+  cliPath: string;
+  slotClass: "background" | "interactive";
+};
+
 export type Company = {
+  /** Chosen once during creation. Missing legacy test values mean direct. */
+  executionMode?: CompanyExecutionMode;
+  mahConfig?: CompanyMahConfig | null;
   id: string;
   name: string;
   founderVision: string;

@@ -144,9 +144,6 @@ export const storyCopy = {
     goalPlaceholder:
       "Who do you want to help, and what should your company achieve?",
     generate: "Generate team and plan",
-    unavailable: "MAH is not connected",
-    boundary:
-      "Connection and real generation are not available yet. Your input stays here; no task will be submitted.",
     close: "Return to company",
     draft: "Input is kept in this browser tab.",
     policy: "Existing execution permissions are unchanged.",
@@ -285,8 +282,6 @@ export const storyCopy = {
     namePlaceholder: "你的公司名称",
     goalPlaceholder: "你希望帮助谁，公司要实现什么目标？",
     generate: "生成团队与计划",
-    unavailable: "MAH 尚未连接",
-    boundary: "安装连接与真实生成暂未开放。输入会保留，不会提交任务。",
     close: "返回公司",
     draft: "输入保留在当前浏览器标签页中。",
     policy: "现有执行权限保持不变。",

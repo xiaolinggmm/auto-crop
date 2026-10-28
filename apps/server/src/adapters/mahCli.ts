@@ -7,7 +7,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFi
 import { isAbsolute, join, resolve } from "node:path";
 import type { Locale, ProofType } from "@cordantry/core";
 import type { createRepositories } from "../db/repositories";
-import { mahTerminalStates, type MahExecution } from "../db/mahExecutions";
+import { mahTerminalStates, type MahExecution, type MahSlotClass } from "../db/mahExecutions";
 import { collectMahFileDelivery, fileDeliveryInstructions } from "../runtime/mahFileDelivery";
 import { parseArtifactEnvelope } from "../runtime/artifactEnvelope";
 import type { AgentAdapter, AgentRunRequest, AgentRunResult } from "./types";
@@ -19,7 +19,33 @@ export type MahCliOptions = {
   mahProjectRoot?: string;
   command?: MahCommand;
   pollMs?: number;
+  slotClass?: MahSlotClass;
 };
+export function resolveMahSlotClass(value = process.env.CORDANTRY_MAH_SLOT): MahSlotClass {
+  const normalized = value?.trim() || "background";
+  if (normalized === "background" || normalized === "interactive") return normalized;
+  throw new Error(`Invalid CORDANTRY_MAH_SLOT=${normalized}; expected background or interactive.`);
+}
+export async function preflightMahSlot(options: {
+  command: MahCommand;
+  mahProjectRoot: string;
+  slotClass: MahSlotClass;
+}): Promise<void> {
+  let projectRoot: string;
+  try { projectRoot = realpathSync(options.mahProjectRoot); }
+  catch { throw new Error("MAH slot preflight failed: CORDANTRY_MAH_PROJECT_ROOT does not exist."); }
+  const result = await options.command(["personal-os", "quota", "list", "--project-root", projectRoot, "--format", "json"]);
+  let body: { ok?: boolean; agent_slots?: Partial<Record<"background" | "interactive" | "review", number>> } | null = null;
+  try { body = JSON.parse(result.stdout); } catch { /* reported below */ }
+  if (result.exitCode !== 0 || body?.ok !== true || !body.agent_slots) {
+    throw new Error(`MAH slot preflight failed: ${result.stderr || "invalid quota response"}`);
+  }
+  if ((body.agent_slots[options.slotClass] ?? 0) > 0) return;
+  if (options.slotClass === "background" && (body.agent_slots.interactive ?? 0) > 0) {
+    throw new Error("MAH background slot is unavailable. Enable background capacity or explicitly set CORDANTRY_MAH_SLOT=interactive.");
+  }
+  throw new Error(`MAH ${options.slotClass} slot is unavailable for this account.`);
+}
 export function mahCommand(executable = process.env.CORDANTRY_MAH_CLI ?? "mah"): MahCommand {
   return args => new Promise(resolveResult => {
     execFile(executable, args, { timeout: 15_000, maxBuffer: 12_000_000, encoding: "utf8" }, (error, stdout, stderr) => {
@@ -34,6 +60,7 @@ const flatFile = (name: string) => /^[a-zA-Z0-9][a-zA-Z0-9._-]*$/.test(name) && 
 /** No external retry: the durable claim is consumed before invoking the submit CLI. */
 export function createMahCliAdapter(options: MahCliOptions): AgentAdapter {
   const command = options.command ?? mahCommand();
+  const slotClass = options.slotClass ?? resolveMahSlotClass();
   return {
     id: "mah", name: "MAH", capabilities: [], contractCapabilities: ["file_delivery"],
     detect: async () => { try { return (await command(["--version"])).exitCode === 0; } catch { return false; } },
@@ -50,19 +77,21 @@ export function createMahCliAdapter(options: MahCliOptions): AgentAdapter {
       let inputBundle: ReturnType<typeof buildMahInputBundle>;
       try { inputBundle = buildMahInputBundle(request.inputDirectories ?? []); }
       catch (error) { return { status: "failed", exitCode: null, stdout: "", stderr: `MAH input preparation failed before submission: ${String(error)}`, failureReason: "missing_deliverable" }; }
-      const requestDigest = digest(JSON.stringify({ prompt: request.prompt, projectRoot: resolve(projectRoot), context, grant: request.grant, inputBundle }));
+      const legacyRequestDigest = digest(JSON.stringify({ prompt: request.prompt, projectRoot: resolve(projectRoot), context, grant: request.grant, inputBundle }));
+      const requestDigest = digest(JSON.stringify({ prompt: request.prompt, projectRoot: resolve(projectRoot), context, grant: request.grant, inputBundle, slotClass }));
       let record: MahExecution;
       try {
         record = options.repositories.transaction(() => {
           options.repositories.reassignments.lockTask(request.taskId);
           const existing = options.repositories.mahExecutions.get(context.runId);
           if (existing) {
-            if (existing.requestDigest !== requestDigest) throw new Error("MAH request content conflict; submission is not repeated.");
+            const existingSlotClass = existing.slotClass ?? "background";
+            if ((existing.requestDigest !== requestDigest && existing.requestDigest !== legacyRequestDigest) || existingSlotClass !== slotClass) throw new Error("MAH request content conflict; submission is not repeated.");
             return existing;
           }
           if (options.repositories.mahExecutions.blocksDispatch(request.taskId)) throw new Error("An earlier MAH execution is unresolved. Query its UUID; do not create another task.");
           const next: MahExecution = { runId: context.runId, taskId: request.taskId, companyId: context.companyId, mahTaskId: randomUUID(),
-            projectRoot: resolve(projectRoot), requestDigest, inputBundleDigest: inputBundle.files.length ? digest(JSON.stringify(inputBundle)) : undefined, ownerEpoch: options.repositories.getTaskExecutionEpoch(request.taskId), context: { locale: context.locale, requireExecutionDetails: context.requireExecutionDetails, proofSchemaId: context.proofSchemaId, acceptedProofTypes: context.acceptedProofTypes }, state: "prepared", detail: "", createdAt: new Date().toISOString() };
+            projectRoot: resolve(projectRoot), requestDigest, slotClass, inputBundleDigest: inputBundle.files.length ? digest(JSON.stringify(inputBundle)) : undefined, ownerEpoch: options.repositories.getTaskExecutionEpoch(request.taskId), context: { locale: context.locale, requireExecutionDetails: context.requireExecutionDetails, proofSchemaId: context.proofSchemaId, acceptedProofTypes: context.acceptedProofTypes }, state: "prepared", detail: "", createdAt: new Date().toISOString() };
           options.repositories.mahExecutions.save(next); return next;
         });
       } catch (error) { return unknownResult(String(error)); }
@@ -79,7 +108,7 @@ If an cordantry-inputs.json attachment is present, decode each base64 file into 
           const attachment = join(root, "cordantry-inputs.json");
           if (inputBundle.files.length) writeFileSync(attachment, JSON.stringify(inputBundle), { flag: "wx", mode: 0o600 });
           const returned = await command(["task", "submit", "--cwd", record.projectRoot, "--task-id", record.mahTaskId,
-            "--description-file", promptPath, "--personal-os-slot", "background", "--write", "--format", "json", ...(inputBundle.files.length ? ["--attach", attachment] : [])]);
+            "--description-file", promptPath, "--personal-os-slot", record.slotClass ?? "background", "--write", "--format", "json", ...(inputBundle.files.length ? ["--attach", attachment] : [])]);
           const response = returned.exitCode === 0 ? JSON.parse(returned.stdout) : null;
           record = { ...record, state: response?.task_id === record.mahTaskId && ["ready", "running", "queued", "deferred"].includes(response.admission_status) ? "submitted" : "unknown",
             detail: returned.stderr || "Submission consumed. Reconcile by UUID; never resubmit." };

@@ -119,8 +119,8 @@ export function createRepositories(database: DatabaseClient) {
         .prepare(
           `INSERT INTO companies (
             id, name, founder_vision, locale, selected_ceo_agent_id, playbook_id, permission_mode, status,
-            creation_idempotency_key, creation_input, created_at, updated_at
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            creation_idempotency_key, creation_input, created_at, updated_at, execution_mode, mah_config
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .run(
           company.id,
@@ -135,7 +135,16 @@ export function createRepositories(database: DatabaseClient) {
           company.creationInput ? JSON.stringify(company.creationInput) : null,
           company.createdAt,
           company.updatedAt,
+          company.executionMode ?? "direct",
+          company.mahConfig ? JSON.stringify(company.mahConfig) : null,
         );
+    },
+
+    repairCompanyMahConnection(id: string, config: NonNullable<Company["mahConfig"]>): void {
+      const company = this.getCompany(id);
+      if (company?.executionMode !== "mah" || company.mahConfig?.projectId !== config.projectId
+        || company.mahConfig.slotClass !== config.slotClass) throw new Error("Company mode and MAH project binding cannot be changed.");
+      database.prepare("UPDATE companies SET mah_config = ? WHERE id = ?").run(JSON.stringify(config), id);
     },
 
     getCompany(id: string): Company | null {
@@ -657,7 +666,7 @@ export function createRepositories(database: DatabaseClient) {
         .run(artifactWorkspacePath, id);
     },
 
-    fetchQueuedTasks(limit: number): Task[] {
+    fetchQueuedTasks(limit: number, companyId: string | null = null): Task[] {
       const rows = database
         .prepare(
           // Only a running company dispatches. A `draft` company is a plan the founder has not
@@ -669,10 +678,11 @@ export function createRepositories(database: DatabaseClient) {
            INNER JOIN companies ON companies.id = tasks.company_id
            WHERE tasks.status IN ('queued', 'waiting_dependency', 'retrying')
              AND companies.status = 'active'
+             AND (? IS NULL OR companies.id = ?)
            ORDER BY companies.created_at ASC, tasks.position ASC, tasks.id ASC
            LIMIT ?`,
         )
-        .all(limit);
+        .all(companyId, companyId, limit);
       return rows.map((row) => mapTask(row as TaskRow));
     },
 
@@ -2293,6 +2303,8 @@ type CompanyRow = {
   status: Company["status"];
   creation_idempotency_key?: string | null;
   creation_input?: string | null;
+  execution_mode: "direct" | "mah";
+  mah_config: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -2630,6 +2642,8 @@ function mapCompany(row: CompanyRow): Company {
     status: row.status,
     creationIdempotencyKey: row.creation_idempotency_key ?? null,
     creationInput: row.creation_input ? JSON.parse(row.creation_input) as unknown : null,
+    executionMode: row.execution_mode,
+    mahConfig: row.mah_config ? JSON.parse(row.mah_config) : null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

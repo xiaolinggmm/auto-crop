@@ -1,9 +1,9 @@
 import { projectCeoOfficeItems, resolveTaskAffordances } from "@cordantry/core";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { realpathSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type {
   BusinessArtifact,
   Company,
@@ -69,6 +69,7 @@ describe("task locks", () => {
 describe("runSchedulerOnce", () => {
   it("delegates to MAH rather than the assignee and captures only the returned file workspace", async () => {
     const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
+    client.prepare("UPDATE companies SET execution_mode = 'mah', mah_config = ? WHERE id = 'company_1'").run(JSON.stringify({projectRoot, projectId: "test", cliPath: "mah", slotClass: "background"}));
     const snapshot = join(projectRoot, "snapshot"); mkdirSync(snapshot);
     let mahCalls = 0; let directCalls = 0;
     const mah: AgentAdapter = { id: "mah", name: "MAH", capabilities: [], contractCapabilities: ["file_delivery"], detect: async () => true,
@@ -87,6 +88,77 @@ describe("runSchedulerOnce", () => {
     expect(mahCalls).toBe(1); expect(directCalls).toBe(0);
     expect(repositories.getTask("task_1")?.workspacePath).toBe(snapshot);
     expect(client.prepare("SELECT agent_id FROM agent_runs WHERE task_id = ?").get("task_1")).toMatchObject({ agent_id: "mah" });
+    client.close();
+  });
+
+  it("keeps an unavailable MAH company queued without starving a direct company", async () => {
+    const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
+    const original = repositories.getCompany("company_1")!;
+    repositories.createCompany({ ...original, id: "company_mah", createdAt: "2020-01-01T00:00:00.000Z", executionMode: "mah", mahConfig: {projectRoot: join(projectRoot, "missing"), projectId: "missing", cliPath: "mah", slotClass: "background"} });
+    client.prepare("UPDATE tasks SET company_id = 'company_mah' WHERE id = 'task_1'").run();
+    for (let i = 0; i < 25; i++) repositories.createTask({ ...createTaskRecord(`a_mah_${i}`, "queued", "low"), companyId: "company_mah" });
+    repositories.createTask({ ...createTaskRecord("task_direct", "queued", "low"), companyId: "company_1", position: 100 });
+    const direct = createMockAgentAdapter({id: "mock-worker", name: "Direct", capabilities: ["code"]});
+    const result = await runSchedulerOnce({ projectRoot, repositories, workerId: "worker", maxTasks: 1, adapters: [direct], executionBackend: "mah", approvalRequired: () => false, proofCollector: ({task}) => [createProofForTask(task)], emit: () => {} });
+    expect(result.started).toContain("task_direct");
+    expect(repositories.getTask("task_1")?.status).toBe("queued");
+    expect(repositories.listTaskEventsForCompany("company_mah").some(event => event.type === "task_warning" && event.message.includes("MAH"))).toBe(true);
+    client.close();
+  });
+
+  it("dispatches Direct while a MAH availability probe is still unresolved", async () => {
+    const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
+    mkdirSync(join(projectRoot, ".mah-project"));
+    writeFileSync(join(projectRoot, ".mah-project/project.json"), JSON.stringify({project_id: "mah-project"}));
+    repositories.createCompany({ ...repositories.getCompany("company_1")!, id: "company_mah", createdAt: "2020-01-01T00:00:00.000Z", executionMode: "mah", mahConfig: {projectRoot, projectId: "mah-project", cliPath: "mah", slotClass: "background"} });
+    client.prepare("UPDATE tasks SET company_id = 'company_mah' WHERE id = 'task_1'").run();
+    repositories.createTask(createTaskRecord("task_direct", "queued", "low"));
+    let release!: () => void;
+    const waiting = new Promise<void>(resolve => { release = resolve; });
+    const direct = createMockAgentAdapter({id: "mock-worker", name: "Direct", capabilities: ["code"]});
+    const run = runSchedulerOnce({ projectRoot, repositories, workerId: "worker", maxTasks: 1, adapters: [direct], mahCommand: async () => { await waiting; return {exitCode: 1, stdout: "", stderr: "offline"}; }, approvalRequired: () => false, proofCollector: ({task}) => [createProofForTask(task)], emit: () => {} });
+    try {
+      await expect(Promise.race([run.then(result => result.started), new Promise(resolve => setTimeout(() => resolve("MAH blocked Direct"), 250))])).resolves.toEqual(["task_direct"]);
+    } finally { release(); await run; client.close(); }
+  });
+
+  it("does not consume dispatch capacity for an unresolved MAH delegation", async () => {
+    const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
+    repositories.mahExecutions.save({runId: "pending", taskId: "task_1", companyId: "company_1", mahTaskId: "uuid", projectRoot, requestDigest: "digest", state: "unknown", detail: "", createdAt: new Date().toISOString()});
+    repositories.createTask({...createTaskRecord("task_direct", "queued", "low"), position: 100});
+    const direct = createMockAgentAdapter({id: "mock-worker", name: "Direct", capabilities: ["code"]});
+    const result = await runSchedulerOnce({ projectRoot, repositories, workerId: "worker", maxTasks: 1, adapters: [direct], approvalRequired: () => false, proofCollector: ({task}) => [createProofForTask(task)], emit: () => {} });
+    expect(result.started).toEqual(["task_direct"]);
+    client.close();
+  });
+
+  it("submits through the real MAH adapter with the company's project and interactive slot after readiness completes", async () => {
+    const { projectRoot, repositories, client } = createSchedulerFixture([createTaskRecord("task_1", "queued", "low")]);
+    mkdirSync(join(projectRoot, ".mah-project"));
+    writeFileSync(join(projectRoot, ".mah-project/project.json"), JSON.stringify({project_id: "bound-project"}));
+    const root = realpathSync(projectRoot);
+    client.prepare("UPDATE companies SET execution_mode = 'mah', mah_config = ? WHERE id = 'company_1'").run(JSON.stringify({projectRoot: root, projectId: "bound-project", cliPath: "mah", slotClass: "interactive"}));
+    const calls: string[][] = [];
+    let uuid = "";
+    const reply = (value: unknown) => ({exitCode: 0, stdout: JSON.stringify(value), stderr: ""});
+    const command = async (args: string[]) => {
+      calls.push(args);
+      if (args[0] === "personal-os") return reply({ok: true, agent_slots: {background: 0, interactive: 1}});
+      if (args[1] === "submit") {
+        uuid = args[args.indexOf("--task-id") + 1];
+        expect(args[args.indexOf("--cwd") + 1]).toBe(root);
+        expect(args[args.indexOf("--personal-os-slot") + 1]).toBe("interactive");
+        return reply({task_id: uuid, admission_status: "queued"});
+      }
+      if (args[1] === "show") return reply({ok: true, task: {task_id: uuid, status: "failed"}});
+      if (args[1] === "execution-carriers") return reply({schema_version: 1, project_root: root, carrier_facts: [{task_id: uuid, task_runtime: {read_state: "ready", status: "failed"}, task_index: {read_state: "ready", status: "failed"}, scheduler: {read_state: "absent"}}]});
+      throw new Error(`Unexpected MAH command: ${args.join(" ")}`);
+    };
+    const input = {projectRoot, repositories, workerId: "worker", maxTasks: 1, adapters: [], mahCommand: command, approvalRequired: () => false, proofCollector: () => [], emit: () => {}};
+    expect((await runSchedulerOnce(input)).started).toEqual([]);
+    await vi.waitFor(async () => expect((await runSchedulerOnce(input)).started).toEqual(["task_1"]));
+    expect(calls.filter(args => args[1] === "submit")).toHaveLength(1);
+    expect(repositories.mahExecutions.list("task_1")[0]).toMatchObject({mahTaskId: uuid, projectRoot: root, slotClass: "interactive", state: "failed"});
     client.close();
   });
 
@@ -1362,7 +1434,7 @@ describe("runSchedulerOnce", () => {
     const missing = await runSchedulerOnce({ ...input, adapters: [fallback] });
     expect(missing.started).toEqual([]);
     expect(runs).toEqual([]);
-    await expect(runSchedulerOnce({ ...input, adapters: [fallback], executionBackend: "mah" })).rejects.toMatchObject({ code: "mah_configuration_missing" });
+    expect((await runSchedulerOnce({ ...input, adapters: [fallback], executionBackend: "mah" })).started).toEqual([]);
     expect(repositories.listTaskLocks()).toEqual([]);
 
     client.close();

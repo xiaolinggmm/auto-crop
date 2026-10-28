@@ -1,10 +1,12 @@
 import type { DatabaseClient } from "./client";
 
 export type MahExecutionState = "prepared" | "submitting" | "submitted" | "unknown" | "completed" | "failed" | "cancelled";
+export type MahSlotClass = "background" | "interactive";
 export type MahExecution = {
   runId: string; taskId: string; companyId: string; mahTaskId: string;
   projectRoot: string; requestDigest: string; state: MahExecutionState;
   createdAt: string; detail: string; deliveryWorkspacePath?: string;
+  slotClass?: MahSlotClass;
   ownerEpoch?: number;
   inputBundleDigest?: string;
   deliveryManifestSha256?: string;
