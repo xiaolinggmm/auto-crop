@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import "./test/setup";
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import App from "./App";
 
@@ -22,28 +21,68 @@ describe("Cordantry landing page", () => {
     expect(container).not.toHaveTextContent("Auto-Crop");
   });
 
-  it("shows the complete company loop without promising a specific model topology", () => {
+  it("shows the company loop as one low-effort illustration instead of feature tabs", () => {
     render(<App />);
 
-    expect(screen.getByRole("heading", { name: "Set the direction. Keep the judgment." })).toBeVisible();
-    expect(screen.getByText("Company plans")).toBeVisible();
-    expect(screen.getByText("Agents work")).toBeVisible();
-    expect(screen.getByText("Needs you")).toBeVisible();
-    expect(screen.getByText("Outcome")).toBeVisible();
-    expect(screen.getByText(/role-based Agent team/i)).toBeVisible();
+    expect(screen.getByRole("heading", { name: "One direction. A company in motion." })).toBeVisible();
+    const illustration = screen.getByRole("img", { name: "Cordantry operating loop" });
+    expect(within(illustration).getByText("Founder direction")).toBeVisible();
+    expect(within(illustration).getByText("Company operating")).toBeVisible();
+    expect(within(illustration).getByText("CEO Agent")).toBeVisible();
+    expect(within(illustration).getAllByLabelText("Codex Agent")).not.toHaveLength(0);
+    expect(within(illustration).getAllByLabelText("Claude Code Agent")).not.toHaveLength(0);
+    expect(within(illustration).getAllByLabelText("Antigravity Agent")).not.toHaveLength(0);
+    expect(within(illustration).queryByText("Codex")).not.toBeInTheDocument();
+    expect(within(illustration).queryByText("Claude Code")).not.toBeInTheDocument();
+    expect(within(illustration).getByText("Needs you")).toBeVisible();
+    expect(within(illustration).getByText("Outcome")).toBeVisible();
+    expect(within(illustration).queryByRole("tab")).not.toBeInTheDocument();
+    expect(within(illustration).queryByRole("button")).not.toBeInTheDocument();
   });
 
-  it("lets the founder inspect a stage and pauses the walkthrough", async () => {
-    const user = userEvent.setup();
+  it("explains founder control as one continuous operating sequence", () => {
     render(<App />);
 
-    const needsYou = screen.getByRole("tab", { name: /Needs you/ });
-    await user.click(needsYou);
+    expect(screen.getByText("You set direction. Cordantry carries the work.")).toBeVisible();
+    const loop = screen.getByRole("img", { name: "Founder control loop" });
+    expect(within(loop).getByText("Founder")).toBeVisible();
+    expect(within(loop).getByRole("img", { name: "Founder" })).toBeVisible();
+    expect(within(loop).getByRole("img", { name: "CEO Agent" })).toBeVisible();
+    expect(within(loop).getByText("Your direction")).toBeVisible();
+    expect(within(loop).getByText("Company running")).toBeVisible();
+    expect(within(loop).getByText("Needs your judgment")).toBeVisible();
+    expect(within(loop).getByText("Founder report ready")).toBeVisible();
+    expect(screen.queryByText("Grant sensitive permissions")).not.toBeInTheDocument();
+    expect(loop.querySelectorAll("[data-phase]")).toHaveLength(0);
+    expect(loop.querySelector(".send-orb")).toBeInTheDocument();
+    expect(loop.querySelectorAll(".agent-arrival")).toHaveLength(4);
+    expect(Array.from(loop.querySelectorAll(".agent-role")).map((role) => role.textContent)).toEqual(["CEO", "Research", "Product", "Build"]);
+    expect(loop.querySelector(".permission-moment")).toBeInTheDocument();
+    expect(loop.querySelector(".ceo-result")).toBeInTheDocument();
+    expect(loop.querySelector(".control-tracks")).not.toBeInTheDocument();
+  });
 
-    expect(needsYou).toHaveAttribute("aria-selected", "true");
-    expect(needsYou).toHaveAttribute("aria-controls", "walkthrough-panel");
-    expect(screen.getByRole("tabpanel")).toHaveAttribute("id", "walkthrough-panel");
-    expect(screen.getByRole("heading", { name: "Choose the launch position" })).toBeVisible();
-    expect(screen.getByRole("button", { name: "Play walkthrough" })).toBeVisible();
+  it("keeps FAQ inside the navigation instead of making it a page section", () => {
+    render(<App />);
+
+    expect(screen.queryByRole("heading", { name: "Before you start." })).not.toBeInTheDocument();
+    const faqButton = screen.getByRole("button", { name: "FAQ" });
+    expect(faqButton).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(faqButton);
+
+    expect(faqButton).toHaveAttribute("aria-expanded", "true");
+    const panel = screen.getByRole("dialog", { name: "Frequently asked questions" });
+    expect(within(panel).getByText("Is Cordantry another AI chat app?")).toBeVisible();
+  });
+
+  it("uses a compact visual to explain local control", () => {
+    render(<App />);
+
+    const visual = screen.getByRole("img", { name: "Local control flow" });
+    expect(within(visual).getByText("Your project")).toBeVisible();
+    expect(within(visual).getByText("Permission gate")).toBeVisible();
+    expect(within(visual).getByText("Accepted proof")).toBeVisible();
+    expect(screen.queryByText(/Your work stays on your machine/)).not.toBeInTheDocument();
   });
 });

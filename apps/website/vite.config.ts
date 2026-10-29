@@ -1,5 +1,5 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type UserConfig } from "vite";
 
 export default defineConfig({
   base: process.env.GITHUB_ACTIONS ? "/cordantry/" : "/",
@@ -8,4 +8,4 @@ export default defineConfig({
     environment: "jsdom",
     setupFiles: "./src/test/setup.ts",
   },
-});
+} as UserConfig & { test: { environment: string; setupFiles: string } });

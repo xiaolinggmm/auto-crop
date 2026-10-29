@@ -1,53 +1,34 @@
 import {
   ArrowRight,
   Check,
-  ChevronRight,
   CirclePause,
+  Crown,
+  FolderKanban,
   Github,
-  Layers3,
   LockKeyhole,
   Menu,
   MonitorDown,
-  Play,
   ShieldCheck,
-  Sparkles,
+  UserRound,
   X,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 const githubUrl = "https://github.com/xiaolinggmm/cordantry";
 const downloadUrl = `${githubUrl}/releases/latest`;
 
-const stages = ["Set direction", "Company plans", "Agents work", "Needs you", "Outcome"] as const;
-type Stage = (typeof stages)[number];
+type AgentType = "codex" | "claude" | "antigravity";
 
-const stageCopy: Record<Stage, { eyebrow: string; title: string; note: string }> = {
-  "Set direction": {
-    eyebrow: "Founder vision",
-    title: "Launch our paid research product",
-    note: "Find a sharp market position, ship the first usable version, and prepare a credible launch.",
-  },
-  "Company plans": {
-    eyebrow: "CEO plan",
-    title: "One goal becomes an operating plan",
-    note: "Objectives, departments, dependencies, and proof requirements are ready.",
-  },
-  "Agents work": {
-    eyebrow: "Company operating",
-    title: "Work moves across departments",
-    note: "Accepted research becomes Product's input. Engineering starts when the brief is ready.",
-  },
-  "Needs you": {
-    eyebrow: "Founder decision",
-    title: "Choose the launch position",
-    note: "The team narrowed the market to two viable directions. This changes what gets built.",
-  },
-  Outcome: {
-    eyebrow: "Founder report",
-    title: "A launch-ready product, with the trail behind it",
-    note: "The result, key decisions, accepted evidence, and remaining risks are in one place.",
-  },
-};
+function AgentIcon({ type }: { type: AgentType }) {
+  const label = type === "codex" ? "Codex Agent" : type === "claude" ? "Claude Code Agent" : "Antigravity Agent";
+  return (
+    <span className={`agent-icon agent-${type}`} role="img" aria-label={label}>
+      {type === "codex" && <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22.282 9.821a5.985 5.985 0 0 0-.516-4.911 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.182a5.985 5.985 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.096 5.98 5.98 0 0 0 .511 4.911 6.051 6.051 0 0 0 6.514 2.9A5.985 5.985 0 0 0 13.26 24a6.056 6.056 0 0 0 5.772-4.206 5.989 5.989 0 0 0 3.997-2.9 6.056 6.056 0 0 0-.747-7.073Zm-9.022 12.608a4.476 4.476 0 0 1-2.877-1.041l.142-.08 4.778-2.758a.795.795 0 0 0 .393-.682v-6.736l2.02 1.168a.071.071 0 0 1 .038.052v5.583a4.504 4.504 0 0 1-4.494 4.494Zm-9.661-4.125a4.471 4.471 0 0 1-.534-3.014l.142.085 4.783 2.758a.771.771 0 0 0 .78 0l5.843-3.368v2.332a.08.08 0 0 1-.033.062L9.74 19.95a4.499 4.499 0 0 1-6.141-1.646ZM2.341 7.896a4.485 4.485 0 0 1 2.365-1.973V11.6a.766.766 0 0 0 .388.677l5.815 3.354-2.02 1.168a.076.076 0 0 1-.071 0l-4.831-2.786a4.504 4.504 0 0 1-1.646-6.141v.024Zm16.596 3.855-5.833-3.387L15.119 7.2a.076.076 0 0 1 .071 0l4.83 2.791a4.494 4.494 0 0 1-.676 8.104v-5.677a.79.79 0 0 0-.407-.667Zm2.011-3.023-.142-.085-4.774-2.782a.776.776 0 0 0-.785 0L9.409 9.23V6.897a.066.066 0 0 1 .028-.061l4.831-2.787a4.499 4.499 0 0 1 6.68 4.66ZM8.307 12.863l-2.02-1.164a.08.08 0 0 1-.038-.057V6.074a4.499 4.499 0 0 1 7.376-3.453l-.142.08-4.778 2.758a.795.795 0 0 0-.393.681l-.005 6.723Zm1.098-2.365 2.602-1.5 2.607 1.5v2.999l-2.598 1.5-2.607-1.5-.004-2.999Z" /></svg>}
+      {type === "claude" && <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4.714 15.956 4.718-2.648.079-.23-.079-.128h-.231l-.789-.049-7.169-.291-.571-.122-.534-.704.055-.352.479-.322 6.579.419 2.447.255h.388l.055-.158-.237-.194-5.527-3.692-1.336-.971-.722-.492-.364-.461-.158-1.008.656-.722.88.06 4.823 3.65.364.304.146-.103.018-.073-.164-.273-3.443-5.968-.17-.619-.103-.729.443-.88.413-.134.996.134.419.364 4.165 8.57.243.832.091.255h.158v-.146l.443-4.801.237-2.696.079-.759.376-.91.747-.492.583.28.48.686-.067.443-1.208 6.697h.213l.243-.243 3.363-4.189.85-.905.546-.431h1.032l.759 1.129-.34 1.166-4.068 5.55.073.109.188-.018 7.067-1.202.832.388.091.395-.328.807-7.753 1.761-.043.031.049.06 7.63.407.789.522.474.638-.079.486-1.214.619-6.776-1.627h-.182v.109l7.704 7.209.127.577-.322.455-.34-.049-7.181-5.678h-.128v.17l2.787 4.171.121 1.081-.17.352-.607.213-.668-.122-4.146-5.872-.14.079-.674 7.255-.315.37-.729.28-.607-.462-.322-.747 1.007-6.83.17-.632-.012-.042-.14.018-5.336 6.758-.413.164-.716-.371.067-.662.401-.589 4.754-6.005-.006-.158h-.055l-6.338 4.117-1.129.145-.486-.455.061-.747.231-.243 1.906-1.311Z" /></svg>}
+      {type === "antigravity" && <svg viewBox="0 0 180 180" aria-hidden="true"><path d="M144.248 149.062c7.5 5.626 18.75 1.876 8.437-8.437-30.937-30-24.375-112.5-62.812-112.5s-31.875 82.5-62.813 112.5c-11.25 11.25.938 14.063 8.438 8.437 29.062-19.687 27.187-54.375 54.375-54.375s25.312 34.688 54.375 54.375Z" /></svg>}
+    </span>
+  );
+}
 
 function Logo() {
   return (
@@ -58,149 +39,54 @@ function Logo() {
   );
 }
 
-function DirectionPanel() {
-  return (
-    <div className="direction-card">
-      <div className="field-label">What are we building?</div>
-      <p>Launch our paid research product</p>
-      <div className="direction-details">Find a sharp market position, ship the first usable version, and prepare a credible launch.</div>
-      <div className="demo-primary">Create company <ArrowRight size={15} /></div>
-    </div>
-  );
-}
-
-function PlanPanel() {
-  return (
-    <div className="plan-board" aria-label="Company plan">
-      <div className="objective-node"><Sparkles size={15} /> Launch a paid research product</div>
-      <div className="connector" aria-hidden="true" />
-      <div className="department-row">
-        <div className="department-card"><span className="agent-dot research" />Research<span>Position the product</span></div>
-        <div className="department-card"><span className="agent-dot product" />Product<span>Shape the first offer</span></div>
-        <div className="department-card"><span className="agent-dot build" />Engineering<span>Build and verify</span></div>
-      </div>
-    </div>
-  );
-}
-
-function AgentsPanel() {
-  const work = [
-    ["Research", "Market position", "Accepted", "complete"],
-    ["Product", "Offer & experience", "Working", "active"],
-    ["Engineering", "Launch build", "Waiting for brief", "waiting"],
-  ];
-  return (
-    <div className="agent-work-list">
-      {work.map(([team, task, status, tone], index) => (
-        <div className="agent-work" key={team}>
-          <div className={`work-index ${tone}`}>{tone === "complete" ? <Check size={15} /> : index + 1}</div>
-          <div><strong>{team}</strong><span>{task}</span></div>
-          <span className={`work-status ${tone}`}>{status}</span>
-        </div>
-      ))}
-      <div className="handoff-line"><ArrowRight size={14} /> Accepted work unlocks the next task</div>
-    </div>
-  );
-}
-
-function DecisionPanel() {
-  return (
-    <div className="decision-card">
-      <div className="decision-context"><span>Recommended</span><strong>Lead with founder research</strong></div>
-      <p>Clearer urgency and a narrower first product. The team can reuse the research already accepted.</p>
-      <div className="decision-option"><i className="visual-radio selected" /> Founder research <span>Focused</span></div>
-      <div className="decision-option"><i className="visual-radio" /> General market intelligence <span>Broader</span></div>
-      <div className="demo-primary">Choose direction <ArrowRight size={15} /></div>
-    </div>
-  );
-}
-
-function OutcomePanel() {
-  return (
-    <div className="outcome-grid">
-      <div className="report-card">
-        <div className="report-check"><Check size={18} /></div>
-        <div><span>Company outcome</span><strong>Launch package ready</strong></div>
-      </div>
-      <div className="report-card"><div><span>Delivered</span><strong>Positioning · Product · Launch plan</strong></div></div>
-      <div className="report-card"><div><span>Founder decisions</span><strong>2 resolved · 0 waiting</strong></div></div>
-      <div className="report-card risk"><div><span>Watch next</span><strong>First 10 customer conversations</strong></div><ChevronRight size={18} /></div>
-    </div>
-  );
-}
-
-const panels: Record<Stage, () => React.JSX.Element> = {
-  "Set direction": DirectionPanel,
-  "Company plans": PlanPanel,
-  "Agents work": AgentsPanel,
-  "Needs you": DecisionPanel,
-  Outcome: OutcomePanel,
-};
-
 function ProductDemo() {
-  const [stage, setStage] = useState<Stage>(stages[0]);
-  const [playing, setPlaying] = useState(true);
-  const StagePanel = panels[stage];
-
-  useEffect(() => {
-    const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-    if (!playing || reducedMotion) return;
-    const timer = window.setInterval(() => {
-      setStage((current) => stages[(stages.indexOf(current) + 1) % stages.length]);
-    }, 4600);
-    return () => window.clearInterval(timer);
-  }, [playing]);
-
   return (
     <section className="demo-section" id="product" aria-labelledby="demo-title">
       <div className="section-intro compact">
-        <p className="eyebrow">Product walkthrough</p>
-        <h2 id="demo-title">Set the direction. Keep the judgment.</h2>
+        <p className="eyebrow">How Cordantry works</p>
+        <h2 id="demo-title">One direction. A company in motion.</h2>
       </div>
-      <div className="demo-stage">
-        <div className="demo-tabs" role="tablist" aria-label="Cordantry company workflow">
-          {stages.map((item) => (
-            <button
-              key={item}
-              type="button"
-              role="tab"
-              id={`walkthrough-tab-${stages.indexOf(item)}`}
-              aria-controls="walkthrough-panel"
-              aria-selected={stage === item}
-              className={stage === item ? "active" : ""}
-              onClick={() => { setStage(item); setPlaying(false); }}
-            >
-              <span>{String(stages.indexOf(item) + 1).padStart(2, "0")}</span>{item}
-            </button>
-          ))}
-          <button className="play-control" type="button" onClick={() => setPlaying((value) => !value)} aria-label={playing ? "Pause walkthrough" : "Play walkthrough"}>
-            {playing ? <CirclePause size={18} /> : <Play size={18} />}
-          </button>
+      <div className="operating-illustration" role="img" aria-label="Cordantry operating loop">
+        <span className="sr-only">The founder sets a direction. Cordantry coordinates Agent roles, returns strategic decisions to the founder, and delivers an outcome.</span>
+        <svg className="flow-map" viewBox="0 0 1120 560" aria-hidden="true">
+          <path className="flow-path path-to-company" d="M250 280 C330 280 330 186 420 186" />
+          <path className="flow-path path-to-decision" d="M700 186 C790 186 770 280 860 280" />
+          <path className="flow-path path-to-outcome" d="M700 374 C790 374 770 280 860 280" />
+          <path className="flow-path path-return" d="M860 316 C824 468 300 492 220 330" />
+        </svg>
+
+        <div className="loop-card founder-direction">
+          <div className="loop-card-head"><span className="founder-avatar">F</span><strong>Founder direction</strong></div>
+          <div className="prompt-lines" aria-hidden="true"><i /><i /><i /></div>
+          <span className="send-signal"><ArrowRight size={14} /></span>
         </div>
-        <div
-          className="product-window"
-          id="walkthrough-panel"
-          role="tabpanel"
-          tabIndex={0}
-          aria-labelledby={`walkthrough-tab-${stages.indexOf(stage)}`}
-        >
-          <div className="product-rail" aria-hidden="true">
-            <div className="rail-brand"><span className="brand-mark small"><span /></span></div>
-            <div className="rail-nav active"><Layers3 size={18} /></div>
-            <div className="rail-nav"><Sparkles size={18} /></div>
-            <div className="rail-spacer" />
-            <div className="avatar">F</div>
+
+        <div className="company-system">
+          <div className="company-system-head">
+            <span className="brand-mark small" aria-hidden="true"><span /></span>
+            <strong>Company operating</strong>
+            <i className="live-dot" />
           </div>
-          <div className="product-content">
-            <header className="product-header">
-              <div><span>Northstar Labs</span><strong>{stageCopy[stage].eyebrow}</strong></div>
-              <div className="operating"><i /> Company operating</div>
-            </header>
-            <main className="product-main">
-              <div className="stage-heading"><p>{stageCopy[stage].eyebrow}</p><h3>{stageCopy[stage].title}</h3><span>{stageCopy[stage].note}</span></div>
-              <div className="stage-panel" key={stage}><StagePanel /></div>
-            </main>
+          <div className="agent-roles">
+            <div className="ceo-agent"><span>CEO</span><strong>CEO Agent</strong><AgentIcon type="antigravity" /></div>
+            <div className="role-card role-research"><span>R</span><strong>Research</strong><AgentIcon type="claude" /><i /></div>
+            <div className="role-handoff handoff-one"><ArrowRight size={13} /></div>
+            <div className="role-card role-product"><span>P</span><strong>Product</strong><AgentIcon type="codex" /><i /></div>
+            <div className="role-handoff handoff-two"><ArrowRight size={13} /></div>
+            <div className="role-card role-build"><span>B</span><strong>Build</strong><AgentIcon type="antigravity" /><i /></div>
           </div>
+        </div>
+
+        <div className="loop-card founder-decision">
+          <div className="attention-dot">!</div>
+          <strong>Needs you</strong>
+          <div className="choice-lines" aria-hidden="true"><i /><i /></div>
+        </div>
+
+        <div className="loop-card company-outcome">
+          <div className="outcome-check"><Check size={16} /></div>
+          <strong>Outcome</strong>
+          <div className="artifact-stack" aria-hidden="true"><i /><i /><i /></div>
         </div>
       </div>
     </section>
@@ -209,20 +95,33 @@ function ProductDemo() {
 
 function App() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [faqOpen, setFaqOpen] = useState(false);
   return (
     <div id="top">
       <header className="site-header">
         <Logo />
         <nav className={menuOpen ? "site-nav open" : "site-nav"} aria-label="Main navigation">
-          <a href="#product" onClick={() => setMenuOpen(false)}>Product</a>
-          <a href="#difference" onClick={() => setMenuOpen(false)}>Why Cordantry</a>
-          <a href="#faq" onClick={() => setMenuOpen(false)}>FAQ</a>
+          <a href="#product" onClick={() => { setMenuOpen(false); setFaqOpen(false); }}>Product</a>
+          <a href="#difference" onClick={() => { setMenuOpen(false); setFaqOpen(false); }}>Why Cordantry</a>
+          <button type="button" aria-expanded={faqOpen} aria-controls="faq-panel" onClick={() => { setFaqOpen((value) => !value); setMenuOpen(false); }}>FAQ</button>
           <a href={githubUrl} target="_blank" rel="noreferrer">GitHub</a>
         </nav>
         <a className="header-cta" href={downloadUrl}>Download <ArrowRight size={15} /></a>
         <button className="menu-button" type="button" aria-label={menuOpen ? "Close menu" : "Open menu"} onClick={() => setMenuOpen((value) => !value)}>
           {menuOpen ? <X /> : <Menu />}
         </button>
+        {faqOpen && (
+          <div className="nav-faq" id="faq-panel" role="dialog" aria-label="Frequently asked questions">
+            <div className="nav-faq-head"><span>FAQ</span><button type="button" aria-label="Close FAQ" onClick={() => setFaqOpen(false)}><X size={18} /></button></div>
+            <div className="faq-list">
+              <details><summary>Is Cordantry another AI chat app?<span>+</span></summary><p>No. It turns a goal into coordinated roles, handoffs, decisions, and verified outcomes.</p></details>
+              <details><summary>Does it require several different AI models?<span>+</span></summary><p>No. Roles can use different supported Agent backends, but a multi-model setup is not required.</p></details>
+              <details><summary>When does Cordantry interrupt me?<span>+</span></summary><p>Only for founder judgment, sensitive permission, or a decision that materially changes the work.</p></details>
+              <details><summary>Where does my work run?<span>+</span></summary><p>On your computer, against the local project you choose.</p></details>
+              <details><summary>What do I need to get started?<span>+</span></summary><p>Cordantry and a supported local Agent CLI, such as Codex or Claude Code.</p></details>
+            </div>
+          </div>
+        )}
       </header>
 
       <main>
@@ -243,23 +142,39 @@ function App() {
         <ProductDemo />
 
         <section className="responsibility section" aria-labelledby="responsibility-title">
-          <div className="section-intro">
+          <div className="section-intro responsibility-intro">
             <p className="eyebrow">One clear boundary</p>
             <h2 id="responsibility-title">Your company runs.<br />You stay in control.</h2>
+            <p>You set direction. Cordantry carries the work.</p>
           </div>
-          <div className="responsibility-grid">
-            <article className="founder-card">
-              <span className="card-number">You</span>
-              <h3>Founder</h3>
-              <ul><li>Set the vision</li><li>Make strategic calls</li><li>Grant sensitive permissions</li><li>Review company outcomes</li></ul>
-            </article>
-            <article className="company-card">
-              <span className="card-number">C</span>
-              <h3>Cordantry</h3>
-              <ul><li>Turn direction into a plan</li><li>Assign work by role</li><li>Move accepted work downstream</li><li>Escalate only when judgment is needed</li></ul>
-            </article>
+          <div className="founder-control-loop" role="img" aria-label="Founder control loop">
+            <span className="sr-only">The founder sets direction. Cordantry runs the company, returns judgment calls to the founder, and prepares a verified report.</span>
+            <div className="founder-sequence">
+              <div className="console-head"><span className="person-icon" role="img" aria-label="Founder"><UserRound size={17} /></span><strong>Founder</strong></div>
+              <div className="direction-input"><span>Your direction</span><i /><i /><ArrowRight size={14} /></div>
+            </div>
+            <span className="send-orb" aria-hidden="true"><ArrowRight size={16} /></span>
+            <div className="company-sequence">
+              <div className="console-head"><span className="brand-mark small" aria-hidden="true"><span /></span><strong>Company running</strong><i className="live-dot" /></div>
+              <div className="continuous-agents">
+                <div className="agent-arrival"><AgentIcon type="antigravity" /><strong className="agent-role">CEO</strong><i /><span /></div>
+                <div className="agent-arrival"><AgentIcon type="claude" /><strong className="agent-role">Research</strong><i /><span /></div>
+                <div className="agent-arrival"><AgentIcon type="codex" /><strong className="agent-role">Product</strong><i /><span /></div>
+                <div className="agent-arrival"><AgentIcon type="antigravity" /><strong className="agent-role">Build</strong><i /><span /></div>
+              </div>
+            </div>
+            <div className="permission-moment">
+                <div className="console-head"><span className="permission-icon"><LockKeyhole size={16} /></span><strong>Needs your judgment</strong><span className="founder-chip">You</span></div>
+                <div className="decision-context" aria-hidden="true"><i /><i /><i /></div>
+                <div className="decision-choices" aria-hidden="true"><i /><i /></div>
+            </div>
+            <div className="ceo-result">
+                <div className="console-head"><span className="person-icon ceo-icon" role="img" aria-label="CEO Agent"><Crown size={17} /></span><strong>CEO</strong><span className="recipient-icon" aria-label="Presented to Founder"><UserRound size={14} /></span></div>
+                <div className="result-title"><span className="outcome-check"><Check size={14} /></span><strong>Founder report ready</strong></div>
+                <div className="report-summary" aria-hidden="true"><i /><i /><i /></div>
+                <div className="report-artifacts" aria-hidden="true"><i /><i /><i /></div>
+            </div>
           </div>
-          <p className="role-note">A role-based Agent team coordinates responsibilities and handoffs. Cordantry does not depend on pretending every role must be a different model.</p>
         </section>
 
         <section className="difference section" id="difference" aria-labelledby="difference-title">
@@ -286,23 +201,15 @@ function App() {
         </section>
 
         <section className="control section" aria-labelledby="control-title">
-          <div className="control-copy"><p className="eyebrow">Local control</p><h2 id="control-title">Autonomy with an audit trail.</h2><p>Your work stays on your machine. Cordantry makes execution visible, asks before sensitive actions, and keeps proof behind every accepted result.</p></div>
-          <div className="control-list">
-            <div><MonitorDown /><span><strong>Local-first</strong>Runs from your computer and project.</span></div>
-            <div><LockKeyhole /><span><strong>Permission-aware</strong>Sensitive actions remain explicit.</span></div>
-            <div><ShieldCheck /><span><strong>Proof-gated</strong>Work advances on accepted evidence.</span></div>
-            <div><CirclePause /><span><strong>Always stoppable</strong>Pause the company or stop active work.</span></div>
-          </div>
-        </section>
-
-        <section className="faq section" id="faq" aria-labelledby="faq-title">
-          <div className="section-intro"><p className="eyebrow">FAQ</p><h2 id="faq-title">Before you start.</h2></div>
-          <div className="faq-list">
-            <details><summary>Is Cordantry another AI chat app?<span>+</span></summary><p>No. It is a local company runtime that turns a goal into coordinated roles, tasks, handoffs, decisions, and verified outcomes.</p></details>
-            <details><summary>Does it require several different AI models?<span>+</span></summary><p>No. “Agent team” describes role-based collaboration. The available execution backends can carry different responsibilities without making a model-count promise.</p></details>
-            <details><summary>When does Cordantry interrupt me?<span>+</span></summary><p>When the company needs founder judgment, a sensitive permission, or a decision that materially changes the work. Routine coordination stays with the team.</p></details>
-            <details><summary>Where does my work run?<span>+</span></summary><p>On your computer, against the local project you choose. Cordantry keeps the plan, execution state, proof, and reports visible in its dashboard.</p></details>
-            <details><summary>What do I need to get started?<span>+</span></summary><p>Install Cordantry and have a supported local Agent CLI, such as Codex or Claude Code, installed and signed in.</p></details>
+          <div className="control-copy"><p className="eyebrow">Local control</p><h2 id="control-title">Autonomy with an audit trail.</h2></div>
+          <div className="control-visual" role="img" aria-label="Local control flow">
+            <span className="sr-only">Work moves from your local project through an explicit permission gate to Agent work and accepted proof. You can pause it at any time.</span>
+            <div className="control-node project-node"><FolderKanban /><strong>Your project</strong></div>
+            <ArrowRight className="control-arrow" aria-hidden="true" />
+            <div className="control-node gate-node"><LockKeyhole /><strong>Permission gate</strong></div>
+            <ArrowRight className="control-arrow" aria-hidden="true" />
+            <div className="control-node proof-node"><ShieldCheck /><strong>Accepted proof</strong></div>
+            <div className="pause-chip"><CirclePause size={15} /> Pause anytime</div>
           </div>
         </section>
 
