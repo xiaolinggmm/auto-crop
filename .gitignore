@@ -23,6 +23,9 @@ MISSION.md
 NOTES.md
 RESOURCES.md
 assets/
+!docs/assets/
+!docs/assets/readme/
+!docs/assets/readme/*.png
 learning-records/
 lessons/
 reference/
